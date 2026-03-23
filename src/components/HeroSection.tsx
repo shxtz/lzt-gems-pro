@@ -1,6 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import heroBg from "@/assets/hero-bg.jpg";
-import banner from "@/assets/banner.png";
+import heroBg from "@/assets/hero-bg.png";
 import { Sparkles, ArrowRight, ChevronDown } from "lucide-react";
 import { useRef } from "react";
 
