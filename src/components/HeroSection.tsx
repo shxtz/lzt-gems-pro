@@ -110,9 +110,9 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black leading-[0.95] mb-4 tracking-tight"
+            className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] mb-4 tracking-tight"
           >
-            <span className="text-foreground">V-BUCKS</span>
+            <span className="text-foreground">VBUCKS</span>
             <br />
             <span className="text-gradient-gold-shine">BARATO</span>
           </motion.h1>
