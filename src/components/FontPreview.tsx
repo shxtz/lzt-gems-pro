@@ -1,7 +1,7 @@
 const fonts = [
-  { name: "Nunito", family: "Nunito, sans-serif" },
-  { name: "Quicksand", family: "Quicksand, sans-serif" },
-  { name: "Comfortaa", family: "Comfortaa, sans-serif" },
+  { name: "Nunito", family: "'Nunito', sans-serif" },
+  { name: "Quicksand", family: "'Quicksand', sans-serif" },
+  { name: "Comfortaa", family: "'Comfortaa', sans-serif" },
   { name: "Varela Round", family: "'Varela Round', sans-serif" },
 ];
 
@@ -16,20 +16,15 @@ const FontPreview = () => {
           <div
             key={font.name}
             className="rounded-2xl border border-border/40 bg-card/50 p-8 backdrop-blur-sm"
+            style={{ fontFamily: font.family }}
           >
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">
               {font.name}
             </p>
-            <h3
-              style={{ fontFamily: font.family }}
-              className="text-5xl md:text-6xl font-bold text-foreground mb-3"
-            >
+            <h3 className="text-5xl md:text-6xl font-bold text-foreground mb-3">
               VBUCKS BARATO
             </h3>
-            <p
-              style={{ fontFamily: font.family }}
-              className="text-lg text-muted-foreground"
-            >
+            <p className="text-lg text-muted-foreground">
               V-Bucks e contas de jogos com os melhores preços do Brasil. Entrega instantânea e segurança garantida.
             </p>
           </div>
