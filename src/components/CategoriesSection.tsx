@@ -1,74 +1,101 @@
 import { motion } from "framer-motion";
-import { Gamepad2, Swords, Flame, Star, Sparkles, Shield } from "lucide-react";
+import { Gamepad2, Swords, Flame, Star, Sparkles, Shield, ArrowUpRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface CategoryCardProps {
   name: string;
   icon: LucideIcon;
   count: number;
-  color: string;
+  gradient: string;
+  index: number;
 }
 
-const CategoryCard = ({ name, icon: Icon, count, color }: CategoryCardProps) => {
+const CategoryCard = ({ name, icon: Icon, count, gradient, index }: CategoryCardProps) => {
   return (
     <motion.div
-      whileHover={{ y: -4 }}
-      className="group relative cursor-pointer rounded-2xl border border-border/50 bg-gradient-card p-6 transition-all hover:border-primary/30 hover:shadow-gold"
+      whileHover={{ y: -6 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="group relative cursor-pointer"
     >
-      <div
-        className="mb-4 inline-flex rounded-xl p-3 transition-colors"
-        style={{ backgroundColor: `${color}15`, color }}
-      >
-        <Icon className="h-6 w-6" />
-      </div>
-      <h3 className="font-display text-lg font-bold text-foreground mb-1">{name}</h3>
-      <p className="font-body text-xs text-muted-foreground">
-        {count} contas disponíveis
-      </p>
-      <div className="absolute top-4 right-4 font-body text-[10px] font-medium uppercase tracking-wider text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-        Ver →
+      <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-gradient-card transition-all duration-500 hover:border-primary/25 hover:shadow-card-hover">
+        {/* Hover glow */}
+        <div
+          className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          style={{ background: gradient }}
+        />
+
+        <div className="relative z-10 p-6 md:p-7">
+          <div className="flex items-start justify-between mb-5">
+            <motion.div
+              whileHover={{ rotate: [0, -5, 5, 0] }}
+              className="inline-flex rounded-xl glass-gold p-3"
+            >
+              <Icon className="h-5 w-5 text-primary" />
+            </motion.div>
+            <div className="opacity-0 transition-all duration-300 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
+              <ArrowUpRight className="h-4 w-4 text-primary" />
+            </div>
+          </div>
+
+          <h3 className="font-display text-[13px] md:text-sm font-bold text-foreground mb-1.5 tracking-wide uppercase">
+            {name}
+          </h3>
+          <p className="font-body text-[11px] text-muted-foreground tracking-wide">
+            {count} contas disponíveis
+          </p>
+
+          {/* Bottom bar */}
+          <div className="mt-5 h-[2px] w-0 bg-gradient-gold rounded-full transition-all duration-500 group-hover:w-full" />
+        </div>
       </div>
     </motion.div>
   );
 };
 
 const categories = [
-  { name: "Valorant", icon: Swords, count: 142, color: "#ff4654" },
-  { name: "Fortnite", icon: Gamepad2, count: 89, color: "#ecb32c" },
-  { name: "League of Legends", icon: Shield, count: 67, color: "#c89b3c" },
-  { name: "Genshin Impact", icon: Star, count: 45, color: "#6eb4ff" },
-  { name: "Honkai: Star Rail", icon: Sparkles, count: 33, color: "#c090ff" },
-  { name: "Brawl Stars", icon: Flame, count: 28, color: "#ff8c00" },
+  { name: "Valorant", icon: Swords, count: 142, gradient: "radial-gradient(ellipse at top left, hsl(0 80% 50% / 0.06), transparent 60%)" },
+  { name: "Fortnite", icon: Gamepad2, count: 89, gradient: "radial-gradient(ellipse at top left, hsl(43 84% 55% / 0.06), transparent 60%)" },
+  { name: "League of Legends", icon: Shield, count: 67, gradient: "radial-gradient(ellipse at top left, hsl(43 60% 45% / 0.06), transparent 60%)" },
+  { name: "Genshin Impact", icon: Star, count: 45, gradient: "radial-gradient(ellipse at top left, hsl(210 80% 60% / 0.06), transparent 60%)" },
+  { name: "Honkai: Star Rail", icon: Sparkles, count: 33, gradient: "radial-gradient(ellipse at top left, hsl(270 60% 65% / 0.06), transparent 60%)" },
+  { name: "Brawl Stars", icon: Flame, count: 28, gradient: "radial-gradient(ellipse at top left, hsl(30 90% 50% / 0.06), transparent 60%)" },
 ];
 
 const CategoriesSection = () => {
   return (
-    <section className="py-24 border-t border-border/30">
-      <div className="container mx-auto px-4">
+    <section className="py-28 relative overflow-hidden">
+      {/* Section divider */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+
+      <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-3 text-foreground">
+          <span className="inline-block font-body text-[10px] text-primary uppercase tracking-[0.3em] mb-4">
+            ⬡ Explore
+          </span>
+          <h2 className="font-display text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
             CATEGORIAS
           </h2>
-          <p className="font-body text-muted-foreground max-w-md mx-auto">
+          <p className="font-body text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
             Contas verificadas dos melhores jogos com entrega automática.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
           {categories.map((cat, i) => (
             <motion.div
               key={cat.name}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
+              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <CategoryCard {...cat} />
+              <CategoryCard {...cat} index={i} />
             </motion.div>
           ))}
         </div>
