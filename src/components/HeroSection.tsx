@@ -172,8 +172,8 @@ const HeroSection = () => {
           className="mt-20 flex items-center justify-center gap-0 max-w-xl mx-auto"
         >
           {[
-            { value: "10K+", label: "Clientes" },
-            { value: "50K+", label: "Vendas" },
+            { value: "1.000+", label: "Clientes" },
+            { value: "2.000+", label: "Vendas" },
             { value: "4.9★", label: "Avaliação" },
           ].map((stat, i) => (
             <div
