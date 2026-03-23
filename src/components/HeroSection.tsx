@@ -116,20 +116,6 @@ const HeroSection = () => {
             <span className="text-gradient-gold-shine">BARATO</span>
           </motion.h1>
 
-          {/* Banner image */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="my-8 mx-auto max-w-2xl"
-          >
-            <img
-              src={banner}
-              alt="VBucks Barato"
-              className="w-full h-auto rounded-2xl shadow-gold opacity-80"
-            />
-          </motion.div>
-
           {/* Description */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
