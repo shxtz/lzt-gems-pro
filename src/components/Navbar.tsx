@@ -41,8 +41,9 @@ const Navbar = () => {
             whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
             transition={{ duration: 0.5 }}
           />
-          <span className="font-display text-base font-bold text-gradient-gold-shine tracking-widest hidden sm:block">
-            VBUCKS BARATO
+          <span className="hidden sm:flex items-baseline gap-0.5">
+            <span className="font-body text-[15px] font-bold text-foreground tracking-[0.08em]">VBUCKS</span>
+            <span className="font-body text-[15px] font-medium text-primary tracking-[0.08em]">BARATO</span>
           </span>
         </Link>
 
