@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Rajdhani", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        display: ["Jost", "sans-serif"],
+        body: ["Jost", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
