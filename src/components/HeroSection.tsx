@@ -44,7 +44,7 @@ const HeroSection = () => {
         <img
           src={heroBg}
           alt=""
-          className="h-[130%] w-full object-cover object-center"
+          className="h-full w-full object-contain object-center"
           style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
