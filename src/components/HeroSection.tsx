@@ -113,7 +113,7 @@ const HeroSection = () => {
             className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] mb-4 tracking-tight"
           >
             <span className="text-foreground block leading-none">VBUCKS</span>
-            <span className="text-gradient-gold-shine block leading-none -mt-6 md:-mt-10 lg:-mt-14">BARATO</span>
+            <span className="text-gradient-gold-shine block leading-none -mt-3 md:-mt-5 lg:-mt-7">BARATO</span>
           </motion.h1>
 
           {/* Description */}
