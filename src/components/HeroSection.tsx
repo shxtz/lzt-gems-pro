@@ -44,10 +44,11 @@ const HeroSection = () => {
         <img
           src={heroBg}
           alt=""
-          className="h-[130%] w-full object-contain object-top scale-100"
+          className="h-[130%] w-full object-cover object-center"
+          style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
         />
-        <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
-        <div className="absolute inset-0 bg-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-transparent h-[30%]" />
       </motion.div>
 
       {/* Animated grid */}
