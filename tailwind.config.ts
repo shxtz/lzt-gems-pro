@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Jost", "sans-serif"],
-        body: ["Jost", "sans-serif"],
+        display: ["Quicksand", "sans-serif"],
+        body: ["Quicksand", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
