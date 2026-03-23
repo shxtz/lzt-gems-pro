@@ -44,7 +44,7 @@ const HeroSection = () => {
         <img
           src={heroBg}
           alt=""
-          className="h-[120%] w-full object-cover object-center scale-110"
+          className="h-[130%] w-full object-contain object-top scale-100"
         />
         <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
         <div className="absolute inset-0 bg-background/30" />
