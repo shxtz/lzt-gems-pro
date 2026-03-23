@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User } from "lucide-react";
 
 const FloatingChat = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,19 +8,20 @@ const FloatingChat = () => {
   const [messages, setMessages] = useState<{ text: string; from: "user" | "bot" }[]>([
     { text: "Olá! 👋 Como posso te ajudar hoje?", from: "bot" },
   ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = () => {
     if (!message.trim()) return;
     setMessages((prev) => [...prev, { text: message, from: "user" }]);
     setMessage("");
-    // Simulated bot response
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
-        {
-          text: "Obrigado pela mensagem! Em breve um atendente responderá. 😊",
-          from: "bot",
-        },
+        { text: "Obrigado pela mensagem! Em breve um atendente responderá. 😊", from: "bot" },
       ]);
     }, 1000);
   };
@@ -33,70 +34,130 @@ const FloatingChat = () => {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="mb-4 w-80 rounded-2xl border border-border bg-card shadow-card overflow-hidden"
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="mb-4 w-[340px] rounded-3xl border border-border/50 glass shadow-card-hover overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-gradient-gold px-4 py-3">
-              <div>
-                <div className="font-display text-sm font-bold text-primary-foreground">
-                  Suporte VBucks Barato
+            <div className="relative overflow-hidden px-5 py-4">
+              <div className="absolute inset-0 bg-gradient-gold opacity-90" />
+              <div className="absolute inset-0 scanlines" />
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-foreground/20">
+                    <Bot className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <div className="font-display text-[12px] font-bold text-primary-foreground tracking-wider uppercase">
+                      Suporte
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-[10px] text-primary-foreground/70 font-body">Online</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[10px] text-primary-foreground/70">Online agora</div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-lg p-1.5 text-primary-foreground/60 transition-all hover:text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-primary-foreground/70 hover:text-primary-foreground">
-                <X className="h-4 w-4" />
-              </button>
             </div>
 
             {/* Messages */}
-            <div className="h-64 overflow-y-auto p-4 space-y-3">
+            <div className="h-72 overflow-y-auto p-4 space-y-3">
               {messages.map((msg, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex items-end gap-2 ${msg.from === "user" ? "justify-end" : "justify-start"}`}
                 >
+                  {msg.from === "bot" && (
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full glass-gold">
+                      <Bot className="h-3 w-3 text-primary" />
+                    </div>
+                  )}
                   <div
-                    className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${
+                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[13px] font-body leading-relaxed ${
                       msg.from === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
+                        ? "bg-gradient-gold text-primary-foreground rounded-br-sm"
+                        : "bg-muted/80 text-foreground rounded-bl-sm"
                     }`}
                   >
                     {msg.text}
                   </div>
-                </div>
+                  {msg.from === "user" && (
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                      <User className="h-3 w-3 text-primary" />
+                    </div>
+                  )}
+                </motion.div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
-            <div className="border-t border-border p-3 flex gap-2">
+            <div className="border-t border-border/30 p-3 flex gap-2">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Digite sua mensagem..."
-                className="flex-1 rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 rounded-xl border border-border/30 bg-muted/50 px-4 py-2.5 text-[13px] text-foreground font-body placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/30 transition-all"
               />
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleSend}
-                className="rounded-lg bg-gradient-gold p-2 text-primary-foreground transition-all hover:opacity-90"
+                className="rounded-xl bg-gradient-gold p-2.5 text-primary-foreground transition-all hover:shadow-gold"
               >
                 <Send className="h-4 w-4" />
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-gold text-primary-foreground shadow-gold animate-pulse-gold"
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </motion.button>
+      {/* Floating button with ripple */}
+      <div className="relative">
+        {/* Ripple rings */}
+        {!isOpen && (
+          <>
+            <motion.div
+              className="absolute inset-0 rounded-full bg-primary/20"
+              animate={{ scale: [1, 2], opacity: [0.4, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+            />
+            <motion.div
+              className="absolute inset-0 rounded-full bg-primary/15"
+              animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+            />
+          </>
+        )}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-gold text-primary-foreground shadow-gold-intense z-10"
+        >
+          <AnimatePresence mode="wait">
+            {isOpen ? (
+              <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
+                <X className="h-5 w-5" />
+              </motion.div>
+            ) : (
+              <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
+                <MessageCircle className="h-5 w-5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
     </div>
   );
 };
