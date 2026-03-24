@@ -28,7 +28,7 @@ const GoldParticle = ({ delay, x, size }: { delay: number; x: number; size: numb
   />
 );
 
-const HeroSection = () => {
+const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -196,13 +196,14 @@ const HeroSection = () => {
       </motion.div>
 
       {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+      <motion.button
+        onClick={onScrollNext}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 cursor-pointer p-2 rounded-full hover:bg-primary/10 transition-colors"
         animate={{ y: [0, 8, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
       >
-        <ChevronDown className="h-5 w-5 text-primary/40" />
-      </motion.div>
+        <ChevronDown className="h-6 w-6 text-primary/60" />
+      </motion.button>
     </section>
   );
 };
