@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import heroBg from "@/assets/hero-bg.png";
+import vbucksIcon from "@/assets/vbucks-icon.png";
 import { Sparkles, ArrowRight, ChevronDown } from "lucide-react";
 import { useRef } from "react";
 
