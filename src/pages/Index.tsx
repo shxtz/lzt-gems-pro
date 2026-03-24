@@ -92,8 +92,10 @@ const Index = () => {
       <section id="categories" className="snap-section">
         <CategoriesSection />
       </section>
-      <section id="features" className="snap-section relative">
-        <FeaturesSection />
+      <section id="features" className="snap-section relative flex flex-col">
+        <div className="flex-1">
+          <FeaturesSection />
+        </div>
         <Footer />
       </section>
       <FloatingChat />
