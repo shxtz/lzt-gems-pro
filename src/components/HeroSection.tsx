@@ -138,7 +138,7 @@ const HeroSection = () => {
             <motion.button
               whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(43 84% 55% / 0.3)" }}
               whileTap={{ scale: 0.97 }}
-              className="group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-gold px-9 py-4 font-display text-[12px] font-bold uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-all"
+              className="group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-gold px-9 py-4 font-display text-[13px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-all"
             >
               <span className="relative z-10">Comprar V-Bucks</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
