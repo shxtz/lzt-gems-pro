@@ -97,10 +97,10 @@ const HeroSection = () => {
             initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="inline-flex items-center gap-2.5 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40 px-6 py-2.5 mb-8 shadow-gold"
+            className="inline-flex items-center gap-3 rounded-full border border-primary/60 bg-background/85 px-7 py-3 mb-8 backdrop-blur-xl shadow-gold"
           >
             <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-            <span className="font-body text-[13px] font-bold text-primary tracking-[0.2em] uppercase">
+            <span className="font-body text-[14px] font-black text-foreground tracking-[0.22em] uppercase drop-shadow-sm">
               Melhor preço do Brasil
             </span>
           </motion.div>
