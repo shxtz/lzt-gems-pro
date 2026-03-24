@@ -10,48 +10,30 @@ const footerLinks = [
 
 const Footer = () => {
   return (
-    <footer className="relative overflow-hidden py-16">
-      {/* Top divider */}
+    <footer className="relative overflow-hidden py-8">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
 
-      {/* Background glow */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.03), transparent 60%)" }}
-      />
-
       <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col items-center gap-8">
+        <div className="flex flex-col items-center gap-3">
           {/* Logo */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="flex items-center gap-3"
-          >
-            <img src={logo} alt="VBucks Barato" className="h-10 w-10 drop-shadow-lg" />
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="VBucks Barato" className="h-8 w-8" />
             <span className="font-display text-sm font-bold text-gradient-gold tracking-[0.2em]">
               VBUCKS BARATO
             </span>
-          </motion.div>
-
-          {/* Links */}
-          <div className="flex items-center gap-8">
-            {footerLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="relative font-body text-[11px] text-muted-foreground uppercase tracking-[0.15em] transition-all duration-300 hover:text-foreground group"
-              >
-                {link.label}
-                <span className="absolute -bottom-1 left-0 h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-full" />
-              </Link>
-            ))}
           </div>
 
-          {/* Divider */}
-          <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-
-          {/* Copyright */}
-          <div className="font-body text-[10px] text-muted-foreground/60 tracking-wider">
-            © 2026 VBucks Barato — Todos os direitos reservados
+          {/* Copyright + Made by */}
+          <div className="font-body text-[11px] text-muted-foreground/60 tracking-wider">
+            © 2026 VBucks Barato - Made by{" "}
+            <a
+              href="https://discord.gg/zqM7BuJubw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors underline"
+            >
+              Ajazz & Bypass
+            </a>
           </div>
         </div>
       </div>
