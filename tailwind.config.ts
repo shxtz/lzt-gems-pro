@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Poppins", "sans-serif"],
-        body: ["Poppins", "sans-serif"],
+        display: ["Urbanist", "sans-serif"],
+        body: ["Urbanist", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
