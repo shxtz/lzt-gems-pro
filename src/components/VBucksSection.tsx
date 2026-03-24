@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Zap, ShoppingBag } from "lucide-react";
+import vbucksIcon from "@/assets/vbucks-icon.png";
 
 interface VBucksCardProps {
   amount: number;
