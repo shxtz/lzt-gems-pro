@@ -97,14 +97,12 @@
 
 @layer utilities {
   .snap-container {
-    scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: none;
   }
 
   .snap-section {
-    scroll-snap-align: start;
     min-height: 100vh;
   }
 
