@@ -101,7 +101,6 @@
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
-  }
 
   .snap-section {
     scroll-snap-align: start;
