@@ -25,7 +25,7 @@ const CategoriesSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-28 relative overflow-hidden">
+    <section id="categories" className="py-28 relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
 
       <div className="container mx-auto px-6">

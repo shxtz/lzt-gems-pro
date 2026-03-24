@@ -151,13 +151,28 @@ const Navbar = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.08 }}
                 >
-                  <Link
-                    to={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="block py-3 px-4 rounded-lg font-body text-[13px] font-medium uppercase tracking-[0.15em] text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50"
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      if (item.href.includes("#")) {
+                        const hash = item.href.split("#")[1];
+                        const basePath = item.href.split("#")[0] || "/";
+                        if (window.location.pathname !== basePath) {
+                          navigate(basePath);
+                          setTimeout(() => {
+                            document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+                          }, 300);
+                        } else {
+                          document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+                        }
+                      } else {
+                        navigate(item.href);
+                      }
+                    }}
+                    className="block w-full text-left py-3 px-4 rounded-lg font-body text-[13px] font-medium uppercase tracking-[0.15em] text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50"
                   >
                     {item.label}
-                  </Link>
+                  </button>
                 </motion.div>
               ))}
               {user ? (
