@@ -48,7 +48,8 @@ const VBucksCard = ({ amount, price, popular, index }: VBucksCardProps) => {
 
         <div className="relative z-10 p-7 text-center">
           {/* Amount */}
-          <div className="mb-1">
+          <div className="mb-1 flex items-center justify-center gap-2">
+            <img src={vbucksIcon} alt="V-Bucks" className="h-10 w-10" />
             <span className="font-display text-3xl md:text-4xl font-black text-gradient-gold">
               {amount.toLocaleString("pt-BR")}
             </span>
