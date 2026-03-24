@@ -96,6 +96,17 @@
 }
 
 @layer utilities {
+  .snap-container {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+
+  .snap-section {
+    scroll-snap-align: start;
+    min-height: 100vh;
+  }
+
+
   .font-display {
     font-family: var(--font-display);
   }
