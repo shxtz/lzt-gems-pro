@@ -31,6 +31,7 @@ const App = () => (
           <CartProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/login" element={<AdminLogin />} />
