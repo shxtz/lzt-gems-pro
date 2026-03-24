@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
+import VBucksPage from "./pages/VBucksPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
@@ -30,6 +31,7 @@ const App = () => (
           <CartProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/login" element={<AdminLogin />} />
