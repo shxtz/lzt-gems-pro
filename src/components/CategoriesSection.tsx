@@ -1,70 +1,31 @@
 import { motion } from "framer-motion";
-import { Gamepad2, Swords, Flame, Star, Sparkles, Shield, ArrowUpRight } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-interface CategoryCardProps {
-  name: string;
-  icon: LucideIcon;
-  count: number;
-  gradient: string;
-  index: number;
-}
-
-const CategoryCard = ({ name, icon: Icon, count, gradient, index }: CategoryCardProps) => {
-  return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="group relative cursor-pointer"
-    >
-      <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-gradient-card transition-all duration-500 hover:border-primary/25 hover:shadow-card-hover">
-        {/* Hover glow */}
-        <div
-          className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-          style={{ background: gradient }}
-        />
-
-        <div className="relative z-10 p-6 md:p-7">
-          <div className="flex items-start justify-between mb-5">
-            <motion.div
-              whileHover={{ rotate: [0, -5, 5, 0] }}
-              className="inline-flex rounded-xl glass-gold p-3"
-            >
-              <Icon className="h-5 w-5 text-primary" />
-            </motion.div>
-            <div className="opacity-0 transition-all duration-300 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
-              <ArrowUpRight className="h-4 w-4 text-primary" />
-            </div>
-          </div>
-
-          <h3 className="font-display text-[13px] md:text-sm font-bold text-foreground mb-1.5 tracking-wide uppercase">
-            {name}
-          </h3>
-          <p className="font-body text-[11px] text-muted-foreground tracking-wide">
-            {count} contas disponíveis
-          </p>
-
-          {/* Bottom bar */}
-          <div className="mt-5 h-[2px] w-0 bg-gradient-gold rounded-full transition-all duration-500 group-hover:w-full" />
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+import valorantImg from "@/assets/categories/valorant.png";
+import fortniteImg from "@/assets/categories/fortnite.png";
+import genshinImg from "@/assets/categories/genshin.png";
+import lolImg from "@/assets/categories/lol.png";
+import honkaiImg from "@/assets/categories/honkai.png";
+import minecraftImg from "@/assets/categories/minecraft.png";
+import steamImg from "@/assets/categories/steam.png";
+import zzzImg from "@/assets/categories/zzz.png";
 
 const categories = [
-  { name: "Valorant", icon: Swords, count: 142, gradient: "radial-gradient(ellipse at top left, hsl(0 80% 50% / 0.06), transparent 60%)" },
-  { name: "Fortnite", icon: Gamepad2, count: 89, gradient: "radial-gradient(ellipse at top left, hsl(43 84% 55% / 0.06), transparent 60%)" },
-  { name: "League of Legends", icon: Shield, count: 67, gradient: "radial-gradient(ellipse at top left, hsl(43 60% 45% / 0.06), transparent 60%)" },
-  { name: "Genshin Impact", icon: Star, count: 45, gradient: "radial-gradient(ellipse at top left, hsl(210 80% 60% / 0.06), transparent 60%)" },
-  { name: "Honkai: Star Rail", icon: Sparkles, count: 33, gradient: "radial-gradient(ellipse at top left, hsl(270 60% 65% / 0.06), transparent 60%)" },
-  { name: "Brawl Stars", icon: Flame, count: 28, gradient: "radial-gradient(ellipse at top left, hsl(30 90% 50% / 0.06), transparent 60%)" },
+  { name: "Valorant", image: valorantImg, slug: "valorant" },
+  { name: "Fortnite", image: fortniteImg, slug: "fortnite" },
+  { name: "Genshin Impact", image: genshinImg, slug: "genshin" },
+  { name: "League of Legends", image: lolImg, slug: "lol" },
+  { name: "Honkai: Star Rail", image: honkaiImg, slug: "honkai" },
+  { name: "Minecraft", image: minecraftImg, slug: "minecraft" },
+  { name: "Steam", image: steamImg, slug: "steam" },
+  { name: "Zenless Zone Zero", image: zzzImg, slug: "zzz" },
 ];
 
 const CategoriesSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-28 relative overflow-hidden">
-      {/* Section divider */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
 
       <div className="container mx-auto px-6">
@@ -86,21 +47,58 @@ const CategoriesSection = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
-          {categories.map((cat, i) => (
-            <motion.div
-              key={cat.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <CategoryCard {...cat} index={i} />
-            </motion.div>
+        {/* Top row - 5 items */}
+        <div className="flex justify-center gap-4 md:gap-6 mb-4 md:mb-6 flex-wrap">
+          {categories.slice(0, 5).map((cat, i) => (
+            <CategoryIcon key={cat.slug} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
+          ))}
+        </div>
+
+        {/* Bottom row - 3 items centered */}
+        <div className="flex justify-center gap-4 md:gap-6 flex-wrap">
+          {categories.slice(5).map((cat, i) => (
+            <CategoryIcon key={cat.slug} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
           ))}
         </div>
       </div>
     </section>
+  );
+};
+
+interface CategoryIconProps {
+  category: { name: string; image: string; slug: string };
+  index: number;
+  onClick: () => void;
+}
+
+const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative cursor-pointer flex flex-col items-center"
+      onClick={onClick}
+    >
+      <motion.div
+        whileHover={{ y: -8, scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+        className="relative w-[72px] h-[72px] md:w-[88px] md:h-[88px] rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)]"
+      >
+        <img
+          src={category.image}
+          alt={category.name}
+          loading="lazy"
+          width={512}
+          height={512}
+          className="w-[52px] h-[52px] md:w-[60px] md:h-[60px] object-contain transition-transform duration-300 group-hover:scale-110"
+        />
+      </motion.div>
+      <span className="mt-2 text-[11px] md:text-xs font-display text-muted-foreground group-hover:text-foreground transition-colors duration-300 text-center max-w-[88px] leading-tight opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all">
+        {category.name}
+      </span>
+    </motion.div>
   );
 };
 
