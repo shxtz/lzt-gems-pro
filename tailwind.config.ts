@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Quicksand", "sans-serif"],
+        display: ["Bungee", "sans-serif"],
         body: ["Quicksand", "sans-serif"],
       },
       colors: {

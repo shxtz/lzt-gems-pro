@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Varela+Round&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@300;400;500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Varela+Round&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 @layer base {
   :root {
@@ -58,7 +58,7 @@
     --shadow-glow: 0 0 80px hsl(43 84% 55% / 0.12);
     --shadow-inner-glow: inset 0 0 30px hsl(43 84% 55% / 0.05);
 
-    --font-display: 'Orbitron', sans-serif;
+    --font-display: 'Bungee', sans-serif;
     --font-body: 'Space Grotesk', sans-serif;
 
     --sidebar-background: 20 14% 9%;
