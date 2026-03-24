@@ -1,25 +1,34 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { ShoppingCart, User, Menu, X } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "Início", href: "/" },
-  { label: "V-Bucks", href: "/vbucks" },
-  { label: "Contas", href: "/contas" },
-  { label: "Categorias", href: "/categorias" },
+  { label: "V-Bucks", href: "/#vbucks" },
+  { label: "Categorias", href: "/#categories" },
 ];
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { totalItems } = useCart();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <motion.nav
@@ -65,22 +74,40 @@ const Navbar = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/checkout")}
             className="relative p-2.5 rounded-xl text-muted-foreground transition-all duration-300 hover:text-primary glass-gold"
           >
             <ShoppingCart className="h-[18px] w-[18px]" />
-            <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-gradient-gold text-[9px] font-bold text-primary-foreground shadow-gold animate-pulse">
-              0
-            </span>
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-gradient-gold text-[9px] font-bold text-primary-foreground shadow-gold animate-pulse">
+                {totalItems}
+              </span>
+            )}
           </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className="hidden lg:flex items-center gap-2 rounded-xl bg-gradient-gold px-5 py-2.5 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition-all duration-300 hover:shadow-gold-intense"
-          >
-            <User className="h-3.5 w-3.5" />
-            Entrar
-          </motion.button>
+          {user ? (
+            <div className="hidden lg:flex items-center gap-2">
+              <span className="font-body text-xs text-muted-foreground">{user.email?.split("@")[0]}</span>
+              <motion.button
+                onClick={handleLogout}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="p-2 rounded-xl text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+              </motion.button>
+            </div>
+          ) : (
+            <motion.button
+              onClick={() => navigate("/auth")}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="hidden lg:flex items-center gap-2 rounded-xl bg-gradient-gold px-5 py-2.5 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition-all duration-300 hover:shadow-gold-intense"
+            >
+              <User className="h-3.5 w-3.5" />
+              Entrar
+            </motion.button>
+          )}
 
           <button
             className="lg:hidden p-2.5 rounded-xl text-muted-foreground glass-gold"
@@ -118,15 +145,29 @@ const Navbar = () => {
                   </Link>
                 </motion.div>
               ))}
-              <motion.button
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.35 }}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-gold px-5 py-3 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground"
-              >
-                <User className="h-3.5 w-3.5" />
-                Entrar
-              </motion.button>
+              {user ? (
+                <motion.button
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.35 }}
+                  onClick={() => { handleLogout(); setMobileOpen(false); }}
+                  className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-destructive/30 px-5 py-3 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-destructive"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Sair
+                </motion.button>
+              ) : (
+                <motion.button
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.35 }}
+                  onClick={() => { navigate("/auth"); setMobileOpen(false); }}
+                  className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-gold px-5 py-3 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  Entrar
+                </motion.button>
+              )}
             </div>
           </motion.div>
         )}
