@@ -47,6 +47,104 @@ export type Database = {
         }
         Relationships: []
       }
+      lzt_accounts: {
+        Row: {
+          buyer_id: string | null
+          category_id: string
+          data: Json | null
+          id: string
+          imported_at: string
+          lzt_item_id: string
+          price_brl: number
+          price_usd: number
+          sold_at: string | null
+          sold_price: number | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          buyer_id?: string | null
+          category_id: string
+          data?: Json | null
+          id?: string
+          imported_at?: string
+          lzt_item_id: string
+          price_brl?: number
+          price_usd?: number
+          sold_at?: string | null
+          sold_price?: number | null
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          buyer_id?: string | null
+          category_id?: string
+          data?: Json | null
+          id?: string
+          imported_at?: string
+          lzt_item_id?: string
+          price_brl?: number
+          price_usd?: number
+          sold_at?: string | null
+          sold_price?: number | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lzt_accounts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "lzt_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lzt_categories: {
+        Row: {
+          account_limit: number
+          api_url: string
+          auto_delete_reimport: boolean
+          auto_import: boolean
+          created_at: string
+          icon_url: string | null
+          id: string
+          last_import_at: string | null
+          margin_percent: number
+          name: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_limit?: number
+          api_url?: string
+          auto_delete_reimport?: boolean
+          auto_import?: boolean
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          last_import_at?: string | null
+          margin_percent?: number
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_limit?: number
+          api_url?: string
+          auto_delete_reimport?: boolean
+          auto_import?: boolean
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          last_import_at?: string | null
+          margin_percent?: number
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           coupon_id: string | null
