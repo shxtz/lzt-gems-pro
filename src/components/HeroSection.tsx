@@ -121,7 +121,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
-            className="font-body text-sm md:text-base text-muted-foreground max-w-lg mx-auto mb-10 leading-relaxed tracking-wide"
+            className="font-body text-sm md:text-base text-foreground max-w-lg mx-auto mb-10 leading-relaxed tracking-wide"
           >
             V-Bucks e contas de jogos com os melhores preços.
             <br className="hidden sm:block" />
