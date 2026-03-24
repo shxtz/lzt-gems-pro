@@ -30,6 +30,7 @@ const GoldParticle = ({ delay, x, size }: { delay: number; x: number; size: numb
 );
 
 const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
+  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
