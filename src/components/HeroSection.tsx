@@ -141,7 +141,7 @@ const HeroSection = () => {
               whileTap={{ scale: 0.97 }}
               className="group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-gold px-9 py-4 font-display text-[13px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-all"
             >
-              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-6 w-6" />
+              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-8 w-8 -ml-1" />
               <span className="relative z-10">Comprar V-Bucks</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               {/* Shimmer effect */}
