@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Bungee&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@300;400;500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Varela+Round&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 @layer base {
   :root {
@@ -59,7 +59,7 @@
     --shadow-inner-glow: inset 0 0 30px hsl(43 84% 55% / 0.05);
 
     --font-display: 'Bungee', sans-serif;
-    --font-body: 'Space Grotesk', sans-serif;
+    --font-body: 'Bungee', sans-serif;
 
     --sidebar-background: 20 14% 9%;
     --sidebar-foreground: 40 30% 92%;

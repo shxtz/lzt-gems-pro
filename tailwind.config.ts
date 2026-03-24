@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         display: ["Bungee", "sans-serif"],
-        body: ["Quicksand", "sans-serif"],
+        body: ["Bungee", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
