@@ -139,6 +139,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <motion.button
+              onClick={() => navigate("/vbucks")}
               whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(43 84% 55% / 0.3)" }}
               whileTap={{ scale: 0.97 }}
               className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-7 py-3 font-display text-[12px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-all"
@@ -146,7 +147,6 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
               <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-10 w-10 -ml-1" />
               <span className="relative z-10">Comprar V-Bucks</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              {/* Shimmer effect */}
               <motion.div
                 className="absolute inset-0 -translate-x-full"
                 animate={{ translateX: ["-100%", "200%"] }}
