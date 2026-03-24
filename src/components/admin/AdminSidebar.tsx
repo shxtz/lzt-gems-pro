@@ -5,6 +5,7 @@ import {
   Ticket,
   Settings,
   LogOut,
+  Store,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -27,6 +28,7 @@ const items = [
   { title: "V-Bucks", url: "/admin/products", icon: Package },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
+  { title: "LZT Market", url: "/admin/lzt", icon: Store },
   { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];
 
