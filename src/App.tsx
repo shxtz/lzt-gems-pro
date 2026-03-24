@@ -17,6 +17,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminLZT from "./pages/admin/AdminLZT";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
