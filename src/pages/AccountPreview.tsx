@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventoryFull from "@/components/ValorantInventory";
+import GameInventoryFull from "@/components/inventory/GameInventoryFull";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
@@ -652,6 +653,18 @@ const AccountPreview = () => {
               <h2 className="font-display text-xl font-bold text-foreground">Inventário</h2>
             </div>
             <ValorantInventoryFull lztData={d} accountId={account.id} />
+          </motion.div>
+        )}
+
+        {/* Non-Valorant game inventory */}
+        {!hasValInventory && realCategory && !realCategory.toLowerCase().includes("valorant") && !realCategory.toLowerCase().includes("telegram") && !realCategory.toLowerCase().includes("discord") && !realCategory.toLowerCase().includes("steam") && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-10"
+          >
+            <GameInventoryFull lztData={d} accountId={account.id} categoryName={realCategory} />
           </motion.div>
         )}
       </div>
