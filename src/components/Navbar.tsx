@@ -1,19 +1,20 @@
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Settings, ShoppingBag, Shield } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Settings, ShoppingBag, Shield, Home, LayoutGrid, Store } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import vbucksNavIcon from "@/assets/vbucks-icon.png";
 
 const navItems = [
-  { label: "Início", href: "/" },
-  { label: "V-Bucks", href: "/vbucks" },
-  { label: "Categorias", href: "/#categories" },
-  { label: "Loja", href: "/loja" },
-];
+  { label: "Início", href: "/", icon: "home" },
+  { label: "V-Bucks", href: "/vbucks", icon: "vbucks" },
+  { label: "Categorias", href: "/#categories", icon: "categories" },
+  { label: "Loja", href: "/loja", icon: "store" },
+] as const;
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -110,8 +111,12 @@ const Navbar = () => {
             <button
               key={item.href}
               onClick={() => handleNav(item.href)}
-              className="relative px-5 py-2 font-body text-[13px] font-medium uppercase tracking-[0.15em] text-foreground transition-all duration-300 hover:text-primary group"
+              className="relative flex items-center gap-1.5 px-5 py-2 font-body text-[13px] font-medium uppercase tracking-[0.15em] text-foreground transition-all duration-300 hover:text-primary group"
             >
+              {item.icon === "home" && <Home className="h-3.5 w-3.5" />}
+              {item.icon === "vbucks" && <img src={vbucksNavIcon} alt="" className="h-4 w-4" />}
+              {item.icon === "categories" && <LayoutGrid className="h-3.5 w-3.5" />}
+              {item.icon === "store" && <Store className="h-3.5 w-3.5" />}
               {item.label}
               <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-0 bg-gradient-gold rounded-full transition-all duration-300 group-hover:w-3/4" />
             </button>
@@ -279,8 +284,12 @@ const Navbar = () => {
                 >
                   <button
                     onClick={() => { setMobileOpen(false); handleNav(item.href); }}
-                    className="block w-full text-left py-3 px-4 rounded-lg font-body text-[13px] font-medium uppercase tracking-[0.15em] text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50"
+                    className="flex items-center gap-2 w-full text-left py-3 px-4 rounded-lg font-body text-[13px] font-medium uppercase tracking-[0.15em] text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50"
                   >
+                    {item.icon === "home" && <Home className="h-4 w-4" />}
+                    {item.icon === "vbucks" && <img src={vbucksNavIcon} alt="" className="h-4.5 w-4.5" />}
+                    {item.icon === "categories" && <LayoutGrid className="h-4 w-4" />}
+                    {item.icon === "store" && <Store className="h-4 w-4" />}
                     {item.label}
                   </button>
                 </motion.div>
