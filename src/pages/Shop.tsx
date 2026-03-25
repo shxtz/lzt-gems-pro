@@ -919,7 +919,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               : [];
                             const hasIndividualItems = individualItems.length > 0;
                             const inv = getLztInventoryImages(account.data);
-                            const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
+                            const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
 
                             const badgeRow = (
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
