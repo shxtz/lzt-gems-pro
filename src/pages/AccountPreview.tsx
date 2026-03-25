@@ -484,23 +484,26 @@ const AccountPreview = () => {
                       key={i}
                       className="relative aspect-square overflow-hidden bg-card"
                       style={{
-                        background: item.tierColor
-                          ? `linear-gradient(135deg, rgba(${item.tierColor.join(",")},0.15), rgba(0,0,0,0.5))`
+                        background: item.tier
+                          ? `linear-gradient(135deg, rgba(${item.tier.tile.join(",")},0.25), rgba(0,0,0,0.6))`
                           : undefined,
                       }}
                     >
-                      {item.icon && (
+                      {item.imageUrl && (
                         <img
-                          src={item.icon}
-                          alt={item.name}
+                          src={item.imageUrl}
+                          alt=""
                           className="absolute inset-0 w-full h-full object-contain p-2.5"
                           loading="lazy"
                           style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
                         />
                       )}
-                      {item.tierIcon && (
+                      {item.tier && item.tier.key !== "gray" && (
                         <div className="absolute top-1.5 right-1.5">
-                          <img src={item.tierIcon} alt="" className="h-4 w-4 drop-shadow-md" />
+                          <span
+                            className="block h-3.5 w-3.5 rounded-full border border-white/20"
+                            style={{ backgroundColor: `rgb(${item.tier.outline.join(",")})` }}
+                          />
                         </div>
                       )}
                     </div>
