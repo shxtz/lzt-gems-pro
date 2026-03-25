@@ -260,10 +260,30 @@ const VBucksPage = () => {
             </h2>
             <div className="space-y-3">
               {[
-                { q: "Como recebo os V-Bucks?", a: "Após a confirmação do pagamento PIX, os V-Bucks são enviados diretamente para sua conta Fortnite através do seu nome de usuário Epic Games." },
-                { q: "Quanto tempo demora?", a: "A entrega é feita em até 30 minutos após a confirmação do pagamento. Em horários de pico pode levar um pouco mais." },
-                { q: "É seguro comprar aqui?", a: "Sim! Utilizamos métodos seguros e já realizamos mais de 2.000 vendas com avaliação 4.9 estrelas." },
-                { q: "Aceita quais formas de pagamento?", a: "Atualmente aceitamos pagamento via PIX com desconto especial." },
+                {
+                  q: "🏪 Como nosso serviço funciona?",
+                  a: "Trabalhamos diretamente com a sua economia nas compras de itens no Fortnite (seja pacotes, trajes, danças, músicas, mascotes e passes). Você escolhe o item desejado (skin, pacote etc), seleciona a quantia em V-Bucks e nós enviamos o presente diretamente para sua conta através da lista de amigos no jogo."
+                },
+                {
+                  q: "🌟 Entenda com um exemplo básico",
+                  a: "Sabe aquela skin maneira de 1.500 V-Bucks? Então... Você realiza a compra de 1.500 V-Bucks clicando no botão \"Comprar V-Bucks\", após a compra abra um pedido de atendimento e, através dali, seu item comprado já está a caminho."
+                },
+                {
+                  q: "🎖️ Passes de Batalha",
+                  a: "Nossos Passes possuem um valor um pouco superior ao painel de V-Bucks que temos aqui na loja, pois o método de envio utilizado para Passes e itens (skins, picaretas, pacotes etc.) é diferente. Esse sistema foi criado justamente para viabilizar a economia na compra de Passes, mantendo a segurança do processo."
+                },
+                {
+                  q: "🎆 Informações básicas do nosso serviço",
+                  a: "Não é necessário informar login ou senha. Você nos envia apenas o nome in-game para que possamos realizar a adição de amizade. Todo o processo é feito exclusivamente via pedido de amizade dentro do jogo, garantindo total segurança e privacidade. 🎁 Garantia vitalícia. Pedido entregue ou seu dinheiro de volta!"
+                },
+                {
+                  q: "Quanto tempo demora a entrega?",
+                  a: "A entrega é feita em até 48 horas após a confirmação do pagamento. Você será notificado assim que o envio for concluído."
+                },
+                {
+                  q: "Aceita quais formas de pagamento?",
+                  a: "Atualmente aceitamos pagamento via PIX com desconto especial."
+                },
               ].map((faq, i) => (
                 <details
                   key={i}
@@ -273,7 +293,7 @@ const VBucksPage = () => {
                     {faq.q}
                     <span className="text-muted-foreground transition-transform group-open:rotate-45 text-lg">+</span>
                   </summary>
-                  <div className="px-6 pb-4 font-body text-sm text-muted-foreground leading-relaxed">
+                  <div className="px-6 pb-4 font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                     {faq.a}
                   </div>
                 </details>
