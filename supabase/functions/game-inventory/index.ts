@@ -153,11 +153,23 @@ async function handleHonkai(data: any) {
 async function handleLoL(data: any) {
   await ensureLoLCache();
 
+  const rawSkins = data?.lolInventory?.Skin ?? data?.lolInventory?.skins ?? [];
+  const skinIds: number[] = Array.isArray(rawSkins)
+    ? rawSkins.filter((id: unknown) => typeof id === "number")
+    : (rawSkins && typeof rawSkins === "object"
+        ? Object.values(rawSkins).filter((id: unknown) => typeof id === "number") as number[]
+        : []);
+
+  const rawChampions = data?.lolInventory?.Champion ?? data?.lolInventory?.champions ?? [];
+  const championIds: number[] = Array.isArray(rawChampions)
+    ? rawChampions.filter((id: unknown) => typeof id === "number")
+    : (rawChampions && typeof rawChampions === "object"
+        ? Object.values(rawChampions).filter((id: unknown) => typeof id === "number") as number[]
+        : []);
+
   const items: any[] = [];
-  const skinIds: number[] = data?.lolInventory?.Skin || [];
   const seenChampions = new Set<number>();
 
-  // Process skins from lolInventory
   for (const skinId of skinIds) {
     const championKey = Math.floor(skinId / 1000);
     const skinNum = skinId % 1000;
@@ -167,30 +179,40 @@ async function handleLoL(data: any) {
 
     seenChampions.add(championKey);
 
-    if (skinNum === 0) {
-      // Base skin = champion
-      items.push({
-        id: `champ-${championKey}`, name: champName,
-        icon: `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/champion/${champId}.png`,
-        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
-        type: "champion", rarity: 0, tier: LOL_TIER, tags: champData?.tags || [],
-      });
-    } else {
-      items.push({
-        id: `skin-${skinId}`, name: `${champName} #${skinNum}`,
-        icon: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
-        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
-        type: "skin", rarity: 1, tier: { ...LOL_TIER, label: "Skin", outline: [200, 155, 60] },
-        champion: champName,
-      });
-    }
+    if (skinNum === 0) continue;
+
+    items.push({
+      id: `skin-${skinId}`,
+      name: `${champName} #${skinNum}`,
+      icon: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
+      splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
+      type: "skin",
+      rarity: 1,
+      tier: { ...LOL_TIER, name: "Skin" },
+      champion: champName,
+    });
   }
 
-  // Separate skins and champions for tabs
-  const skins = items.filter(i => i.type === "skin");
-  const champions = items.filter(i => i.type === "champion");
+  for (const championKey of championIds) {
+    if (seenChampions.has(championKey)) continue;
+    const champData = lolChampionByKey?.get(championKey);
+    const champId = champData?.id || `Champion${championKey}`;
+    const champName = champData?.name || champId;
 
-  // Add stats
+    items.push({
+      id: `champ-${championKey}`,
+      name: champName,
+      icon: `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/champion/${champId}.png`,
+      splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_0.jpg`,
+      type: "champion",
+      rarity: 0,
+      tier: LOL_TIER,
+      tags: champData?.tags || [],
+    });
+  }
+
+  const skins = items.filter((i) => i.type === "skin");
+  const champions = items.filter((i) => i.type === "champion");
   const stats = {
     level: data?.riot_lol_level,
     rank: data?.riot_lol_rank,
@@ -200,7 +222,7 @@ async function handleLoL(data: any) {
     rp: data?.riot_lol_wallet_riot,
     mythicEssence: data?.riot_lol_wallet_mythic,
     skinCount: data?.riot_lol_skin_count || skins.length,
-    championCount: data?.riot_lol_champion_count || champions.length,
+    championCount: data?.riot_lol_champion_count || championIds.length || champions.length,
   };
 
   const tabs = [];
