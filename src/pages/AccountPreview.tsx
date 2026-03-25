@@ -398,6 +398,24 @@ const AccountPreview = () => {
     enabled: !!account?.category_id,
   });
 
+  const d = account?.data as any;
+  const valInventory = d?.valorantInventory;
+  const hasValInventory = !!(valInventory && typeof valInventory === "object");
+
+  // Fetch enriched inventory from edge function for the 3x3 grid
+  const { data: enrichedInventory } = useQuery({
+    queryKey: ["enriched-inventory", account?.id],
+    queryFn: async () => {
+      const data = await fetchEdgeJson(
+        `${SUPABASE_URL}/functions/v1/valorant-inventory?account_id=${account!.id}`,
+        { retries: 3, retryDelayMs: 600 }
+      );
+      return data;
+    },
+    enabled: !!account?.id && hasValInventory,
+    staleTime: 5 * 60 * 1000,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -420,29 +438,11 @@ const AccountPreview = () => {
     );
   }
 
-  const d = account.data as any;
   const realCategory = d?.category?.category_name || d?.category?.category_title || lztCategory?.name || "Conta";
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
   const lztInv = getLztInventoryImages(d);
-  
-  const valInventory = d?.valorantInventory;
-  const hasValInventory = valInventory && typeof valInventory === "object";
-
-  // Fetch enriched inventory from edge function for the 3x3 grid
-  const { data: enrichedInventory } = useQuery({
-    queryKey: ["enriched-inventory", account?.id],
-    queryFn: async () => {
-      const data = await fetchEdgeJson(
-        `${SUPABASE_URL}/functions/v1/valorant-inventory?account_id=${account!.id}`,
-        { retries: 3, retryDelayMs: 600 }
-      );
-      return data;
-    },
-    enabled: !!account?.id && hasValInventory,
-    staleTime: 5 * 60 * 1000,
-  });
 
   const enrichedSkins = enrichedInventory?.skins || [];
   const hasIndividualItems = enrichedSkins.length > 0 || hasValInventory;
