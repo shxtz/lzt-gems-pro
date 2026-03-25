@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 const AdminSettings = () => {
   const queryClient = useQueryClient();
-  const [pixKey, setPixKey] = useState("");
+  
 
   const { data: settings } = useQuery({
     queryKey: ["admin-settings"],
@@ -75,25 +75,6 @@ const AdminSettings = () => {
         </div>
       </div>
 
-      {/* PIX Key */}
-      <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
-        <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Chave PIX</h2>
-        <p className="text-xs text-muted-foreground">Chave PIX para receber pagamentos (cadastrada na Efi)</p>
-        <div className="flex gap-2">
-          <input
-            value={pixKey || (settings?.pix_key as string) || ""}
-            onChange={(e) => setPixKey(e.target.value)}
-            className="flex-1 rounded-xl border border-border/40 bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-            placeholder="email@exemplo.com ou CPF/CNPJ"
-          />
-          <button
-            onClick={() => saveSetting.mutate({ key: "pix_key", value: pixKey })}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-display text-xs font-bold text-primary-foreground uppercase"
-          >
-            <Save className="h-3 w-3" /> Salvar
-          </button>
-        </div>
-      </div>
 
       {/* Site Settings */}
       <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
