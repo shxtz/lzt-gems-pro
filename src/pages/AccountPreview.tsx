@@ -14,7 +14,7 @@ import Footer from "@/components/Footer";
 import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
 import { getQuickPreviewItems } from "@/lib/valorant-api";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
-import ValorantInventory from "@/components/ValorantInventory";
+import ValorantInventoryFull from "@/components/ValorantInventory";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -597,7 +597,7 @@ const AccountPreview = () => {
                 <Crosshair className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-lg text-foreground">Inventário Completo</h2>
               </div>
-              <ValorantInventory lztData={d} />
+              <ValorantInventoryFull lztData={d} />
             </div>
           )}
 
