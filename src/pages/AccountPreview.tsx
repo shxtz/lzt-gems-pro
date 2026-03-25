@@ -425,7 +425,7 @@ const AccountPreview = () => {
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
-  const inv = getLztInventoryImages(d);
+  const lztInv = getLztInventoryImages(d);
   
   const valInventory = d?.valorantInventory;
   const hasValInventory = valInventory && typeof valInventory === "object";
@@ -446,8 +446,7 @@ const AccountPreview = () => {
 
   const enrichedSkins = enrichedInventory?.skins || [];
   const hasIndividualItems = enrichedSkins.length > 0 || hasValInventory;
-  const inv = getLztInventoryImages(d);
-  const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
+  const hasInventory = hasIndividualItems || lztInv.weapons || lztInv.agents || lztInv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
