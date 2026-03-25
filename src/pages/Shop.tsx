@@ -578,16 +578,32 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-card border border-border/40 rounded-2xl max-w-lg w-full overflow-hidden relative">
               <button onClick={() => setViewAccount(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10"><X className="h-4 w-4" /></button>
 
-              {/* Banner - CSS dynamic or LZT image */}
+              {/* Banner with inventory tabs */}
               {(() => {
+                const inv = getLztInventoryImages(viewAccount.data);
                 const accountImg = getAccountImage(viewAccount.data, modalRealCategory);
                 const theme = getCategoryTheme(modalRealCategory);
                 const seed = hashId(viewAccount.lzt_item_id);
                 const CategoryIcon = theme.Icon;
+                const hasInventory = inv.weapons || inv.agents || inv.buddies;
+
+                const inventoryTabs = [
+                  { src: inv.weapons, label: "🔫 Skins", key: "weapons" },
+                  { src: inv.agents, label: "🧑 Agentes", key: "agents" },
+                  { src: inv.buddies, label: "🔑 Chaveiros", key: "buddies" },
+                ].filter(i => i.src);
+
+                const modalDisplayName = (() => {
+                  const matchingShop = shopCategories?.find(sc => {
+                    const matchingIds = getMatchingLztCategoryIds(sc);
+                    return matchingIds.includes(viewAccount.category_id);
+                  });
+                  return matchingShop?.name || getCategoryName(viewAccount.category_id);
+                })();
 
                 const badges = (
-                  <div className="absolute bottom-3 left-4 flex items-center gap-1.5 z-[2]">
-                    <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">{modalRealCategory}</Badge>
+                  <div className="absolute top-3 left-4 flex items-center gap-1.5 z-[2]">
+                    <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">{modalDisplayName}</Badge>
                     {modalRealCategory.toLowerCase().includes("valorant") && (() => {
                       const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
                       const icon = getValorantRankIcon(rank);
@@ -602,6 +618,33 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                     })()}
                   </div>
                 );
+
+                if (hasInventory) {
+                  return (
+                    <div className="relative">
+                      {/* Inventory gallery */}
+                      <div className="space-y-0">
+                        {inventoryTabs.map((tab, idx) => (
+                          <div key={tab.key} className="relative">
+                            {idx === 0 && badges}
+                            <div className="relative overflow-hidden" style={{ maxHeight: idx === 0 ? 160 : 120 }}>
+                              <img
+                                src={tab.src!}
+                                alt={tab.label}
+                                className="w-full object-cover"
+                                style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
+                            </div>
+                            <div className="absolute bottom-2 left-3 z-[2]">
+                              <span className="text-[10px] font-display uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">{tab.label}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
 
                 if (accountImg) {
                   return (
