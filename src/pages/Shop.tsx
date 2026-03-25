@@ -368,6 +368,32 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (!user) { toast.error("Faça login para comprar"); navigate("/auth"); return; }
     setPurchasing(account.id);
     try {
+      // Step 1: Check availability on LZT before anything
+      const { data: checkResult, error: checkError } = await supabase.functions.invoke("lzt-purchase", {
+        body: { action: "check_availability", lzt_item_id: account.lzt_item_id },
+      });
+      if (checkError) throw checkError;
+      if (!checkResult?.available) {
+        toast.error(checkResult?.reason || "Conta indisponível no LZT Market");
+        // Remove from local cache
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        return;
+      }
+
+      // Check if price changed on LZT
+      if (checkResult.currentPriceUsd) {
+        const lztCategory = lztCategories?.find((c) => c.id === account.category_id);
+        const margin = lztCategory?.margin_percent || 30;
+        const expectedBrl = Math.round(checkResult.currentPriceUsd * 5.5 * (1 + margin / 100) * 100) / 100;
+        const priceDiff = Math.abs(expectedBrl - Number(account.price_brl));
+        if (priceDiff > 0.5) {
+          toast.warning(`O preço desta conta mudou! Novo preço: R$${expectedBrl.toFixed(2)}`);
+          queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+          return;
+        }
+      }
+
+      // Step 2: Create order + generate PIX
       const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending" }).select().single();
       if (orderError) throw orderError;
       const accountName = `CONTA BARATA #${getShortId(account.lzt_item_id)}`;
