@@ -341,6 +341,13 @@ const Shop = () => {
       case "spam": return <Shield className="h-3 w-3 text-primary shrink-0" />;
       case "premium": return <Star className="h-3 w-3 text-primary shrink-0" />;
       case "age": return <Clock className="h-3 w-3 text-primary shrink-0" />;
+      case "rank": return <Trophy className="h-3 w-3 text-primary shrink-0" />;
+      case "level": return <BarChart3 className="h-3 w-3 text-primary shrink-0" />;
+      case "star": return <Star className="h-3 w-3 text-primary shrink-0" />;
+      case "trophy": return <Trophy className="h-3 w-3 text-primary shrink-0" />;
+      case "coins": return <Tag className="h-3 w-3 text-primary shrink-0" />;
+      case "verified": return <Shield className="h-3 w-3 text-primary shrink-0" />;
+      case "platform": return <Gamepad2 className="h-3 w-3 text-primary shrink-0" />;
       default: return <Tag className="h-3 w-3 text-primary shrink-0" />;
     }
   };
