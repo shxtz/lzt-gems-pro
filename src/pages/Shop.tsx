@@ -632,8 +632,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                 src={tab.src!}
                                 alt={tab.label}
                                 className="w-full object-cover"
-                                style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                                style={{ filter: "saturate(1.15) contrast(1.08) brightness(1.02)" }}
                               />
+                              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(30,20,10,0.15) 0%, rgba(30,20,10,0.25) 100%)", mixBlendMode: "multiply" }} />
                               <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
                             </div>
                             <div className="absolute bottom-2 left-3 z-[2]">
@@ -932,24 +933,29 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                               return (
                                 <div className="relative">
-                                  <div className="aspect-square overflow-hidden relative bg-muted/5 border-b border-border/20">
-                                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-border/15">
+                                  <div className="aspect-square overflow-hidden relative bg-background border-b border-border/20">
+                                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[2px] bg-border/10">
                                       {inventoryItems.slice(0, 4).map((item, idx) => (
-                                        <div key={idx} className="relative overflow-hidden bg-card">
+                                        <div key={idx} className="relative overflow-hidden bg-background">
                                           <img
                                             src={item.src!}
                                             alt={item.label}
                                             loading="lazy"
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                                            style={{ filter: "saturate(1.15) contrast(1.08) brightness(1.02)" }}
                                           />
+                                          {/* Subtle warm overlay to reduce green tint */}
+                                          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(30,20,10,0.15) 0%, rgba(30,20,10,0.25) 100%)", mixBlendMode: "multiply" }} />
                                         </div>
                                       ))}
                                       {inventoryItems.length < 4 && Array.from({ length: 4 - inventoryItems.length }).map((_, idx) => (
-                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-card flex items-center justify-center">
+                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-background flex items-center justify-center">
                                           <CategoryIcon className="h-6 w-6 text-muted-foreground/15" strokeWidth={1} />
                                         </div>
                                       ))}
                                     </div>
+                                    {/* Bottom fade */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none z-[1]" />
                                     <div className="absolute top-2 right-2 z-[3]">
                                       <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
                                         <Zap className="h-2.5 w-2.5" /> Automática
