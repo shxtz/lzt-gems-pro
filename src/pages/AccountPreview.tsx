@@ -477,48 +477,26 @@ const AccountPreview = () => {
           <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
             {hasIndividualItems ? (
               <div className="grid grid-cols-3 gap-[3px] p-[3px]">
-                {(() => {
-                  // Separate by type for rows: skins, agents, buddies
-                  const skins = individualItems.filter(i => i.type === "skin").slice(0, 6);
-                  const agents = individualItems.filter(i => i.type === "agent").slice(0, 3);
-                  const buddies = individualItems.filter(i => i.type === "buddy").slice(0, 3);
-                  const rows = [
-                    ...skins.slice(0, 3).map(i => ({ ...i, bgColor: "rgba(90,50,120,0.5)" })),
-                    ...(agents.length > 0
-                      ? agents.slice(0, 3).map(i => ({ ...i, bgColor: "rgba(40,80,70,0.5)" }))
-                      : skins.slice(3, 6).map(i => ({ ...i, bgColor: "rgba(60,60,80,0.5)" }))
-                    ),
-                    ...(buddies.length > 0
-                      ? buddies.slice(0, 3).map(i => ({ ...i, bgColor: "rgba(50,70,90,0.5)" }))
-                      : skins.slice(6, 9).map(i => ({ ...i, bgColor: "rgba(70,50,50,0.5)" }))
-                    ),
-                  ];
-                  // Fill remaining
-                  while (rows.length < 9) {
-                    const extra = individualItems[rows.length];
-                    if (extra) rows.push({ ...extra, bgColor: "rgba(50,50,60,0.5)" });
-                    else break;
-                  }
-                  return rows.map((item, idx) => (
+                {individualItems.slice(0, 9).map((item, idx) => {
+                  const { tile, outline } = item.tier;
+                  return (
                     <div
                       key={item.uuid + idx}
                       className="aspect-square rounded-xl overflow-hidden relative group/tile flex items-center justify-center"
-                      style={{ background: `linear-gradient(135deg, ${(item as any).bgColor}, rgba(20,20,25,0.8))` }}
+                      style={{ background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.9), rgba(${tile.join(",")}, 0.35))` }}
                     >
                       <img
                         src={item.imageUrl}
                         alt=""
                         loading="lazy"
-                        className="w-[85%] h-[85%] object-contain drop-shadow-lg saturate-[1.4] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
+                        className="w-[85%] h-[85%] object-contain drop-shadow-lg saturate-[1.8] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
                       />
-                      {item.type === "skin" && (
-                        <div className="absolute top-1.5 right-1.5">
-                          <span className="text-primary/80 text-[8px]">◆</span>
-                        </div>
-                      )}
+                      <div className="absolute top-1.5 right-1.5">
+                        <span style={{ color: `rgba(${outline.join(",")}, 0.8)` }} className="text-[8px]">◆</span>
+                      </div>
                     </div>
-                  ));
-                })()}
+                  );
+                })}
               </div>
             ) : mainImage ? (
               <div className="aspect-square overflow-hidden relative">

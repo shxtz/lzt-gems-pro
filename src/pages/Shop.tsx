@@ -18,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
-import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, type ValorantSkin } from "@/lib/valorant-api";
+import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, prewarmSkinsCatalog, type ValorantSkin, type QuickPreviewItem } from "@/lib/valorant-api";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventory from "@/components/ValorantInventory";
 
@@ -223,6 +223,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [filterSpamFree, setFilterSpamFree] = useState(false);
   const [filterPremium, setFilterPremium] = useState(false);
   const [sortBy, setSortBy] = useState<"recent" | "price_asc" | "price_desc">("recent");
+
+  // Pre-warm skins catalog so rarity colors are available for cards
+  useEffect(() => { prewarmSkinsCatalog(); }, []);
 
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
@@ -944,29 +947,25 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                   <div className="aspect-square overflow-hidden relative border-b border-border/20">
                                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
                                       {gridItems.map((item) => {
-                                        // Default tile style - will be enriched by rarity
-                                        const defaultTile = item.type === "skin"
-                                          ? { bg: "rgba(60,60,60,0.6)", border: "rgba(120,120,120,0.4)" }
-                                          : { bg: "rgba(40,50,60,0.6)", border: "rgba(80,120,140,0.4)" };
-
+                                        const { tile, outline } = item.tier;
                                         return (
                                           <div
                                             key={item.uuid}
                                             className="relative overflow-hidden flex items-center justify-center group/tile"
                                             style={{
-                                              background: defaultTile.bg,
-                                              borderRight: `1px solid ${defaultTile.border}`,
-                                              borderBottom: `1px solid ${defaultTile.border}`,
+                                              background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.85), rgba(${tile.join(",")}, 0.35))`,
+                                              borderRight: `1px solid rgba(${outline.join(",")}, 0.25)`,
+                                              borderBottom: `1px solid rgba(${outline.join(",")}, 0.25)`,
                                             }}
                                           >
                                             <img
                                               src={item.imageUrl}
                                               alt=""
                                               loading="lazy"
-                                              className="w-full h-full object-contain p-1 saturate-[1.6] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
+                                              className="w-full h-full object-contain p-1.5 saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300"
                                             />
                                             <div className="absolute top-0.5 right-0.5">
-                                              <span className="text-primary/70 text-[7px]">◆</span>
+                                              <span style={{ color: `rgba(${outline.join(",")}, 0.8)` }} className="text-[7px]">◆</span>
                                             </div>
                                           </div>
                                         );
