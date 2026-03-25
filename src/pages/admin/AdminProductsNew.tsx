@@ -98,6 +98,25 @@ const AdminProductsNew = () => {
     },
   });
 
+  // Stock text validation (after variations query)
+  const stockValidation = useMemo(() => {
+    if (!stockText.trim() || !showAddStock) return { lines: [], errors: [], duplicates: 0, valid: 0 };
+    const lines = stockText.split("\n").map((l) => l.trim()).filter(Boolean);
+    const seen = new Set<string>();
+    let duplicates = 0;
+    const errors: string[] = [];
+    let valid = 0;
+    const variation = variations?.find((v) => v.id === showAddStock);
+    const credType = variation?.credential_type || "account";
+    lines.forEach((line, i) => {
+      if (seen.has(line)) { duplicates++; return; }
+      seen.add(line);
+      const result = credType === "key" ? validateKeyCredential(line) : validateAccountCredential(line);
+      if (!result.valid) { errors.push(`Linha ${i + 1}: ${result.error}`); } else { valid++; }
+    });
+    return { lines, errors, duplicates, valid };
+  }, [stockText, showAddStock, variations]);
+
   const { data: stockCounts } = useQuery({
     queryKey: ["admin-stock-counts"],
     queryFn: async () => {
