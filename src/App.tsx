@@ -15,6 +15,8 @@ import Checkout from "./pages/Checkout";
 import ClientArea from "./pages/ClientArea";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminProductsNew from "./pages/admin/AdminProductsNew";
+import Shop from "./pages/Shop";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -34,6 +36,7 @@ const App = () => (
           <CartProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/loja" element={<Shop />} />
               <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/checkout" element={<Checkout />} />
@@ -56,6 +59,7 @@ const App = () => (
               >
                 <Route index element={<AdminDashboard />} />
                 <Route path="products" element={<AdminProducts />} />
+                <Route path="produtos" element={<AdminProductsNew />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="settings" element={<AdminSettings />} />
