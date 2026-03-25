@@ -284,8 +284,12 @@ const Navbar = () => {
                 >
                   <button
                     onClick={() => { setMobileOpen(false); handleNav(item.href); }}
-                    className="block w-full text-left py-3 px-4 rounded-lg font-body text-[13px] font-medium uppercase tracking-[0.15em] text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50"
+                    className="flex items-center gap-2 w-full text-left py-3 px-4 rounded-lg font-body text-[13px] font-medium uppercase tracking-[0.15em] text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50"
                   >
+                    {item.icon === "home" && <Home className="h-4 w-4" />}
+                    {item.icon === "vbucks" && <img src={vbucksNavIcon} alt="" className="h-4.5 w-4.5" />}
+                    {item.icon === "categories" && <LayoutGrid className="h-4 w-4" />}
+                    {item.icon === "store" && <Store className="h-4 w-4" />}
                     {item.label}
                   </button>
                 </motion.div>
