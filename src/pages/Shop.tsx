@@ -78,6 +78,20 @@ const getShortId = (lztItemId: string) => {
   return isNaN(num) ? lztItemId.slice(-6) : String(num);
 };
 
+const getCategoryBanner = (categoryName?: string, lztData?: any): string => {
+  // Use the LZT data's actual category_name if available
+  const lztCatName = lztData?.category?.category_name || "";
+  const name = (categoryName || lztCatName || "").toLowerCase();
+  if (name.includes("telegram")) return bannerTelegram;
+  if (name.includes("discord")) return bannerDiscord;
+  if (name.includes("valorant")) return bannerValorant;
+  if (name.includes("fortnite")) return bannerFortnite;
+  if (name.includes("genshin")) return bannerValorant;
+  if (name.includes("honkai")) return bannerValorant;
+  if (name.includes("lol") || name.includes("league")) return bannerDiscord;
+  return bannerDefault;
+};
+
 const getAccountImage = (data: any, categoryName?: string): string | null => {
   const lztImage = getLztAccountImageUrl(data, categoryName);
   if (lztImage) return lztImage;
