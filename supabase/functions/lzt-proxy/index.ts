@@ -19,13 +19,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Build headers — add LZT auth for api.lzt.market URLs that need it
     const headers: Record<string, string> = {
       "User-Agent": "Mozilla/5.0",
       "Accept": "image/*,*/*",
     };
 
-    if (imageUrl.includes("api.lzt.market") && !imageUrl.includes("jwt=")) {
+    // Always send LZT API key for api.lzt.market URLs
+    if (imageUrl.includes("api.lzt.market")) {
       const lztApiKey = Deno.env.get("LZT_API_KEY");
       if (lztApiKey) {
         headers["Authorization"] = `Bearer ${lztApiKey}`;

@@ -18,32 +18,34 @@ const PREFERRED_KEYS: Record<string, string[]> = {
   discord: ["profile"],
 };
 
+function proxyUrl(url: string): string {
+  if (!SUPABASE_URL) return url;
+  return `${SUPABASE_URL}/functions/v1/lzt-proxy?image_url=${encodeURIComponent(url)}`;
+}
+
 function getPreviewFromLztData(lztData: any, categoryName?: string): string | null {
   if (!lztData) return null;
 
   const links = lztData.imagePreviewLinks || lztData.image_preview_links;
   if (!links) return null;
 
-  // Determine preferred keys from category name
   const slug = (categoryName || "").toLowerCase();
   const keys = Object.entries(PREFERRED_KEYS).find(([k]) =>
     slug.includes(k)
   )?.[1] || ["weapons", "agents", "skins"];
 
-  // Try direct URLs first (they contain embedded JWT), then download
-  for (const source of [links.direct, links.download]) {
+  // Prefer download URLs (higher quality, proxied with auth)
+  for (const source of [links.download, links.direct]) {
     if (!source || typeof source !== "object") continue;
     for (const key of keys) {
       if (source[key]) return source[key];
     }
-    // Fallback: first available key
     const firstVal = Object.values(source).find(
       (v) => typeof v === "string"
     ) as string | undefined;
     if (firstVal) return firstVal;
   }
 
-  // If imagePreviewLinks is a flat string or array
   if (typeof links === "string") return links;
   if (Array.isArray(links) && links.length > 0) return links[0];
 
@@ -51,20 +53,37 @@ function getPreviewFromLztData(lztData: any, categoryName?: string): string | nu
 }
 
 /**
- * Get the best image URL for an LZT account.
- * Uses the lzt-proxy edge function to avoid CORS issues.
+ * Get the best single image URL for an LZT account (used for card banner).
  */
 export function getLztAccountImageUrl(lztData: any, categoryName?: string): string | null {
   if (!lztData) return null;
-
-  // Try imagePreviewLinks first
   const previewUrl = getPreviewFromLztData(lztData, categoryName);
-  if (previewUrl && SUPABASE_URL) {
-    return `${SUPABASE_URL}/functions/v1/lzt-proxy?image_url=${encodeURIComponent(previewUrl)}`;
+  if (previewUrl) return proxyUrl(previewUrl);
+  return null;
+}
+
+export interface InventoryImages {
+  weapons: string | null;
+  agents: string | null;
+  buddies: string | null;
+}
+
+/**
+ * Get all inventory images (weapons, agents, buddies) for display.
+ * Returns proxied URLs ready for <img> tags.
+ */
+export function getLztInventoryImages(lztData: any): InventoryImages {
+  const result: InventoryImages = { weapons: null, agents: null, buddies: null };
+  if (!lztData) return result;
+
+  const links = lztData.imagePreviewLinks || lztData.image_preview_links;
+  if (!links) return result;
+
+  // Prefer download URLs (auth handled by proxy), fallback to direct (JWT embedded)
+  for (const key of ["weapons", "agents", "buddies"] as const) {
+    const url = links.download?.[key] || links.direct?.[key];
+    if (url) result[key] = proxyUrl(url);
   }
 
-  // Direct preview URL if already proxied or data URI
-  if (previewUrl) return previewUrl;
-
-  return null;
+  return result;
 }
