@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getLztAccountImageUrl } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
