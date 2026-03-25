@@ -686,7 +686,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                 {/* Full Valorant Inventory */}
                 {modalRealCategory.toLowerCase().includes("valorant") && (
-                  <ValorantInventory lztData={viewAccount.data} compact />
+                  <ValorantInventory lztData={viewAccount.data} accountId={viewAccount.id} compact />
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">

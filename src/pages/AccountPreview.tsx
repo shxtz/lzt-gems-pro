@@ -482,7 +482,7 @@ const AccountPreview = () => {
                   <Crosshair className="h-5 w-5 text-primary" />
                   <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Inventário Completo</h2>
                 </div>
-                <ValorantInventoryFull lztData={d} />
+                <ValorantInventoryFull lztData={d} accountId={account.id} />
               </div>
             ) : mainImage ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
