@@ -473,16 +473,42 @@ const AccountPreview = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-[1fr,1fr] gap-6">
 
-          {/* LEFT — Inventory + Details */}
+          {/* LEFT — 3x3 Preview Grid + Details */}
           <div className="space-y-5">
-            {/* Full Inventory with all skins */}
-            {realCategory.toLowerCase().includes("valorant") && valInventory && typeof valInventory === "object" ? (
-              <div className="rounded-2xl border border-border/40 bg-card p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Crosshair className="h-5 w-5 text-primary" />
-                  <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Inventário Completo</h2>
+            {/* 3x3 Preview Grid */}
+            {realCategory.toLowerCase().includes("valorant") && hasIndividualItems ? (
+              <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+                <div className="grid grid-cols-3 gap-[1px] bg-border/10">
+                  {individualItems.slice(0, 9).map((item, i) => (
+                    <div
+                      key={i}
+                      className="relative aspect-square overflow-hidden bg-card"
+                      style={{
+                        background: item.tier
+                          ? `linear-gradient(135deg, rgba(${item.tier.tile.join(",")},0.25), rgba(0,0,0,0.6))`
+                          : undefined,
+                      }}
+                    >
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-contain p-2.5"
+                          loading="lazy"
+                          style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
+                        />
+                      )}
+                      {item.tier && item.tier.key !== "gray" && (
+                        <div className="absolute top-1.5 right-1.5">
+                          <span
+                            className="block h-3.5 w-3.5 rounded-full border border-white/20"
+                            style={{ backgroundColor: `rgb(${item.tier.outline.join(",")})` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                <ValorantInventoryFull lztData={d} accountId={account.id} />
               </div>
             ) : mainImage ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
@@ -591,10 +617,25 @@ const AccountPreview = () => {
                 <span>Todas as contas são verificadas e entregues com <strong>acesso completo</strong>.</span>
               </div>
             </div>
-
           </div>
 
         </motion.div>
+
+        {/* FULL-WIDTH Inventory Section */}
+        {realCategory.toLowerCase().includes("valorant") && valInventory && typeof valInventory === "object" && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-10"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Crosshair className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-xl font-bold text-foreground">Inventário</h2>
+            </div>
+            <ValorantInventoryFull lztData={d} accountId={account.id} />
+          </motion.div>
+        )}
       </div>
 
       <Footer />

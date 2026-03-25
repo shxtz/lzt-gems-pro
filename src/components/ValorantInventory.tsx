@@ -118,9 +118,9 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
 
   const getGridCols = () => {
     if (compact) return "grid-cols-3 sm:grid-cols-4";
-    if (activeTab === "buddies") return "grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8";
-    if (activeTab === "skins") return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5";
-    return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
+    if (activeTab === "buddies") return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
+    if (activeTab === "skins") return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
+    return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5";
   };
 
   return (
