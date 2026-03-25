@@ -1,19 +1,20 @@
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Settings, ShoppingBag, Shield } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Settings, ShoppingBag, Shield, Home, LayoutGrid, Store } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import vbucksNavIcon from "@/assets/vbucks-icon.png";
 
 const navItems = [
-  { label: "Início", href: "/" },
-  { label: "V-Bucks", href: "/vbucks" },
-  { label: "Categorias", href: "/#categories" },
-  { label: "Loja", href: "/loja" },
-];
+  { label: "Início", href: "/", icon: "home" },
+  { label: "V-Bucks", href: "/vbucks", icon: "vbucks" },
+  { label: "Categorias", href: "/#categories", icon: "categories" },
+  { label: "Loja", href: "/loja", icon: "store" },
+] as const;
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
