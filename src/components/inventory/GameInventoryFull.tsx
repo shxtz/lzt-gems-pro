@@ -390,12 +390,12 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                       : undefined,
                   }}
                 >
-                  <div className="aspect-square flex items-center justify-center overflow-hidden p-3">
+                  <div className={`${gameKey === 'lol' ? 'aspect-[3/4]' : 'aspect-square'} flex items-center justify-center overflow-hidden ${gameKey === 'lol' ? 'p-0' : 'p-3'}`}>
                     {hasImage ? (
                       <img
                         src={item.icon!}
                         alt={item.name}
-                        className="h-full w-full object-contain transition-transform duration-500 group-hover/tile:scale-110 drop-shadow-lg"
+                        className={`h-full w-full ${gameKey === 'lol' ? 'object-cover' : 'object-contain'} transition-transform duration-500 group-hover/tile:scale-110 drop-shadow-lg`}
                         loading="lazy"
                         style={{ filter: theme.filterStyle }}
                         onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
