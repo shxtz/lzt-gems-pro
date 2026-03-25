@@ -417,11 +417,31 @@ const Shop = () => {
                 const theme = getCategoryTheme(modalRealCategory);
                 const seed = hashId(viewAccount.lzt_item_id);
                 const CategoryIcon = theme.Icon;
+
+                const badges = (
+                  <div className="absolute bottom-3 left-4 flex items-center gap-1.5 z-[2]">
+                    <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">{modalRealCategory}</Badge>
+                    {modalRealCategory.toLowerCase().includes("valorant") && (() => {
+                      const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
+                      const icon = getValorantRankIcon(rank);
+                      const rName = getValorantRankName(rank);
+                      if (!rName) return null;
+                      return (
+                        <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
+                          {icon && <img src={icon} alt={rName} className="h-3.5 w-3.5" />}
+                          {rName}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+                );
+
                 if (accountImg) {
                   return (
                     <div className="h-36 overflow-hidden relative">
                       <img src={accountImg} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
                       <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+                      {badges}
                     </div>
                   );
                 }
@@ -430,34 +450,15 @@ const Shop = () => {
                     <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="relative">
-                        <div className="absolute inset-0 blur-3xl rounded-full opacity-30" style={{ background: theme.accent, width: 120, height: 120, transform: `translate(-50%, -50%) rotate(${seed % 360}deg)` }} />
+                        <div className="absolute rounded-full opacity-30 blur-3xl" style={{ background: theme.accent, width: 120, height: 120, left: "50%", top: "50%", transform: `translate(-50%, -50%) rotate(${seed % 360}deg)` }} />
                         <CategoryIcon className="h-16 w-16 text-white/20" strokeWidth={1} />
                       </div>
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                    {badges}
                   </div>
                 );
               })()}
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
-                  <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
-                    {modalRealCategory}
-                  </Badge>
-                  {(() => {
-                    if (!modalRealCategory.toLowerCase().includes("valorant")) return null;
-                    const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
-                    const icon = getValorantRankIcon(rank);
-                    const name = getValorantRankName(rank);
-                    if (!name) return null;
-                    return (
-                      <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
-                        {icon && <img src={icon} alt={name} className="h-3.5 w-3.5" />}
-                        {name}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </div>
 
               <div className="p-6 space-y-4">
                 <h3 className="font-display text-lg text-foreground">
