@@ -105,6 +105,16 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
     return counts;
   }, [skins]);
 
+  const rarityIcons = useMemo(() => {
+    const icons: Record<string, string> = {};
+    for (const s of skins) {
+      if (s.tierIcon && !icons[s.tier.key]) {
+        icons[s.tier.key] = s.tierIcon;
+      }
+    }
+    return icons;
+  }, [skins]);
+
   if (!lztData?.valorantInventory) return null;
   if (!hasSkins && !hasAgents && !hasBuddies && !loading) return null;
 
@@ -162,9 +172,11 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
                     : "border-border/20 bg-muted/5 text-muted-foreground hover:bg-muted/15 hover:text-foreground"
                 }`}
               >
-                {color && (
+                {key !== "all" && rarityIcons[key] ? (
+                  <img src={rarityIcons[key]} alt={label} className="h-3.5 w-3.5 shrink-0 drop-shadow-sm" />
+                ) : key !== "all" && color ? (
                   <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: `rgb(${color.join(",")})` }} />
-                )}
+                ) : null}
                 <span>{label}</span>
                 <span className="text-[9px] opacity-60">({count})</span>
               </button>
