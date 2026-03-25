@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getLztAccountImageUrl } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -421,6 +421,8 @@ const AccountPreview = () => {
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
+  const inv = getLztInventoryImages(d);
+  const hasInventory = inv.weapons || inv.agents || inv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
@@ -453,7 +455,30 @@ const AccountPreview = () => {
 
       {/* Hero Banner */}
       <div className="relative">
-        {mainImage ? (
+        {hasInventory ? (
+          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
+            <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
+            <div className="absolute inset-0 flex">
+              {[
+                { src: inv.weapons, label: "🔫 Skins" },
+                { src: inv.agents, label: "🧑 Agentes" },
+                { src: inv.buddies, label: "🔑 Chaveiros" },
+              ].filter(i => i.src).map((item, idx) => (
+                <div key={idx} className="flex-1 relative overflow-hidden border-r border-white/5 last:border-r-0">
+                  <img
+                    src={item.src!}
+                    alt={item.label}
+                    className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700"
+                    style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                  <span className="absolute bottom-3 left-0 right-0 text-center text-[10px] font-display uppercase tracking-wider text-white/80 bg-black/30 backdrop-blur-sm mx-3 py-1 rounded-full">{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          </div>
+        ) : mainImage ? (
           <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
             <img src={mainImage} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
@@ -541,13 +566,24 @@ const AccountPreview = () => {
               <div className="flex items-center gap-2 mb-5">
                 <Gamepad2 className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-lg text-foreground">Inventário Visual</h2>
+                <span className="text-[10px] text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full ml-auto">{allImages.length} categorias</span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {allImages.map((img, i) => (
                   <div key={i} className="space-y-2">
-                    <p className="text-xs font-display text-muted-foreground uppercase tracking-wider">{img.label}</p>
-                    <div className="rounded-xl overflow-hidden border border-border/20 bg-muted/10">
-                      <img src={img.url} alt={img.label} className="w-full h-auto object-contain max-h-[400px]" loading="lazy" style={{ filter: "saturate(1.1) contrast(1.05)" }} />
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-4 rounded-full bg-primary/60" />
+                      <p className="text-xs font-display text-primary uppercase tracking-wider">{img.label}</p>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-border/20 bg-black/20 relative group">
+                      <img
+                        src={img.url}
+                        alt={img.label}
+                        className="w-full h-auto object-contain max-h-[400px] group-hover:scale-[1.02] transition-transform duration-500"
+                        loading="lazy"
+                        style={{ filter: "saturate(1.15) contrast(1.05)" }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                   </div>
                 ))}
