@@ -39,6 +39,15 @@ interface LztCategory {
   margin_percent: number;
 }
 
+interface ShopCategory {
+  id: string;
+  name: string;
+  slug: string;
+  emoji: string;
+  icon_url: string | null;
+  sort_order: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -128,9 +137,57 @@ const countryFlag = (code: string): string => {
 
 // extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
-const isAccountCategoryCompatible = (..._args: any[]) => {
-  // Always show accounts - the admin assigns them to the category they want
-  return true;
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  valorant: ["valorant", "valorant br"],
+  "valorant-smurfs": ["valorant smurfs", "smurfs", "smurf"],
+  fortnite: ["fortnite"],
+  genshin: ["genshin", "genshin impact"],
+  lol: ["league of legends", "lol"],
+  honkai: ["honkai", "honkai star rail"],
+  minecraft: ["minecraft"],
+  steam: ["steam"],
+  zzz: ["zenless zone zero", "zenless", "zzz"],
+  discord: ["discord"],
+  telegram: ["telegram"],
+};
+
+const normalizeCategoryText = (value = "") =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const resolveCategoryKey = (value = "") => {
+  const normalizedValue = normalizeCategoryText(value);
+  let bestMatch: { key: string; length: number } | null = null;
+
+  for (const [key, aliases] of Object.entries(CATEGORY_ALIASES)) {
+    for (const alias of aliases) {
+      const normalizedAlias = normalizeCategoryText(alias);
+      if ((normalizedValue === normalizedAlias || normalizedValue.includes(normalizedAlias)) && normalizedAlias.length > (bestMatch?.length ?? 0)) {
+        bestMatch = { key, length: normalizedAlias.length };
+      }
+    }
+  }
+
+  return bestMatch?.key ?? null;
+};
+
+const isAccountCategoryCompatible = (account: LztAccount, adminCategoryName: string) => {
+  const realCategory = String(account.data?.category?.category_name || account.data?.category?.category_title || "");
+  if (!realCategory) return true;
+
+  const adminKey = resolveCategoryKey(adminCategoryName);
+  const realKey = resolveCategoryKey(realCategory);
+
+  if (adminKey && realKey) return adminKey === realKey;
+
+  const normalizedAdminCategory = normalizeCategoryText(adminCategoryName);
+  const normalizedRealCategory = normalizeCategoryText(realCategory);
+
+  return !normalizedRealCategory || normalizedAdminCategory === normalizedRealCategory || normalizedAdminCategory.includes(normalizedRealCategory);
 };
 
 const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: string) => string) => {
@@ -189,7 +246,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     queryFn: async () => {
       const { data, error } = await supabase.from("shop_categories").select("*").eq("visible", true).order("sort_order");
       if (error) throw error;
-      return data as { id: string; name: string; slug: string; emoji: string; icon_url: string | null; sort_order: number }[];
+      return data as ShopCategory[];
     },
   });
 
@@ -226,21 +283,43 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const getCategoryName = (catId: string) =>
     lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
 
-  // Auto-select category from slug prop
+  const getShopCategoryAliases = (shopCategory: ShopCategory) => {
+    const aliases = [
+      shopCategory.name,
+      shopCategory.slug.replace(/-/g, " "),
+      ...(CATEGORY_ALIASES[shopCategory.slug] ?? []),
+    ];
+
+    return Array.from(new Set(aliases.map(normalizeCategoryText).filter(Boolean)));
+  };
+
+  const getMatchingLztCategoryIds = (shopCategory: ShopCategory | null) => {
+    if (!shopCategory) return [];
+
+    const aliases = getShopCategoryAliases(shopCategory);
+
+    return (lztCategories ?? [])
+      .filter((category) => {
+        const normalizedCategoryName = normalizeCategoryText(category.name);
+        return aliases.some((alias) => normalizedCategoryName === alias || normalizedCategoryName.includes(alias));
+      })
+      .map((category) => category.id);
+  };
+
+  const selectedShopCategory = useMemo(
+    () => shopCategories?.find((category) => category.slug === selectedCategory) || null,
+    [shopCategories, selectedCategory]
+  );
+
+  const selectedLztCategoryIds = useMemo(
+    () => new Set(getMatchingLztCategoryIds(selectedShopCategory)),
+    [selectedShopCategory, lztCategories]
+  );
+
   useEffect(() => {
-    if (initialCategorySlug && lztCategories && lztCategories.length > 0 && !selectedCategory) {
-      const slugMap: Record<string, string> = {
-        valorant: "VALORANT", fortnite: "FORTNITE", genshin: "GENSHIN IMPACT",
-        lol: "LEAGUE OF LEGENDS", honkai: "HONKAI: STAR RAIL", minecraft: "MINECRAFT",
-        steam: "STEAM", zzz: "ZENLESS ZONE ZERO",
-      };
-      const targetName = slugMap[initialCategorySlug]?.toLowerCase();
-      if (targetName) {
-        const cat = lztCategories.find((c) => c.name.toLowerCase() === targetName);
-        if (cat) setSelectedCategory(cat.id);
-      }
-    }
-  }, [initialCategorySlug, lztCategories]);
+    setSelectedCategory(initialCategorySlug ?? null);
+    setSelectedTab("contas");
+  }, [initialCategorySlug]);
 
   const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || [], getCategoryName), [lztAccounts, lztCategories]);
 
@@ -249,7 +328,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       const adminCategoryName = getCategoryName(a.category_id);
       if (!isAccountCategoryCompatible(a, adminCategoryName)) return false;
 
-      const matchCategory = !selectedCategory || a.category_id === selectedCategory;
+      const matchCategory = !selectedShopCategory || selectedLztCategoryIds.has(a.category_id);
       const matchSearch = !searchTerm ||
         `CONTA BARATA #${getShortId(a.lzt_item_id)}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         adminCategoryName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -265,9 +344,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (sortBy === "price_asc") accounts.sort((a, b) => Number(a.price_brl) - Number(b.price_brl));
     else if (sortBy === "price_desc") accounts.sort((a, b) => Number(b.price_brl) - Number(a.price_brl));
     return accounts;
-  }, [lztAccounts, selectedCategory, searchTerm, filterCountry, filterPriceMax, filterSpamFree, filterPremium, sortBy, lztCategories]);
+  }, [lztAccounts, selectedShopCategory, selectedLztCategoryIds, searchTerm, filterCountry, filterPriceMax, filterSpamFree, filterPremium, sortBy, lztCategories]);
 
-  const getCategoryCount = (catId: string) => lztAccounts?.filter((a) => a.category_id === catId && isAccountCategoryCompatible(a, getCategoryName(catId))).length || 0;
+  const getCategoryCount = (shopCategory: ShopCategory | null) => {
+    const matchingIds = new Set(getMatchingLztCategoryIds(shopCategory));
+    return lztAccounts?.filter((account) => matchingIds.has(account.category_id) && isAccountCategoryCompatible(account, getCategoryName(account.category_id))).length || 0;
+  };
+
+  const totalAccountCount = lztAccounts?.filter((account) => isAccountCategoryCompatible(account, getCategoryName(account.category_id))).length || 0;
   const getProductVariations = (productId: string) => variations?.filter((v) => v.product_id === productId) || [];
   const getLowestPrice = (productId: string) => {
     const pvars = getProductVariations(productId);
@@ -277,8 +361,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const filteredProducts = products?.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCategory = !selectedCategory || p.category === selectedCategory;
-    return matchSearch && matchCategory;
+    return matchSearch;
   });
 
   const handleBuyAccount = async (account: LztAccount) => {
@@ -540,22 +623,38 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 <Star className="h-3 w-3 text-primary" /> Categorias
               </h3>
               <nav className="space-y-1 mb-5">
+                <button
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSelectedTab("contas");
+                    navigate("/loja");
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+                    selectedTab === "contas" && !selectedCategory
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Star className="h-4 w-4" />
+                    <span>Todos</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] bg-muted/30 px-2 py-0.5 rounded-full">{totalAccountCount}</span>
+                    <ChevronRight className="h-3 w-3 opacity-40" />
+                  </div>
+                </button>
                 {shopCategories?.map((cat) => {
-                  const matchedCat = lztCategories?.find((c) => c.name.toLowerCase().includes(cat.slug));
-                  const catId = matchedCat?.id || null;
-                  const count = catId ? getCategoryCount(catId) : 0;
-                  const isActive = catId ? selectedCategory === catId : false;
+                  const count = getCategoryCount(cat);
+                  const isActive = selectedTab === "contas" && selectedCategory === cat.slug;
 
                   return (
                     <button
                       key={cat.id}
                       onClick={() => {
-                        if (catId) {
-                          setSelectedCategory(catId);
-                          setSelectedTab("contas");
-                        } else {
-                          navigate(`/contas/${cat.slug}`);
-                        }
+                        setSelectedCategory(cat.slug);
+                        setSelectedTab("contas");
+                        navigate(`/contas/${cat.slug}`);
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
                         isActive
@@ -621,9 +720,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 </div>
                 {selectedTab === "contas" && (
                   <div className="flex lg:hidden flex-wrap gap-1.5 w-full">
-                    <button onClick={() => setSelectedCategory(null)} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>Todos</button>
-                    {lztCategories?.map((cat) => (
-                      <button key={cat.id} onClick={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${selectedCategory === cat.id ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>{cat.name}</button>
+                    <button onClick={() => { setSelectedCategory(null); navigate("/loja"); }} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>Todos</button>
+                    {shopCategories?.map((cat) => (
+                      <button key={cat.id} onClick={() => { setSelectedCategory(cat.slug); navigate(`/contas/${cat.slug}`); }} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${selectedCategory === cat.slug ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>{cat.name}</button>
                     ))}
                   </div>
                 )}
@@ -668,7 +767,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 {selectedTab === "contas" ? (
                   <>
                     <Star className="h-5 w-5 text-primary" />
-                    <h2 className="font-display text-lg text-foreground">{selectedCategory ? getCategoryName(selectedCategory) : "Todas as Contas"}</h2>
+                    <h2 className="font-display text-lg text-foreground">{selectedShopCategory?.name || "Todas as Contas"}</h2>
                     <Badge variant="outline" className="text-[10px] border-border/40 text-muted-foreground ml-1">{filteredAccounts?.length || 0} disponíveis</Badge>
                   </>
                 ) : (
