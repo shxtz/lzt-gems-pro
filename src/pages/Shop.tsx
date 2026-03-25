@@ -193,6 +193,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     },
   });
 
+  const { data: products } = useQuery({
     queryKey: ["shop-products"],
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("*").eq("active", true).order("sort_order");
