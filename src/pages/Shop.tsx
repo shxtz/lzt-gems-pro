@@ -906,7 +906,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                       const valRankName = getValorantRankName(valRank);
 
                       return (
-                        <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
+                        <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative cursor-pointer" onClick={() => navigate(`/preview/${account.id}`)}>
                           {/* Spotlight hover effect */}
                           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl z-[1]" style={{ background: `radial-gradient(400px circle at 50% 0%, ${getCategoryTheme(realCategory).accent}15, transparent 60%)` }} />
 
@@ -1055,29 +1055,12 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               CONTA BARATA #{getShortId(account.lzt_item_id)}
                             </h3>
 
-                            {/* Inventory Tags */}
-                            {inventoryInfo.length > 0 && (
-                              <div className="grid grid-cols-2 gap-1.5">
-                                {inventoryInfo.map((item, i) => (
-                                  <div key={i} className="flex items-center gap-1.5 text-[11px] rounded-lg bg-muted/10 px-2 py-1.5 border border-border/10">
-                                    <InfoIcon type={item.icon} />
-                                    <span className="text-muted-foreground truncate">{item.label}:</span>
-                                    <span className="text-foreground font-medium truncate">{item.value}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
 
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
                               <span className="text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
-                              <div className="flex gap-1.5">
-                                <Button size="sm" variant="outline" className="text-[10px] h-8 px-2.5" onClick={() => navigate(`/preview/${account.id}`)}>
-                                  <Eye className="h-3 w-3 mr-1" /> Detalhes
-                                </Button>
-                                <Button size="sm" className="bg-gradient-gold text-primary-foreground text-[10px] h-8 px-3" disabled={purchasing === account.id} onClick={() => handleBuyAccount(account)}>
-                                  {purchasing === account.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><ShoppingCart className="h-3 w-3 mr-1" /> Comprar</>}
-                                </Button>
-                              </div>
+                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-[10px] h-8 px-3" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
+                                {purchasing === account.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><ShoppingCart className="h-3 w-3 mr-1" /> Comprar</>}
+                              </Button>
                             </div>
                           </div>
                         </motion.div>
