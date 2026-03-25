@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
+import { getQuickPreviewItems } from "@/lib/valorant-api";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import ValorantInventoryFull from "@/components/ValorantInventory";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -422,7 +424,14 @@ const AccountPreview = () => {
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
   const inv = getLztInventoryImages(d);
-  const hasInventory = inv.weapons || inv.agents || inv.buddies;
+  
+  // Individual inventory items from valorant-api.com (same as Shop cards)
+  const valInventory = d?.valorantInventory;
+  const individualItems = valInventory && typeof valInventory === "object"
+    ? getQuickPreviewItems(valInventory, 12)
+    : [];
+  const hasIndividualItems = individualItems.length > 0;
+  const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
@@ -455,7 +464,28 @@ const AccountPreview = () => {
 
       {/* Hero Banner */}
       <div className="relative">
-        {hasInventory ? (
+        {hasIndividualItems ? (
+          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
+            <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
+            <div className="absolute inset-0 grid grid-cols-4 sm:grid-cols-6 gap-[2px] p-2">
+              {individualItems.map((item) => (
+                <div
+                  key={item.uuid}
+                  className="relative overflow-hidden rounded-lg flex items-center justify-center group/tile"
+                  style={{ background: "rgba(0,0,0,0.3)" }}
+                >
+                  <img
+                    src={item.imageUrl}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-full object-contain p-2 saturate-[1.6] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          </div>
+        ) : hasInventory ? (
           <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
             <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
             <div className="absolute inset-0 flex">
@@ -559,6 +589,17 @@ const AccountPreview = () => {
             </div>
             <GameInventory data={d} cat={realCategory} />
           </div>
+
+          {/* Full Valorant Inventory with enriched data */}
+          {realCategory.toLowerCase().includes("valorant") && (
+            <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
+              <div className="flex items-center gap-2 mb-5">
+                <Crosshair className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-lg text-foreground">Inventário Completo</h2>
+              </div>
+              <ValorantInventoryFull lztData={d} />
+            </div>
+          )}
 
           {/* Image Gallery */}
           {allImages.length > 0 && (
