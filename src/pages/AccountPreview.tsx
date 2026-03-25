@@ -427,12 +427,26 @@ const AccountPreview = () => {
   const mainImage = getLztAccountImageUrl(d, realCategory);
   const inv = getLztInventoryImages(d);
   
-  // Individual inventory items from valorant-api.com (same as Shop cards)
   const valInventory = d?.valorantInventory;
-  const individualItems = valInventory && typeof valInventory === "object"
-    ? getQuickPreviewItems(valInventory, 12)
-    : [];
-  const hasIndividualItems = individualItems.length > 0;
+  const hasValInventory = valInventory && typeof valInventory === "object";
+
+  // Fetch enriched inventory from edge function for the 3x3 grid
+  const { data: enrichedInventory } = useQuery({
+    queryKey: ["enriched-inventory", account?.id],
+    queryFn: async () => {
+      const data = await fetchEdgeJson(
+        `${SUPABASE_URL}/functions/v1/valorant-inventory?account_id=${account!.id}`,
+        { retries: 3, retryDelayMs: 600 }
+      );
+      return data;
+    },
+    enabled: !!account?.id && hasValInventory,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const enrichedSkins = enrichedInventory?.skins || [];
+  const hasIndividualItems = enrichedSkins.length > 0 || hasValInventory;
+  const inv = getLztInventoryImages(d);
   const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
