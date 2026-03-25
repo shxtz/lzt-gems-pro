@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
+import AccountPreview from "./pages/AccountPreview";
 import VBucksPage from "./pages/VBucksPage";
 import CategoryPage from "./pages/CategoryPage";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/contas/:slug" element={<CategoryPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/preview/:id" element={<AccountPreview />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route
                 path="/minha-conta"
