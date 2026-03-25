@@ -984,11 +984,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             }
 
                             if (hasInventory) {
-                              const inventoryItems = [
-                                { src: inv.weapons, label: "Skins" },
-                                { src: inv.agents, label: "Agentes" },
-                                { src: inv.buddies, label: "Chaveiros" },
-                              ].filter(i => i.src);
+                              // Collect all available inventory images dynamically
+                              const inventoryItems = Object.entries(inv)
+                                .filter(([_, src]) => src !== null)
+                                .map(([key, src]) => ({ src: src as string, label: key }))
+                                .slice(0, 4);
 
                               return (
                                 <div className="relative">
