@@ -942,10 +942,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                             alt={item.label}
                                             loading="lazy"
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                                            style={{ filter: "saturate(1.3) contrast(1.1) brightness(0.95) hue-rotate(-10deg)" }}
+                                            style={{ filter: "saturate(1.15) contrast(1.08) brightness(1.02)" }}
                                           />
-                                          {/* Dark overlay to neutralize green tint */}
-                                          <div className="absolute inset-0 bg-background/20 mix-blend-color pointer-events-none" />
+                                          {/* Subtle warm overlay to reduce green tint */}
+                                          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(30,20,10,0.15) 0%, rgba(30,20,10,0.25) 100%)", mixBlendMode: "multiply" }} />
                                         </div>
                                       ))}
                                       {inventoryItems.length < 4 && Array.from({ length: 4 - inventoryItems.length }).map((_, idx) => (
