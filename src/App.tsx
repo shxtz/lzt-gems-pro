@@ -15,6 +15,8 @@ import Checkout from "./pages/Checkout";
 import ClientArea from "./pages/ClientArea";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminProductsNew from "./pages/admin/AdminProductsNew";
+import Shop from "./pages/Shop";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminSettings from "./pages/admin/AdminSettings";

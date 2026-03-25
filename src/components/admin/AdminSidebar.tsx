@@ -27,6 +27,7 @@ import logo from "@/assets/logo.png";
 const items = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "V-Bucks", url: "/admin/products", icon: Package },
+  { title: "Produtos", url: "/admin/produtos", icon: Store },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
   { title: "Suporte", url: "/admin/tickets", icon: MessageCircle },
