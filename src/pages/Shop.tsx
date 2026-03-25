@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, prewarmSkinsCatalog, type ValorantSkin, type QuickPreviewItem } from "@/lib/valorant-api";
+import { prewarmChampionsCatalog, getLoLQuickPreviewItems, type LoLPreviewItem } from "@/lib/lol-api";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventory from "@/components/ValorantInventory";
 
@@ -216,8 +217,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [filterPremium, setFilterPremium] = useState(false);
   const [sortBy, setSortBy] = useState<"recent" | "price_asc" | "price_desc">("recent");
 
-  // Pre-warm skins catalog so rarity colors are available for cards
-  useEffect(() => { prewarmSkinsCatalog(); }, []);
+  // Pre-warm skins catalogs so rarity colors and champion names are available for cards
+  useEffect(() => { prewarmSkinsCatalog(); prewarmChampionsCatalog(); }, []);
 
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
@@ -895,13 +896,17 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                         });
                         return matchingShop?.name || adminCategoryName;
                       })();
-                      // Always use LZT's actual category for display, banners, and info extraction
-                      const realCategory = account.data?.category?.category_name || account.data?.category?.category_title || adminCategoryName;
+                      // Use admin category name for game detection (more reliable than LZT platform name)
+                      const realCategory = adminCategoryName;
                       const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
                       const accountImg = getAccountImage(account.data, realCategory);
 
-                      // Valorant rank badge - only if REAL category is valorant
-                      const isValorant = realCategory.toLowerCase().includes("valorant");
+                      // Determine game type from admin category
+                      const catLower = adminCategoryName.toLowerCase();
+                      const isValorant = catLower.includes("valorant") || catLower.includes("riot");
+                      const isLoL = catLower.includes("league") || catLower.includes("lol");
+
+                      // Valorant rank badge - only for Valorant accounts
                       const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
                       const valRankIcon = getValorantRankIcon(valRank);
                       const valRankName = getValorantRankName(valRank);
@@ -917,10 +922,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const seed = hashId(account.lzt_item_id);
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
-                            const valInventory = account.data?.valorantInventory;
-                            const individualItems = valInventory && typeof valInventory === "object"
-                              ? getQuickPreviewItems(valInventory, 9)
-                              : [];
+
+                            // Choose inventory based on game type
+                            let individualItems: (QuickPreviewItem | LoLPreviewItem)[] = [];
+                            if (isLoL && account.data?.lolInventory) {
+                              individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
+                            } else if (!isLoL && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
+                              individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
+                            }
                             const hasIndividualItems = individualItems.length > 0;
                             const inv = getLztInventoryImages(account.data);
                             const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
@@ -953,11 +962,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                 <div className="relative">
                                   <div className="aspect-square overflow-hidden relative border-b border-border/20">
                                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
-                                      {gridItems.map((item) => {
+                                      {gridItems.map((item, idx) => {
                                         const { tile, outline } = item.tier;
+                                        const itemKey = 'uuid' in item ? item.uuid : String(item.id);
+                                        const tierIcon = 'tierIcon' in item ? item.tierIcon : null;
+                                        const isLoLItem = 'championName' in item;
                                         return (
                                           <div
-                                            key={item.uuid}
+                                            key={itemKey}
                                             className="relative overflow-hidden flex items-center justify-center group/tile"
                                             style={{
                                               background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.85), rgba(${tile.join(",")}, 0.35))`,
@@ -969,11 +981,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                               src={item.imageUrl}
                                               alt=""
                                               loading="lazy"
-                                              className="w-full h-full object-contain p-1.5 saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300"
+                                              className={`w-full h-full ${isLoLItem ? 'object-cover' : 'object-contain p-1.5'} saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300`}
                                             />
-                                            {item.tierIcon && (
+                                            {tierIcon && (
                                               <div className="absolute top-1 right-1">
-                                                <img src={item.tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
+                                                <img src={tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
                                               </div>
                                             )}
                                           </div>

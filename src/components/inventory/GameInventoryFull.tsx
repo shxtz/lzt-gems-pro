@@ -96,6 +96,8 @@ interface InventoryItem {
   constellation?: number;
   eidolon?: number;
   path?: string | null;
+  champion?: string;
+  splash?: string;
 }
 
 interface GalleryImage {
@@ -111,6 +113,9 @@ interface GameInventoryData {
   theme: { primary: number[]; accent: number[]; bg: number[] };
   weapons?: InventoryItem[];
   lightcones?: InventoryItem[];
+  skins?: InventoryItem[];
+  champions?: InventoryItem[];
+  stats?: Record<string, any>;
 }
 
 interface Props {
@@ -170,9 +175,11 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
     load();
   }, [accountId, gameKey]);
 
-  // Determine items to display
+  // Determine items to display based on active tab
   const allItems = useMemo(() => {
     if (!data) return [];
+    if (activeTab === "skins" && data.skins) return data.skins;
+    if (activeTab === "champions" && data.champions) return data.champions;
     if (activeTab === "weapons" && data.weapons) return data.weapons;
     if (activeTab === "lightcones" && data.lightcones) return data.lightcones;
     return data.items || [];
@@ -226,6 +233,9 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
 
   if (!hasItems && !hasGallery) return null;
 
+  // LoL stats badges
+  const lolStats = data?.stats;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -249,6 +259,15 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
           )}
         </div>
       </div>
+
+      {/* LoL Stats */}
+      {lolStats && (
+        <div className="flex flex-wrap gap-2">
+          {lolStats.level && <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-border/30 bg-muted/10">Nível {lolStats.level}</span>}
+          {lolStats.blueEssence && <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-border/30 bg-muted/10"><span className="h-2 w-2 rounded-full bg-blue-500" />{Number(lolStats.blueEssence).toLocaleString("pt-BR")} BE</span>}
+          {lolStats.rp && Number(lolStats.rp) > 0 && <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-border/30 bg-muted/10"><span className="h-2 w-2 rounded-full bg-red-500" />{Number(lolStats.rp).toLocaleString("pt-BR")} RP</span>}
+        </div>
+      )}
 
       {/* Gallery Mode */}
       <AnimatePresence>
@@ -373,12 +392,12 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                       : undefined,
                   }}
                 >
-                  <div className="aspect-square flex items-center justify-center overflow-hidden p-3">
+                  <div className={`${gameKey === 'lol' ? 'aspect-[3/4]' : 'aspect-square'} flex items-center justify-center overflow-hidden ${gameKey === 'lol' ? 'p-0' : 'p-3'}`}>
                     {hasImage ? (
                       <img
                         src={item.icon!}
                         alt={item.name}
-                        className="h-full w-full object-contain transition-transform duration-500 group-hover/tile:scale-110 drop-shadow-lg"
+                        className={`h-full w-full ${gameKey === 'lol' ? 'object-cover' : 'object-contain'} transition-transform duration-500 group-hover/tile:scale-110 drop-shadow-lg`}
                         loading="lazy"
                         style={{ filter: theme.filterStyle }}
                         onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
@@ -439,6 +458,9 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                     <p className="text-[11px] font-semibold text-white leading-tight line-clamp-2 drop-shadow-md text-center">
                       {item.name}
                     </p>
+                    {item.champion && (
+                      <p className="text-[9px] text-white/60 text-center mt-0.5">{item.champion}</p>
+                    )}
                   </div>
                 </motion.div>
               );
