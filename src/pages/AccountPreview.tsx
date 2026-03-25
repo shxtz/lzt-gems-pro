@@ -455,7 +455,30 @@ const AccountPreview = () => {
 
       {/* Hero Banner */}
       <div className="relative">
-        {mainImage ? (
+        {hasInventory ? (
+          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
+            <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
+            <div className="absolute inset-0 flex">
+              {[
+                { src: inv.weapons, label: "🔫 Skins" },
+                { src: inv.agents, label: "🧑 Agentes" },
+                { src: inv.buddies, label: "🔑 Chaveiros" },
+              ].filter(i => i.src).map((item, idx) => (
+                <div key={idx} className="flex-1 relative overflow-hidden border-r border-white/5 last:border-r-0">
+                  <img
+                    src={item.src!}
+                    alt={item.label}
+                    className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700"
+                    style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                  <span className="absolute bottom-3 left-0 right-0 text-center text-[10px] font-display uppercase tracking-wider text-white/80 bg-black/30 backdrop-blur-sm mx-3 py-1 rounded-full">{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          </div>
+        ) : mainImage ? (
           <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
             <img src={mainImage} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
