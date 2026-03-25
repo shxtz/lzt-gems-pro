@@ -394,7 +394,9 @@ const Shop = () => {
 
       {/* Account Detail Modal */}
       <AnimatePresence>
-        {viewAccount && (
+        {viewAccount && (() => {
+          const modalRealCategory = viewAccount.data?.category?.category_name || viewAccount.data?.category?.category_title || getCategoryName(viewAccount.category_id);
+          return (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setViewAccount(null)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-card border border-border/40 rounded-2xl max-w-lg w-full overflow-hidden relative">
               <button onClick={() => setViewAccount(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10"><X className="h-4 w-4" /></button>
@@ -402,18 +404,17 @@ const Shop = () => {
               {/* Banner - uses LZT image or fallback */}
               <div className="h-36 overflow-hidden relative">
                 <img
-                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || getCategoryBanner(getCategoryName(viewAccount.category_id), viewAccount.data)}
+                  src={getAccountImage(viewAccount.data, modalRealCategory) || getCategoryBanner(modalRealCategory, viewAccount.data)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
                   <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
-                    {getCategoryName(viewAccount.category_id)}
+                    {modalRealCategory}
                   </Badge>
                   {(() => {
-                    const catName = getCategoryName(viewAccount.category_id);
-                    if (!catName.toLowerCase().includes("valorant")) return null;
+                    if (!modalRealCategory.toLowerCase().includes("valorant")) return null;
                     const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
                     const icon = getValorantRankIcon(rank);
                     const name = getValorantRankName(rank);
@@ -434,7 +435,7 @@ const Shop = () => {
                 </h3>
 
                 {/* Account Details - per category */}
-                <AccountDetails lztData={viewAccount.data} categoryName={getCategoryName(viewAccount.category_id)} />
+                <AccountDetails lztData={viewAccount.data} categoryName={modalRealCategory} />
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
