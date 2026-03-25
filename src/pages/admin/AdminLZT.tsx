@@ -163,6 +163,42 @@ const AdminLZT = () => {
     onError: (e) => toast.error(e.message),
   });
 
+  // Fetch shop categories to sync
+  const { data: shopCategories } = useQuery({
+    queryKey: ["shop-categories-for-lzt"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("shop_categories").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Sync shop categories into lzt_categories
+  const syncCategories = useMutation({
+    mutationFn: async () => {
+      if (!shopCategories?.length) throw new Error("Nenhuma categoria da loja encontrada");
+      const existingNames = categories?.map((c) => c.name.toLowerCase()) || [];
+      const toCreate = shopCategories.filter(
+        (sc) => !existingNames.includes(sc.name.toLowerCase())
+      );
+      if (!toCreate.length) throw new Error("Todas as categorias já estão sincronizadas");
+      for (const sc of toCreate) {
+        const { error } = await supabase.from("lzt_categories").insert({
+          name: sc.name,
+          icon_url: sc.icon_url || null,
+          sort_order: sc.sort_order || 0,
+        });
+        if (error) throw error;
+      }
+      return toCreate.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+      toast.success(`${count} categoria(s) sincronizada(s)!`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Count active auto-imports
   const activeImports = categories?.filter((c) => c.auto_import).length || 0;
 
@@ -250,34 +286,43 @@ const AdminLZT = () => {
         Configure as URLs de busca, margem de lucro, e ative Auto Import e/ou Auto Delete por categoria.
       </p>
 
-      {/* Add category button */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogTrigger asChild>
-          <button className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground uppercase">
-            <Plus className="h-3 w-3" /> Nova Categoria
-          </button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nova Categoria LZT</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <input
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="Nome da categoria (ex: Valorant BR)"
-              className="w-full rounded-xl border border-border/40 bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-            <button
-              onClick={() => addCategory.mutate(newCatName)}
-              disabled={!newCatName || addCategory.isPending}
-              className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground uppercase"
-            >
-              Criar Categoria
+      {/* Add category buttons */}
+      <div className="flex gap-3 flex-wrap">
+        <button
+          onClick={() => syncCategories.mutate()}
+          disabled={syncCategories.isPending}
+          className="flex items-center gap-2 rounded-xl bg-accent/20 border border-accent/30 px-4 py-2 text-xs font-bold text-accent-foreground uppercase hover:bg-accent/30 transition disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3 w-3 ${syncCategories.isPending ? "animate-spin" : ""}`} /> Sincronizar com Loja
+        </button>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogTrigger asChild>
+            <button className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground uppercase">
+              <Plus className="h-3 w-3" /> Nova Categoria
             </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nova Categoria LZT</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <input
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="Nome da categoria (ex: Valorant BR)"
+                className="w-full rounded-xl border border-border/40 bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
+              <button
+                onClick={() => addCategory.mutate(newCatName)}
+                disabled={!newCatName || addCategory.isPending}
+                className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground uppercase"
+              >
+                Criar Categoria
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Categories list */}
       {isLoading ? (
