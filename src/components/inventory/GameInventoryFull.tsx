@@ -111,6 +111,9 @@ interface GameInventoryData {
   theme: { primary: number[]; accent: number[]; bg: number[] };
   weapons?: InventoryItem[];
   lightcones?: InventoryItem[];
+  skins?: InventoryItem[];
+  champions?: InventoryItem[];
+  stats?: Record<string, any>;
 }
 
 interface Props {
