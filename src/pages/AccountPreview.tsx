@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
+import { getQuickPreviewItems } from "@/lib/valorant-api";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -422,7 +423,14 @@ const AccountPreview = () => {
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
   const inv = getLztInventoryImages(d);
-  const hasInventory = inv.weapons || inv.agents || inv.buddies;
+  
+  // Individual inventory items from valorant-api.com (same as Shop cards)
+  const valInventory = d?.valorantInventory;
+  const individualItems = valInventory && typeof valInventory === "object"
+    ? getQuickPreviewItems(valInventory, 12)
+    : [];
+  const hasIndividualItems = individualItems.length > 0;
+  const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
