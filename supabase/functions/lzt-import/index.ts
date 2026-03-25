@@ -213,21 +213,43 @@ async function importFromUrl(
   const itemsToImport = data.items.slice(0, remaining);
 
   for (const item of itemsToImport) {
+    const lztItemId = String(item.item_id);
     const usdPrice = item.price || 0;
-    const brlPrice = usdPrice * 5.5 * (1 + marginPercent / 100);
+    const brlPrice = Math.round(usdPrice * 5.5 * (1 + marginPercent / 100) * 100) / 100;
 
-    const { error } = await supabase.from("lzt_accounts").upsert(
-      {
-        category_id: categoryId,
-        lzt_item_id: String(item.item_id),
-        title: item.title || `Account #${item.item_id}`,
-        price_usd: usdPrice,
-        price_brl: Math.round(brlPrice * 100) / 100,
-        data: item,
-        status: "available",
-      },
-      { onConflict: "lzt_item_id" }
-    );
+    // Check if already exists
+    const { data: existing } = await supabase
+      .from("lzt_accounts")
+      .select("id, price_usd, price_brl")
+      .eq("lzt_item_id", lztItemId)
+      .maybeSingle();
+
+    if (existing) {
+      // Update price if changed
+      if (existing.price_usd !== usdPrice && usdPrice > 0) {
+        await supabase
+          .from("lzt_accounts")
+          .update({
+            price_usd: usdPrice,
+            price_brl: brlPrice,
+            data: { ...item, price_changed: true, previous_price_brl: existing.price_brl },
+          })
+          .eq("id", existing.id);
+      }
+      skipped++;
+      continue;
+    }
+
+    // Insert new
+    const { error } = await supabase.from("lzt_accounts").insert({
+      category_id: categoryId,
+      lzt_item_id: lztItemId,
+      title: item.title || `Account #${item.item_id}`,
+      price_usd: usdPrice,
+      price_brl: brlPrice,
+      data: item,
+      status: "available",
+    });
 
     if (!error) imported++;
   }
