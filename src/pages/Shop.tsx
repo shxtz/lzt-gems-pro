@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
@@ -147,7 +147,7 @@ const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: str
   return Array.from(countries).sort();
 };
 
-const Shop = () => {
+const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
