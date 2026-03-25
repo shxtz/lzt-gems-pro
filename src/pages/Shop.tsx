@@ -98,45 +98,7 @@ const countryFlag = (code: string): string => {
   return String.fromCodePoint(...codePoints);
 };
 
-const extractInventoryInfo = (data: any) => {
-  if (!data || typeof data !== "object") return [];
-  const info: { label: string; value: string; icon: string }[] = [];
-  const d = data as Record<string, any>;
-  const category = d.category?.category_name || "";
-
-  if (category === "telegram") {
-    if (d.telegram_country) info.push({ label: "País", value: `${countryFlag(d.telegram_country)} ${d.telegram_country}`, icon: "country" });
-    if (d.telegram_last_seen) info.push({ label: "Último Login", value: formatLastSeen(d.telegram_last_seen), icon: "clock" });
-    if (d.telegram_spam_block !== undefined) info.push({ label: "Spam Block", value: d.telegram_spam_block === -1 ? "✅ Limpo" : "⚠️ Sim", icon: "spam" });
-    if (d.telegram_premium !== undefined) info.push({ label: "Premium", value: d.telegram_premium ? "⭐ Sim" : "Não", icon: "premium" });
-    if (d.telegram_password !== undefined) info.push({ label: "2FA", value: d.telegram_password ? "🔒 Ativado" : "Desativado", icon: "2fa" });
-    if (d.published_date) {
-      const days = Math.floor((Date.now() / 1000 - d.published_date) / 86400);
-      info.push({ label: "Idade da Conta", value: `${days}+ dias`, icon: "age" });
-    }
-    if (d.telegram_contacts_count !== undefined) info.push({ label: "Contatos", value: String(d.telegram_contacts_count), icon: "contacts" });
-    if (d.telegram_chats_count !== undefined) info.push({ label: "Chats", value: String(d.telegram_chats_count), icon: "chats" });
-    if (d.telegram_channels_count !== undefined) info.push({ label: "Canais", value: String(d.telegram_channels_count), icon: "channels" });
-    if (d.telegram_dc_id) info.push({ label: "DC", value: `DC${d.telegram_dc_id}`, icon: "dc" });
-  } else if (category === "discord") {
-    if (d.discord_country) info.push({ label: "País", value: `${countryFlag(d.discord_country)} ${d.discord_country}`, icon: "country" });
-    if (d.discordAccountConditionLabel) info.push({ label: "Condição", value: d.discordAccountConditionLabel, icon: "condition" });
-    if (d.discord_register_date) info.push({ label: "Registrado", value: formatLastSeen(d.discord_register_date), icon: "clock" });
-    if (d.discordNitroType && d.discordNitroType !== "No") info.push({ label: "Nitro", value: d.discordNitroType, icon: "premium" });
-    if (d.discord_2fa !== undefined) info.push({ label: "2FA", value: d.discord_2fa ? "🔒 Ativado" : "Desativado", icon: "2fa" });
-    if (d.discord_verified !== undefined) info.push({ label: "Verificado", value: d.discord_verified ? "✅ Sim" : "Não", icon: "verified" });
-    if (d.discord_server_count !== undefined) info.push({ label: "Servidores", value: String(d.discord_server_count), icon: "servers" });
-    if (d.discordLocaleTitle) info.push({ label: "Idioma", value: d.discordLocaleTitle, icon: "locale" });
-  } else {
-    if (d.category?.category_title) info.push({ label: "Plataforma", value: d.category.category_title, icon: "platform" });
-    if (d.published_date) {
-      const days = Math.floor((Date.now() / 1000 - d.published_date) / 86400);
-      info.push({ label: "Idade", value: `${days}+ dias`, icon: "age" });
-    }
-    if (d.itemOriginPhrase) info.push({ label: "Origem", value: d.itemOriginPhrase, icon: "origin" });
-  }
-  return info;
-};
+// extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
 const getUniqueCountries = (accounts: LztAccount[]) => {
   const countries = new Set<string>();
