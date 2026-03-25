@@ -220,6 +220,22 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const getCategoryName = (catId: string) =>
     lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
 
+  // Auto-select category from slug prop
+  useEffect(() => {
+    if (initialCategorySlug && lztCategories && lztCategories.length > 0 && !selectedCategory) {
+      const slugMap: Record<string, string> = {
+        valorant: "VALORANT", fortnite: "FORTNITE", genshin: "GENSHIN IMPACT",
+        lol: "LEAGUE OF LEGENDS", honkai: "HONKAI: STAR RAIL", minecraft: "MINECRAFT",
+        steam: "STEAM", zzz: "ZENLESS ZONE ZERO",
+      };
+      const targetName = slugMap[initialCategorySlug]?.toLowerCase();
+      if (targetName) {
+        const cat = lztCategories.find((c) => c.name.toLowerCase() === targetName);
+        if (cat) setSelectedCategory(cat.id);
+      }
+    }
+  }, [initialCategorySlug, lztCategories]);
+
   const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || [], getCategoryName), [lztAccounts, lztCategories]);
 
   const filteredAccounts = useMemo(() => {
