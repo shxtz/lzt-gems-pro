@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
-  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock
+  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import accountBannerDefault from "@/assets/account-banner-default.jpg";
+import { getLztAccountImageUrl } from "@/lib/lzt-image";
+import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 
 interface LztAccount {
   id: string;
@@ -72,12 +74,9 @@ const getShortId = (lztItemId: string) => {
   return isNaN(num) ? lztItemId.slice(-6) : String(num);
 };
 
-const getAccountImage = (data: any): string | null => {
-  if (!data || typeof data !== "object") return null;
-  const d = data as Record<string, any>;
-  if (Array.isArray(d.imagePreviewLinks) && d.imagePreviewLinks.length > 0) {
-    return d.imagePreviewLinks[0];
-  }
+const getAccountImage = (data: any, categoryName?: string): string | null => {
+  const lztImage = getLztAccountImageUrl(data, categoryName);
+  if (lztImage) return lztImage;
   return null;
 };
 
@@ -99,45 +98,7 @@ const countryFlag = (code: string): string => {
   return String.fromCodePoint(...codePoints);
 };
 
-const extractInventoryInfo = (data: any) => {
-  if (!data || typeof data !== "object") return [];
-  const info: { label: string; value: string; icon: string }[] = [];
-  const d = data as Record<string, any>;
-  const category = d.category?.category_name || "";
-
-  if (category === "telegram") {
-    if (d.telegram_country) info.push({ label: "País", value: `${countryFlag(d.telegram_country)} ${d.telegram_country}`, icon: "country" });
-    if (d.telegram_last_seen) info.push({ label: "Último Login", value: formatLastSeen(d.telegram_last_seen), icon: "clock" });
-    if (d.telegram_spam_block !== undefined) info.push({ label: "Spam Block", value: d.telegram_spam_block === -1 ? "✅ Limpo" : "⚠️ Sim", icon: "spam" });
-    if (d.telegram_premium !== undefined) info.push({ label: "Premium", value: d.telegram_premium ? "⭐ Sim" : "Não", icon: "premium" });
-    if (d.telegram_password !== undefined) info.push({ label: "2FA", value: d.telegram_password ? "🔒 Ativado" : "Desativado", icon: "2fa" });
-    if (d.published_date) {
-      const days = Math.floor((Date.now() / 1000 - d.published_date) / 86400);
-      info.push({ label: "Idade da Conta", value: `${days}+ dias`, icon: "age" });
-    }
-    if (d.telegram_contacts_count !== undefined) info.push({ label: "Contatos", value: String(d.telegram_contacts_count), icon: "contacts" });
-    if (d.telegram_chats_count !== undefined) info.push({ label: "Chats", value: String(d.telegram_chats_count), icon: "chats" });
-    if (d.telegram_channels_count !== undefined) info.push({ label: "Canais", value: String(d.telegram_channels_count), icon: "channels" });
-    if (d.telegram_dc_id) info.push({ label: "DC", value: `DC${d.telegram_dc_id}`, icon: "dc" });
-  } else if (category === "discord") {
-    if (d.discord_country) info.push({ label: "País", value: `${countryFlag(d.discord_country)} ${d.discord_country}`, icon: "country" });
-    if (d.discordAccountConditionLabel) info.push({ label: "Condição", value: d.discordAccountConditionLabel, icon: "condition" });
-    if (d.discord_register_date) info.push({ label: "Registrado", value: formatLastSeen(d.discord_register_date), icon: "clock" });
-    if (d.discordNitroType && d.discordNitroType !== "No") info.push({ label: "Nitro", value: d.discordNitroType, icon: "premium" });
-    if (d.discord_2fa !== undefined) info.push({ label: "2FA", value: d.discord_2fa ? "🔒 Ativado" : "Desativado", icon: "2fa" });
-    if (d.discord_verified !== undefined) info.push({ label: "Verificado", value: d.discord_verified ? "✅ Sim" : "Não", icon: "verified" });
-    if (d.discord_server_count !== undefined) info.push({ label: "Servidores", value: String(d.discord_server_count), icon: "servers" });
-    if (d.discordLocaleTitle) info.push({ label: "Idioma", value: d.discordLocaleTitle, icon: "locale" });
-  } else {
-    if (d.category?.category_title) info.push({ label: "Plataforma", value: d.category.category_title, icon: "platform" });
-    if (d.published_date) {
-      const days = Math.floor((Date.now() / 1000 - d.published_date) / 86400);
-      info.push({ label: "Idade", value: `${days}+ dias`, icon: "age" });
-    }
-    if (d.itemOriginPhrase) info.push({ label: "Origem", value: d.itemOriginPhrase, icon: "origin" });
-  }
-  return info;
-};
+// extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
 const getUniqueCountries = (accounts: LztAccount[]) => {
   const countries = new Set<string>();
@@ -342,6 +303,13 @@ const Shop = () => {
       case "spam": return <Shield className="h-3 w-3 text-primary shrink-0" />;
       case "premium": return <Star className="h-3 w-3 text-primary shrink-0" />;
       case "age": return <Clock className="h-3 w-3 text-primary shrink-0" />;
+      case "rank": return <Trophy className="h-3 w-3 text-primary shrink-0" />;
+      case "level": return <BarChart3 className="h-3 w-3 text-primary shrink-0" />;
+      case "star": return <Star className="h-3 w-3 text-primary shrink-0" />;
+      case "trophy": return <Trophy className="h-3 w-3 text-primary shrink-0" />;
+      case "coins": return <Tag className="h-3 w-3 text-primary shrink-0" />;
+      case "verified": return <Shield className="h-3 w-3 text-primary shrink-0" />;
+      case "platform": return <Gamepad2 className="h-3 w-3 text-primary shrink-0" />;
       default: return <Tag className="h-3 w-3 text-primary shrink-0" />;
     }
   };
@@ -416,15 +384,29 @@ const Shop = () => {
               {/* Banner - uses LZT image or fallback */}
               <div className="h-36 overflow-hidden relative">
                 <img
-                  src={getAccountImage(viewAccount.data) || accountBannerDefault}
+                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || accountBannerDefault}
                   alt=""
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                <div className="absolute bottom-3 left-4">
+                <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
                   <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
                     {getCategoryName(viewAccount.category_id)}
                   </Badge>
+                  {(() => {
+                    const catName = getCategoryName(viewAccount.category_id);
+                    if (!catName.toLowerCase().includes("valorant")) return null;
+                    const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
+                    const icon = getValorantRankIcon(rank);
+                    const name = getValorantRankName(rank);
+                    if (!name) return null;
+                    return (
+                      <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
+                        {icon && <img src={icon} alt={name} className="h-3.5 w-3.5" />}
+                        {name}
+                      </Badge>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -433,25 +415,8 @@ const Shop = () => {
                   CONTA BARATA #{getShortId(viewAccount.lzt_item_id)}
                 </h3>
 
-                {/* Full Inventory Grid */}
-                {(() => {
-                  const info = extractInventoryInfo(viewAccount.data);
-                  return info.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                      {info.map((item, i) => (
-                        <div key={i} className="rounded-xl bg-muted/10 border border-border/20 p-3 flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <InfoIcon type={item.icon} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
-                            <p className="text-sm text-foreground font-medium truncate">{item.value}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null;
-                })()}
+                {/* Account Details - per category */}
+                <AccountDetails lztData={viewAccount.data} categoryName={getCategoryName(viewAccount.category_id)} />
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
@@ -593,9 +558,15 @@ const Shop = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
-                      const inventoryInfo = extractInventoryInfo(account.data).slice(0, 4);
                       const categoryName = getCategoryName(account.category_id);
-                      const accountImg = getAccountImage(account.data);
+                      const inventoryInfo = extractAccountInfo(account.data, categoryName).slice(0, 4);
+                      const accountImg = getAccountImage(account.data, categoryName);
+
+                      // Valorant rank badge
+                      const isValorant = categoryName.toLowerCase().includes("valorant");
+                      const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
+                      const valRankIcon = getValorantRankIcon(valRank);
+                      const valRankName = getValorantRankName(valRank);
 
                       return (
                         <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300">
@@ -610,13 +581,14 @@ const Shop = () => {
                               height={512}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-                            <div className="absolute top-2.5 left-2.5">
+                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                               <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{categoryName}</Badge>
-                            </div>
-                            <div className="absolute top-2.5 right-2.5">
-                              <Badge variant="outline" className="bg-background/70 backdrop-blur-sm text-[10px] border-green-500/30 text-green-400">
-                                <Zap className="h-3 w-3 mr-1" /> Automática
-                              </Badge>
+                              {valRankName && (
+                                <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
+                                  {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
+                                  {valRankName}
+                                </Badge>
+                              )}
                             </div>
                           </div>
 
