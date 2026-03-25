@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
-import { getQuickPreviewItems } from "@/lib/valorant-api";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventoryFull from "@/components/ValorantInventory";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -425,15 +425,28 @@ const AccountPreview = () => {
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
-  const inv = getLztInventoryImages(d);
+  const lztInv = getLztInventoryImages(d);
   
-  // Individual inventory items from valorant-api.com (same as Shop cards)
   const valInventory = d?.valorantInventory;
-  const individualItems = valInventory && typeof valInventory === "object"
-    ? getQuickPreviewItems(valInventory, 12)
-    : [];
-  const hasIndividualItems = individualItems.length > 0;
-  const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
+  const hasValInventory = valInventory && typeof valInventory === "object";
+
+  // Fetch enriched inventory from edge function for the 3x3 grid
+  const { data: enrichedInventory } = useQuery({
+    queryKey: ["enriched-inventory", account?.id],
+    queryFn: async () => {
+      const data = await fetchEdgeJson(
+        `${SUPABASE_URL}/functions/v1/valorant-inventory?account_id=${account!.id}`,
+        { retries: 3, retryDelayMs: 600 }
+      );
+      return data;
+    },
+    enabled: !!account?.id && hasValInventory,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const enrichedSkins = enrichedInventory?.skins || [];
+  const hasIndividualItems = enrichedSkins.length > 0 || hasValInventory;
+  const hasInventory = hasIndividualItems || lztInv.weapons || lztInv.agents || lztInv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
@@ -481,35 +494,38 @@ const AccountPreview = () => {
             {hasIndividualItems ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
                 <div className="grid grid-cols-3 gap-[1px] bg-border/10">
-                  {individualItems.slice(0, 9).map((item, i) => (
-                    <div
-                      key={i}
-                      className="relative aspect-square overflow-hidden bg-card"
-                      style={{
-                        background: item.tier
-                          ? `linear-gradient(135deg, rgba(${item.tier.tile.join(",")},0.25), rgba(0,0,0,0.6))`
-                          : undefined,
-                      }}
-                    >
-                      {item.imageUrl && (
-                        <img
-                          src={item.imageUrl}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-contain p-2.5"
-                          loading="lazy"
-                          style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
-                        />
-                      )}
-                      {item.tier && item.tier.key !== "gray" && (
-                        <div className="absolute top-1.5 right-1.5">
-                          <span
-                            className="block h-3.5 w-3.5 rounded-full border border-white/20"
-                            style={{ backgroundColor: `rgb(${item.tier.outline.join(",")})` }}
+                  {enrichedSkins.slice(0, 9).map((skin: any, i: number) => {
+                    const tier = skin.tier;
+                    const tileColor = tier ? `rgb(${tier.tile[0]}, ${tier.tile[1]}, ${tier.tile[2]})` : undefined;
+                    const outlineColor = tier ? `rgb(${tier.outline[0]}, ${tier.outline[1]}, ${tier.outline[2]})` : undefined;
+                    return (
+                      <div
+                        key={skin.uuid + i}
+                        className="relative aspect-square overflow-hidden bg-card"
+                        style={{
+                          background: tileColor
+                            ? `linear-gradient(135deg, ${tileColor}, rgba(0,0,0,0.6))`
+                            : undefined,
+                          border: outlineColor ? `1px solid ${outlineColor}40` : undefined,
+                        }}
+                      >
+                        {skin.icon && (
+                          <img
+                            src={skin.icon}
+                            alt={skin.name}
+                            className="absolute inset-0 w-full h-full object-contain p-2"
+                            loading="lazy"
+                            style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
                           />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                        {skin.tierIcon && (
+                          <div className="absolute top-1.5 right-1.5">
+                            <img src={skin.tierIcon} alt="" className="h-4 w-4 drop-shadow-md" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : mainImage ? (
