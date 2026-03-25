@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
   BarChart3, Coins, Mail, Phone, Clock, Gamepad2, Loader2, Crosshair,
-  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown
+  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown, Key, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
