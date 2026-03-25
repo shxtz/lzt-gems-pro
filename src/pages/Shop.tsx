@@ -177,19 +177,11 @@ const resolveCategoryKey = (value = "") => {
   return bestMatch?.key ?? null;
 };
 
-const isAccountCategoryCompatible = (account: LztAccount, adminCategoryName: string) => {
-  const realCategory = String(account.data?.category?.category_name || account.data?.category?.category_title || "");
-  if (!realCategory) return true;
-
-  const adminKey = resolveCategoryKey(adminCategoryName);
-  const realKey = resolveCategoryKey(realCategory);
-
-  if (adminKey && realKey) return adminKey === realKey;
-
-  const normalizedAdminCategory = normalizeCategoryText(adminCategoryName);
-  const normalizedRealCategory = normalizeCategoryText(realCategory);
-
-  return !normalizedRealCategory || normalizedAdminCategory === normalizedRealCategory || normalizedAdminCategory.includes(normalizedRealCategory);
+// LZT stores platform category names (riot, mihoyo, telegram, minecraft, etc.)
+// which don't match game names (Fortnite, Genshin Impact, etc.).
+// We trust the admin category assignment as the source of truth.
+const isAccountCategoryCompatible = (_account: LztAccount, _adminCategoryName: string) => {
+  return true;
 };
 
 const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: string) => string) => {
@@ -927,7 +919,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               : [];
                             const hasIndividualItems = individualItems.length > 0;
                             const inv = getLztInventoryImages(account.data);
-                            const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
+                            const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
 
                             const badgeRow = (
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
@@ -992,11 +984,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             }
 
                             if (hasInventory) {
-                              const inventoryItems = [
-                                { src: inv.weapons, label: "Skins" },
-                                { src: inv.agents, label: "Agentes" },
-                                { src: inv.buddies, label: "Chaveiros" },
-                              ].filter(i => i.src);
+                              // Collect all available inventory images dynamically
+                              const inventoryItems = Object.entries(inv)
+                                .filter(([_, src]) => src !== null)
+                                .map(([key, src]) => ({ src: src as string, label: key }))
+                                .slice(0, 4);
 
                               return (
                                 <div className="relative">

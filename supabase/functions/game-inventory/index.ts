@@ -178,13 +178,20 @@ function handleFortnite(data: any) {
 
 function handleMinecraft(data: any) {
   const items: any[] = [];
-  if (data?.minecraft_java || data?.javaEdition || data?.mc_java)
-    items.push({ id: "java", name: "Java Edition", icon: null, type: "edition", rarity: 0, tier: MINECRAFT_TIER });
-  if (data?.minecraft_bedrock || data?.bedrockEdition || data?.mc_bedrock)
-    items.push({ id: "bedrock", name: "Bedrock Edition", icon: null, type: "edition", rarity: 0, tier: MINECRAFT_TIER });
-  const capes: any[] = data?.minecraftCapes || data?.mc_capes || [];
+  // Editions
+  if (data?.minecraft_java) items.push({ id: "java", name: "Java Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/44/Java_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
+  if (data?.minecraft_bedrock) items.push({ id: "bedrock", name: "Bedrock Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/7/73/Bedrock_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
+  // Capes
+  const capes: any[] = data?.minecraft_capes || [];
   for (const cape of capes) {
-    items.push({ id: (cape.name || "cape").toLowerCase().replace(/\s+/g, "-"), name: cape.name || "Capa", icon: cape.icon || null, type: "cape", rarity: 1, tier: { ...MINECRAFT_TIER, name: "Capa" } });
+    const capeName = typeof cape === "string" ? cape : (cape?.name || cape?.title || "Capa");
+    items.push({ id: capeName.toLowerCase().replace(/\s+/g, "-"), name: capeName, icon: typeof cape === "object" ? (cape?.icon || cape?.url || null) : null, type: "cape", rarity: 1, tier: { ...MINECRAFT_TIER, name: "Capa" } });
+  }
+  // Skin preview
+  const mcId = data?.minecraft_id;
+  const mcNick = data?.minecraft_nickname;
+  if (mcId) {
+    items.push({ id: "skin", name: mcNick || "Skin", icon: `https://crafatar.com/renders/body/${mcId}?overlay&scale=4`, type: "skin", rarity: 0, tier: MINECRAFT_TIER });
   }
   return { game: "minecraft", items, tabs: items.length > 0 ? [{ key: "all", label: "Itens", count: items.length }] : [], theme: { primary: [93, 140, 62], accent: [120, 170, 80], bg: [30, 40, 25] } };
 }
