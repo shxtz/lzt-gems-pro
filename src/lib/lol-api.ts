@@ -66,6 +66,10 @@ export function getLoLQuickPreviewItems(lolInventory: any, limit = 9): LoLPrevie
   
   if (skinIds.length === 0) return [];
 
+  const items: LoLPreviewItem[] = [];
+  const interestingSkins = skinIds.filter(id => id % 1000 !== 0);
+  const skinsToShow = interestingSkins.length > 0 ? interestingSkins : skinIds;
+
   for (const skinId of skinsToShow.slice(0, limit)) {
     const { championKey, skinNum } = parseSkinId(skinId);
     const champData = championsCache?.get(championKey);
