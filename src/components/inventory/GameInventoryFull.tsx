@@ -456,6 +456,9 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                     <p className="text-[11px] font-semibold text-white leading-tight line-clamp-2 drop-shadow-md text-center">
                       {item.name}
                     </p>
+                    {item.champion && (
+                      <p className="text-[9px] text-white/60 text-center mt-0.5">{item.champion}</p>
+                    )}
                   </div>
                 </motion.div>
               );
