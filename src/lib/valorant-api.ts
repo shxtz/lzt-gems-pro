@@ -231,6 +231,7 @@ export interface QuickPreviewItem {
   type: "skin" | "agent" | "buddy";
   imageUrl: string;
   tier: ReturnType<typeof getTierStyle>;
+  tierIcon: string | null;
 }
 
 export function getQuickPreviewItems(valorantInventory: Record<string, string[]>, limit = 9): QuickPreviewItem[] {
@@ -245,15 +246,22 @@ export function getQuickPreviewItems(valorantInventory: Record<string, string[]>
 
   for (const uuid of skinUuids.slice(0, limit)) {
     let tier = DEFAULT_TIER;
+    let tierIcon: string | null = null;
     if (hasCachedSkins) {
       const catalogSkin = skinsCache!.get(uuid);
-      if (catalogSkin) tier = getTierStyle(catalogSkin.contentTierUuid);
+      if (catalogSkin) {
+        tier = getTierStyle(catalogSkin.contentTierUuid);
+        if (catalogSkin.contentTierUuid) {
+          tierIcon = `https://media.valorant-api.com/contenttiers/${catalogSkin.contentTierUuid}/displayicon.png`;
+        }
+      }
     }
     items.push({
       uuid,
       type: "skin",
       imageUrl: `https://media.valorant-api.com/weaponskins/${uuid}/displayicon.png`,
       tier,
+      tierIcon,
     });
   }
 
@@ -264,6 +272,7 @@ export function getQuickPreviewItems(valorantInventory: Record<string, string[]>
         type: "agent",
         imageUrl: `https://media.valorant-api.com/agents/${uuid}/displayicon.png`,
         tier: { key: "agent", tile: [30, 70, 60] as [number, number, number], outline: [50, 150, 120] as [number, number, number], label: "Agent" },
+        tierIcon: null,
       });
     }
   }
@@ -275,6 +284,7 @@ export function getQuickPreviewItems(valorantInventory: Record<string, string[]>
         type: "buddy",
         imageUrl: `https://media.valorant-api.com/buddies/${uuid}/displayicon.png`,
         tier: { key: "buddy", tile: [40, 55, 80] as [number, number, number], outline: [70, 110, 160] as [number, number, number], label: "Buddy" },
+        tierIcon: null,
       });
     }
   }
