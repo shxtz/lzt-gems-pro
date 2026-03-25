@@ -17,8 +17,10 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
+import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, type ValorantSkin } from "@/lib/valorant-api";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import ValorantInventory from "@/components/ValorantInventory";
 
 interface LztAccount {
   id: string;
