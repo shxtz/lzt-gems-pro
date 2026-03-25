@@ -599,9 +599,15 @@ const Shop = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
-                      const inventoryInfo = extractInventoryInfo(account.data).slice(0, 4);
                       const categoryName = getCategoryName(account.category_id);
-                      const accountImg = getAccountImage(account.data);
+                      const inventoryInfo = extractAccountInfo(account.data, categoryName).slice(0, 4);
+                      const accountImg = getAccountImage(account.data, categoryName);
+
+                      // Valorant rank badge
+                      const isValorant = categoryName.toLowerCase().includes("valorant");
+                      const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
+                      const valRankIcon = getValorantRankIcon(valRank);
+                      const valRankName = getValorantRankName(valRank);
 
                       return (
                         <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300">
