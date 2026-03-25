@@ -56,12 +56,20 @@ export function AdminSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <img src={logo} alt="Logo" className="h-6 w-6" />
               {!collapsed && (
-                <span className="font-display text-xs text-gradient-gold tracking-wider">
-                  ADMIN
-                </span>
+                <>
+                  <span className="font-display text-xs text-gradient-gold tracking-wider">
+                    ADMIN
+                  </span>
+                  <button
+                    onClick={() => navigate("/loja")}
+                    className="ml-auto text-[10px] px-2 py-0.5 rounded border border-primary/30 text-primary hover:bg-primary/10 transition-colors font-medium tracking-wide"
+                  >
+                    Ver Loja
+                  </button>
+                </>
               )}
             </div>
           </SidebarGroupLabel>
