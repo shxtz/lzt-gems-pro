@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
   BarChart3, Coins, Mail, Phone, Clock, Gamepad2, Loader2, Crosshair,
-  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown
+  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown, Key, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -462,191 +462,179 @@ const AccountPreview = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero Banner */}
-      <div className="relative">
-        {hasIndividualItems ? (
-          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
-            <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
-            <div className="absolute inset-0 grid grid-cols-4 sm:grid-cols-6 gap-[2px] p-2">
-              {individualItems.map((item) => (
-                <div
-                  key={item.uuid}
-                  className="relative overflow-hidden rounded-lg flex items-center justify-center group/tile"
-                  style={{ background: "rgba(0,0,0,0.3)" }}
-                >
-                  <img
-                    src={item.imageUrl}
-                    alt=""
-                    loading="lazy"
-                    className="w-full h-full object-contain p-2 saturate-[1.6] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
-          </div>
-        ) : hasInventory ? (
-          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
-            <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
-            <div className="absolute inset-0 flex">
-              {[
-                { src: inv.weapons, label: "🔫 Skins" },
-                { src: inv.agents, label: "🧑 Agentes" },
-                { src: inv.buddies, label: "🔑 Chaveiros" },
-              ].filter(i => i.src).map((item, idx) => (
-                <div key={idx} className="flex-1 relative overflow-hidden border-r border-white/5 last:border-r-0">
-                  <img
-                    src={item.src!}
-                    alt={item.label}
-                    className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700"
-                    style={{ filter: "saturate(1.2) contrast(1.05)" }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-                  <span className="absolute bottom-3 left-0 right-0 text-center text-[10px] font-display uppercase tracking-wider text-white/80 bg-black/30 backdrop-blur-sm mx-3 py-1 rounded-full">{item.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
-          </div>
-        ) : mainImage ? (
-          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
-            <img src={mainImage} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-          </div>
-        ) : (
-          <div className={`h-56 sm:h-72 lg:h-80 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
-            <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative">
-                <div className="absolute rounded-full opacity-20 blur-3xl" style={{ background: theme.accent, width: 200, height: 200, left: "50%", top: "50%", transform: "translate(-50%, -50%)" }} />
-                <CategoryIcon className="h-24 w-24 text-white/15" strokeWidth={0.8} />
-              </div>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-          </div>
-        )}
-
-        {/* Back button overlay */}
-        <div className="absolute top-20 left-4 sm:left-6 z-10">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="bg-background/60 backdrop-blur-md border-border/30 hover:bg-background/80">
-            <ArrowLeft className="h-4 w-4 mr-1.5" /> Voltar
-          </Button>
-        </div>
+      {/* Back button */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground gap-1.5">
+          <ArrowLeft className="h-4 w-4" /> Voltar para {realCategory}
+        </Button>
       </div>
 
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-16 relative z-10 pb-12">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      {/* Two-column layout */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-[1fr,1fr] gap-6">
 
-          {/* Header Card */}
-          <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-              <div className="flex-1 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{realCategory}</Badge>
-                  {isAvailable ? (
-                    <Badge className="bg-green-500/20 text-green-400 text-[10px] border border-green-500/30">
-                      <Zap className="h-3 w-3 mr-1" /> Disponível
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive" className="text-[10px]">Vendida</Badge>
-                  )}
-                  {origin && <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground">{origin}</Badge>}
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                  CONTA BARATA #{shortId}
-                </h1>
-                {publishedDate && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Calendar className="h-3 w-3" /> Publicada em {publishedDate}
-                  </p>
-                )}
+          {/* LEFT — Inventory Grid */}
+          <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+            {hasIndividualItems ? (
+              <div className="grid grid-cols-3 gap-[3px] p-[3px]">
+                {(() => {
+                  // Separate by type for rows: skins, agents, buddies
+                  const skins = individualItems.filter(i => i.type === "skin").slice(0, 6);
+                  const agents = individualItems.filter(i => i.type === "agent").slice(0, 3);
+                  const buddies = individualItems.filter(i => i.type === "buddy").slice(0, 3);
+                  const rows = [
+                    ...skins.slice(0, 3).map(i => ({ ...i, bgColor: "rgba(90,50,120,0.5)" })),
+                    ...(agents.length > 0
+                      ? agents.slice(0, 3).map(i => ({ ...i, bgColor: "rgba(40,80,70,0.5)" }))
+                      : skins.slice(3, 6).map(i => ({ ...i, bgColor: "rgba(60,60,80,0.5)" }))
+                    ),
+                    ...(buddies.length > 0
+                      ? buddies.slice(0, 3).map(i => ({ ...i, bgColor: "rgba(50,70,90,0.5)" }))
+                      : skins.slice(6, 9).map(i => ({ ...i, bgColor: "rgba(70,50,50,0.5)" }))
+                    ),
+                  ];
+                  // Fill remaining
+                  while (rows.length < 9) {
+                    const extra = individualItems[rows.length];
+                    if (extra) rows.push({ ...extra, bgColor: "rgba(50,50,60,0.5)" });
+                    else break;
+                  }
+                  return rows.map((item, idx) => (
+                    <div
+                      key={item.uuid + idx}
+                      className="aspect-square rounded-xl overflow-hidden relative group/tile flex items-center justify-center"
+                      style={{ background: `linear-gradient(135deg, ${(item as any).bgColor}, rgba(20,20,25,0.8))` }}
+                    >
+                      <img
+                        src={item.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        className="w-[85%] h-[85%] object-contain drop-shadow-lg saturate-[1.4] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
+                      />
+                      {item.type === "skin" && (
+                        <div className="absolute top-1.5 right-1.5">
+                          <span className="text-primary/80 text-[8px]">◆</span>
+                        </div>
+                      )}
+                    </div>
+                  ));
+                })()}
               </div>
-              <div className="sm:text-right space-y-3">
-                <p className="text-3xl font-bold text-primary font-display">R$ {price.toFixed(2)}</p>
-                {isAvailable && (
+            ) : mainImage ? (
+              <div className="aspect-square overflow-hidden relative">
+                <img src={mainImage} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
+              </div>
+            ) : (
+              <div className={`aspect-square overflow-hidden relative bg-gradient-to-br ${theme.gradient} flex items-center justify-center`}>
+                <CategoryIcon className="h-24 w-24 text-white/15" strokeWidth={0.8} />
+              </div>
+            )}
+
+            {/* "DETALHES DA CONTA" section below images */}
+            <div className="p-5 border-t border-border/20">
+              <h3 className="text-xs font-display text-muted-foreground uppercase tracking-wider mb-4">Detalhes da Conta</h3>
+              <GameInventory data={d} cat={realCategory} />
+            </div>
+          </div>
+
+          {/* RIGHT — Product Info */}
+          <div className="space-y-5">
+            {/* Title & Badge */}
+            <div className="space-y-3">
+              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{realCategory}</Badge>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+                CONTA BARATA #{shortId}
+              </h1>
+              {isAvailable && (
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Disponível</span>
+                </div>
+              )}
+            </div>
+
+            {/* Price Card */}
+            <div className="rounded-2xl border border-border/40 bg-card p-5 space-y-4">
+              <p className="text-3xl font-bold text-primary font-display">R$ {price.toFixed(2)}</p>
+              {isAvailable && (
+                <div className="flex gap-3">
                   <Button
                     size="lg"
-                    className="bg-gradient-gold text-primary-foreground font-display w-full sm:w-auto gap-2 shadow-gold"
+                    className="flex-1 bg-gradient-gold text-primary-foreground font-display gap-2 shadow-gold"
                     onClick={() => {
                       if (!user) { toast.error("Faça login para comprar"); navigate("/auth"); return; }
                       navigate("/loja");
                       toast.info("Use a loja para finalizar a compra.");
                     }}
                   >
-                    <ShoppingCart className="h-5 w-5" /> Comprar Agora
+                    <ShoppingCart className="h-5 w-5" /> Comprar agora
                   </Button>
-                )}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-primary"><Zap className="h-3.5 w-3.5" /> Entrega automática</span>
+                <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Pagamento seguro via PIX</span>
+                <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Conta verificada</span>
               </div>
             </div>
-          </div>
 
-          {/* Game-specific Inventory */}
-          <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
-            <div className="flex items-center gap-2 mb-5">
-              <Eye className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-lg text-foreground">Detalhes da Conta</h2>
-            </div>
-            <GameInventory data={d} cat={realCategory} />
-          </div>
-
-          {/* Full Valorant Inventory with enriched data */}
-          {realCategory.toLowerCase().includes("valorant") && (
-            <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
-              <div className="flex items-center gap-2 mb-5">
-                <Crosshair className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-lg text-foreground">Inventário Completo</h2>
+            {/* Full Access Card */}
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-display text-foreground font-semibold">Full Acesso</h3>
+                  <p className="text-[11px] text-muted-foreground">Entrega instantânea e segura</p>
+                </div>
               </div>
-              <ValorantInventoryFull lztData={d} />
-            </div>
-          )}
-
-          {/* Image Gallery */}
-          {allImages.length > 0 && (
-            <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
-              <div className="flex items-center gap-2 mb-5">
-                <Gamepad2 className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-lg text-foreground">Inventário Visual</h2>
-                <span className="text-[10px] text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full ml-auto">{allImages.length} categorias</span>
-              </div>
-              <div className="space-y-5">
-                {allImages.map((img, i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-4 rounded-full bg-primary/60" />
-                      <p className="text-xs font-display text-primary uppercase tracking-wider">{img.label}</p>
-                    </div>
-                    <div className="rounded-xl overflow-hidden border border-border/20 bg-black/20 relative group">
-                      <img
-                        src={img.url}
-                        alt={img.label}
-                        className="w-full h-auto object-contain max-h-[400px] group-hover:scale-[1.02] transition-transform duration-500"
-                        loading="lazy"
-                        style={{ filter: "saturate(1.15) contrast(1.05)" }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-background/50 border border-border/20 p-3 flex items-center gap-2.5">
+                  <Key className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">E-mail + Senha</p>
+                    <p className="text-[10px] text-muted-foreground">Credenciais completas</p>
                   </div>
-                ))}
+                </div>
+                <div className="rounded-xl bg-background/50 border border-border/20 p-3 flex items-center gap-2.5">
+                  <Zap className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Entrega Automática</p>
+                    <p className="text-[10px] text-muted-foreground">Após confirmação do Pix</p>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-background/50 border border-border/20 p-3 flex items-center gap-2.5">
+                  <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Sem Restrições</p>
+                    <p className="text-[10px] text-muted-foreground">Jogue sem limitações</p>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-background/50 border border-border/20 p-3 flex items-center gap-2.5">
+                  <Shield className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Conta Segura</p>
+                    <p className="text-[10px] text-muted-foreground">Verificada e protegida</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-primary pt-1">
+                <Check className="h-3.5 w-3.5" />
+                <span>Todas as contas são verificadas e entregues com <strong>acesso completo</strong>.</span>
               </div>
             </div>
-          )}
 
-          {/* Seller / Trust Info */}
-          {sellerName && (
-            <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
-              <div className="flex items-center gap-2 mb-4">
-                <Shield className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-lg text-foreground">Informações de Confiança</h2>
+            {/* Full Valorant Inventory with enriched data */}
+            {realCategory.toLowerCase().includes("valorant") && (
+              <div className="rounded-2xl border border-border/40 bg-card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Crosshair className="h-5 w-5 text-primary" />
+                  <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Inventário Completo</h2>
+                </div>
+                <ValorantInventoryFull lztData={d} />
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Stat icon={Users} label="Vendedor" value={sellerName} />
-                {soldCount !== undefined && <Stat icon={ShoppingCart} label="Vendas" value={soldCount.toLocaleString()} />}
-                {positiveFeedback > 0 && <Stat icon={Star} label="Avaliações +" value={positiveFeedback.toLocaleString()} highlight />}
-                {negativeFeedback > 0 && <Stat icon={Shield} label="Avaliações -" value={negativeFeedback.toLocaleString()} />}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </motion.div>
       </div>
