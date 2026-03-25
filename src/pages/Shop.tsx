@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
-  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3
+  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3,
+  Send, MessageCircle, Sword, Crosshair
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -18,11 +19,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getLztAccountImageUrl } from "@/lib/lzt-image";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
-import bannerTelegram from "@/assets/banner-telegram.jpg";
-import bannerDiscord from "@/assets/banner-discord.jpg";
-import bannerValorant from "@/assets/banner-valorant.jpg";
-import bannerFortnite from "@/assets/banner-fortnite.jpg";
-import bannerDefault from "@/assets/banner-default.jpg";
 
 interface LztAccount {
   id: string;
@@ -78,18 +74,32 @@ const getShortId = (lztItemId: string) => {
   return isNaN(num) ? lztItemId.slice(-6) : String(num);
 };
 
-const getCategoryBanner = (categoryName?: string, lztData?: any): string => {
-  // Use the LZT data's actual category_name if available
-  const lztCatName = lztData?.category?.category_name || "";
-  const name = (categoryName || lztCatName || "").toLowerCase();
-  if (name.includes("telegram")) return bannerTelegram;
-  if (name.includes("discord")) return bannerDiscord;
-  if (name.includes("valorant")) return bannerValorant;
-  if (name.includes("fortnite")) return bannerFortnite;
-  if (name.includes("genshin")) return bannerValorant;
-  if (name.includes("honkai")) return bannerValorant;
-  if (name.includes("lol") || name.includes("league")) return bannerDiscord;
-  return bannerDefault;
+// Category-specific gradient themes and icons
+const CATEGORY_THEMES: Record<string, { gradient: string; accent: string; Icon: any }> = {
+  telegram: { gradient: "from-[#0088cc] via-[#0077b5] to-[#005f8d]", accent: "#0088cc", Icon: Send },
+  discord: { gradient: "from-[#5865F2] via-[#4752c4] to-[#3c45a5]", accent: "#5865F2", Icon: MessageCircle },
+  valorant: { gradient: "from-[#ff4655] via-[#bd3944] to-[#53212a]", accent: "#ff4655", Icon: Crosshair },
+  fortnite: { gradient: "from-[#9d4dbb] via-[#7b2d9e] to-[#4a1a5e]", accent: "#9d4dbb", Icon: Sword },
+  genshin: { gradient: "from-[#c8a96e] via-[#a88b4a] to-[#6b5a30]", accent: "#c8a96e", Icon: Star },
+  honkai: { gradient: "from-[#6c5ce7] via-[#5a4bd1] to-[#3d2d9e]", accent: "#6c5ce7", Icon: Star },
+  lol: { gradient: "from-[#c89b3c] via-[#a67c2e] to-[#785a1e]", accent: "#c89b3c", Icon: Trophy },
+  steam: { gradient: "from-[#1b2838] via-[#2a475e] to-[#1b2838]", accent: "#66c0f4", Icon: Gamepad2 },
+  default: { gradient: "from-primary/80 via-primary/50 to-primary/20", accent: "hsl(var(--primary))", Icon: Gamepad2 },
+};
+
+const getCategoryTheme = (categoryName: string) => {
+  const name = categoryName.toLowerCase();
+  for (const [key, theme] of Object.entries(CATEGORY_THEMES)) {
+    if (key !== "default" && name.includes(key)) return theme;
+  }
+  return CATEGORY_THEMES.default;
+};
+
+// Generate a unique seed number from item ID for visual variation
+const hashId = (id: string): number => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
 };
 
 const getAccountImage = (data: any, categoryName?: string): string | null => {
@@ -401,33 +411,54 @@ const Shop = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-card border border-border/40 rounded-2xl max-w-lg w-full overflow-hidden relative">
               <button onClick={() => setViewAccount(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10"><X className="h-4 w-4" /></button>
 
-              {/* Banner - uses LZT image or fallback */}
-              <div className="h-36 overflow-hidden relative">
-                <img
-                  src={getAccountImage(viewAccount.data, modalRealCategory) || getCategoryBanner(modalRealCategory, viewAccount.data)}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
-                  <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
-                    {modalRealCategory}
-                  </Badge>
-                  {(() => {
-                    if (!modalRealCategory.toLowerCase().includes("valorant")) return null;
-                    const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
-                    const icon = getValorantRankIcon(rank);
-                    const name = getValorantRankName(rank);
-                    if (!name) return null;
-                    return (
-                      <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
-                        {icon && <img src={icon} alt={name} className="h-3.5 w-3.5" />}
-                        {name}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </div>
+              {/* Banner - CSS dynamic or LZT image */}
+              {(() => {
+                const accountImg = getAccountImage(viewAccount.data, modalRealCategory);
+                const theme = getCategoryTheme(modalRealCategory);
+                const seed = hashId(viewAccount.lzt_item_id);
+                const CategoryIcon = theme.Icon;
+
+                const badges = (
+                  <div className="absolute bottom-3 left-4 flex items-center gap-1.5 z-[2]">
+                    <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">{modalRealCategory}</Badge>
+                    {modalRealCategory.toLowerCase().includes("valorant") && (() => {
+                      const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
+                      const icon = getValorantRankIcon(rank);
+                      const rName = getValorantRankName(rank);
+                      if (!rName) return null;
+                      return (
+                        <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
+                          {icon && <img src={icon} alt={rName} className="h-3.5 w-3.5" />}
+                          {rName}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+                );
+
+                if (accountImg) {
+                  return (
+                    <div className="h-36 overflow-hidden relative">
+                      <img src={accountImg} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+                      {badges}
+                    </div>
+                  );
+                }
+                return (
+                  <div className={`h-36 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
+                    <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative">
+                        <div className="absolute rounded-full opacity-30 blur-3xl" style={{ background: theme.accent, width: 120, height: 120, left: "50%", top: "50%", transform: `translate(-50%, -50%) rotate(${seed % 360}deg)` }} />
+                        <CategoryIcon className="h-16 w-16 text-white/20" strokeWidth={1} />
+                      </div>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                    {badges}
+                  </div>
+                );
+              })()}
 
               <div className="p-6 space-y-4">
                 <h3 className="font-display text-lg text-foreground">
@@ -591,28 +622,54 @@ const Shop = () => {
                       const valRankName = getValorantRankName(valRank);
 
                       return (
-                        <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300">
-                          {/* Banner Image - LZT photo or fallback */}
-                          <div className="h-28 overflow-hidden relative">
-                            <img
-                              src={accountImg || getCategoryBanner(realCategory, account.data)}
-                              alt=""
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              loading="lazy"
-                              width={640}
-                              height={512}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{realCategory}</Badge>
-                              {valRankName && (
-                                <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
-                                  {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
-                                  {valRankName}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
+                        <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
+                          {/* Spotlight hover effect */}
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl z-[1]" style={{ background: `radial-gradient(400px circle at 50% 0%, ${getCategoryTheme(realCategory).accent}15, transparent 60%)` }} />
+
+                          {/* Banner - CSS dynamic or LZT preview image */}
+                          {(() => {
+                            const theme = getCategoryTheme(realCategory);
+                            const seed = hashId(account.lzt_item_id);
+                            const CategoryIcon = theme.Icon;
+                            const angle = seed % 360;
+
+                            const badgeRow = (
+                              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
+                                <Badge className="bg-background/70 backdrop-blur-md text-[10px] uppercase font-display tracking-wider border-0 text-foreground">{realCategory}</Badge>
+                                {valRankName && (
+                                  <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
+                                    {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
+                                    {valRankName}
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+
+                            if (accountImg) {
+                              return (
+                                <div className="h-32 overflow-hidden relative">
+                                  <img src={accountImg} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy" style={{ filter: "saturate(1.15) contrast(1.05)" }} />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+                                  {badgeRow}
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className={`h-32 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
+                                {/* Animated mesh pattern */}
+                                <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3C/g%3E%3C/svg%3E\")" }} />
+                                {/* Floating glow orb */}
+                                <div className="absolute opacity-25 blur-2xl rounded-full group-hover:opacity-40 transition-opacity duration-700" style={{ background: `radial-gradient(circle, ${theme.accent}, transparent)`, width: 100, height: 100, left: `${30 + (seed % 40)}%`, top: `${10 + (seed % 50)}%` }} />
+                                {/* Category icon */}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <CategoryIcon className="h-12 w-12 text-white/10 group-hover:text-white/20 transition-all duration-500 group-hover:scale-110" strokeWidth={1} style={{ transform: `rotate(${angle % 20 - 10}deg)` }} />
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                                {badgeRow}
+                              </div>
+                            );
+                          })()}
 
                           <div className="p-4 space-y-3">
                             <h3 className="font-display text-sm text-foreground font-semibold">
