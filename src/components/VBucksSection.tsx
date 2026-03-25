@@ -66,13 +66,15 @@ const VBucksCard = ({ id, amount, price, originalPrice, popular, index }: VBucks
           <div className="mx-auto mb-6 h-[1px] w-12 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
           <div className="mb-7">
-            {originalPrice && (
-              <>
-                <span className="font-body text-[11px] text-muted-foreground line-through mr-2">
+            {originalPrice && originalPrice > price && (
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="font-body text-[11px] text-muted-foreground line-through">
                   R${Number(originalPrice).toFixed(2).replace(".", ",")}
                 </span>
-                <br />
-              </>
+                <span className="inline-block rounded bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 font-display text-[10px] font-bold text-emerald-400">
+                  -{Math.round(((originalPrice - price) / originalPrice) * 100)}%
+                </span>
+              </div>
             )}
             <span className="font-display text-2xl md:text-3xl font-bold text-foreground">
               R${price.toFixed(2).replace(".", ",")}
