@@ -52,13 +52,19 @@ export interface LoLPreviewItem {
 const LOL_SKIN_TIER = { key: "lol-skin", tile: [50, 40, 20] as [number, number, number], outline: [200, 155, 60] as [number, number, number], label: "Skin" };
 const LOL_CHAMP_TIER = { key: "lol-champ", tile: [25, 35, 50] as [number, number, number], outline: [100, 140, 200] as [number, number, number], label: "Campeão" };
 
-export function getLoLQuickPreviewItems(lolInventory: { Skin?: number[] }, limit = 9): LoLPreviewItem[] {
-  const skinIds = lolInventory?.Skin || [];
-  const items: LoLPreviewItem[] = [];
-
-  // Filter out base skins (skinNum === 0) and pick interesting ones
-  const interestingSkins = skinIds.filter(id => id % 1000 !== 0);
-  const skinsToShow = interestingSkins.length > 0 ? interestingSkins : skinIds;
+export function getLoLQuickPreviewItems(lolInventory: any, limit = 9): LoLPreviewItem[] {
+  if (!lolInventory) return [];
+  
+  // Handle various data formats - Skin could be array, object, or missing
+  let skinIds: number[] = [];
+  const rawSkins = lolInventory?.Skin || lolInventory?.skins || lolInventory?.skin || [];
+  if (Array.isArray(rawSkins)) {
+    skinIds = rawSkins.filter(id => typeof id === "number");
+  } else if (typeof rawSkins === "object" && rawSkins !== null) {
+    skinIds = Object.values(rawSkins).filter(id => typeof id === "number") as number[];
+  }
+  
+  if (skinIds.length === 0) return [];
 
   for (const skinId of skinsToShow.slice(0, limit)) {
     const { championKey, skinNum } = parseSkinId(skinId);
