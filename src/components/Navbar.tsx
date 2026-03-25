@@ -170,21 +170,21 @@ const Navbar = () => {
                     </div>
                     <div className="p-1.5">
                       <button
-                        onClick={() => { setDropdownOpen(false); navigate("/minha-conta"); }}
+                        onClick={() => { setDropdownOpen(false); navigate("/minha-conta?tab=profile"); }}
                         className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-[12px] font-medium text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <User className="h-3.5 w-3.5 text-muted-foreground" />
                         Meu Perfil
                       </button>
                       <button
-                        onClick={() => { setDropdownOpen(false); navigate("/minha-conta"); }}
+                        onClick={() => { setDropdownOpen(false); navigate("/minha-conta?tab=orders"); }}
                         className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-[12px] font-medium text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
                         Meus Pedidos
                       </button>
                       <button
-                        onClick={() => { setDropdownOpen(false); navigate("/minha-conta"); }}
+                        onClick={() => { setDropdownOpen(false); navigate("/minha-conta?tab=security"); }}
                         className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-[12px] font-medium text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <Settings className="h-3.5 w-3.5 text-muted-foreground" />

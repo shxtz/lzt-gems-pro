@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: ReactNod
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={requireAdmin ? "/login" : "/auth"} replace />;
   if (requireAdmin && !isAdmin) return <Navigate to="/" replace />;
 
   return <>{children}</>;

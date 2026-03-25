@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,15 @@ type Tab = "profile" | "orders" | "security";
 const ClientArea = () => {
   const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") as Tab | null;
+  const [activeTab, setActiveTab] = useState<Tab>(tabParam && ["profile", "orders", "security"].includes(tabParam) ? tabParam : "profile");
+
+  useEffect(() => {
+    if (tabParam && ["profile", "orders", "security"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   const [displayName, setDisplayName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
