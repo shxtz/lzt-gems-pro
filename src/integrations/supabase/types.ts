@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      balance_transactions: {
+        Row: {
+          admin_id: string | null
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          admin_id?: string | null
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string | null
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           active: boolean | null
