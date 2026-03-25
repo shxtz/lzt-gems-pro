@@ -226,17 +226,34 @@ export async function enrichValorantInventory(
  * Get preview items for a card (up to 9 skins sorted by rarity).
  * Returns quickly with basic URLs, then can be enriched later.
  */
-export function getQuickPreviewItems(valorantInventory: Record<string, string[]>, limit = 9) {
+export interface QuickPreviewItem {
+  uuid: string;
+  type: "skin" | "agent" | "buddy";
+  imageUrl: string;
+  tier: ReturnType<typeof getTierStyle>;
+}
+
+export function getQuickPreviewItems(valorantInventory: Record<string, string[]>, limit = 9): QuickPreviewItem[] {
   const skinUuids = valorantInventory?.WeaponSkins || [];
   const agentUuids = valorantInventory?.Agent || [];
+  const buddyUuids = valorantInventory?.Buddy || [];
 
-  const items: Array<{ uuid: string; type: "skin" | "agent" | "buddy"; imageUrl: string }> = [];
+  const items: QuickPreviewItem[] = [];
+
+  // Use cache if available for rarity colors
+  const hasCachedSkins = skinsCache !== null;
 
   for (const uuid of skinUuids.slice(0, limit)) {
+    let tier = DEFAULT_TIER;
+    if (hasCachedSkins) {
+      const catalogSkin = skinsCache!.get(uuid);
+      if (catalogSkin) tier = getTierStyle(catalogSkin.contentTierUuid);
+    }
     items.push({
       uuid,
       type: "skin",
       imageUrl: `https://media.valorant-api.com/weaponskins/${uuid}/displayicon.png`,
+      tier,
     });
   }
 
@@ -246,9 +263,29 @@ export function getQuickPreviewItems(valorantInventory: Record<string, string[]>
         uuid,
         type: "agent",
         imageUrl: `https://media.valorant-api.com/agents/${uuid}/displayicon.png`,
+        tier: { key: "agent", tile: [30, 70, 60] as [number, number, number], outline: [50, 150, 120] as [number, number, number], label: "Agent" },
+      });
+    }
+  }
+
+  if (items.length < limit) {
+    for (const uuid of buddyUuids.slice(0, limit - items.length)) {
+      items.push({
+        uuid,
+        type: "buddy",
+        imageUrl: `https://media.valorant-api.com/buddies/${uuid}/displayicon.png`,
+        tier: { key: "buddy", tile: [40, 55, 80] as [number, number, number], outline: [70, 110, 160] as [number, number, number], label: "Buddy" },
       });
     }
   }
 
   return items;
+}
+
+/**
+ * Pre-warm the skins cache so getQuickPreviewItems can use rarity data.
+ * Call once early in the app lifecycle.
+ */
+export async function prewarmSkinsCatalog(): Promise<void> {
+  if (!skinsCache) await getSkinsCatalog();
 }
