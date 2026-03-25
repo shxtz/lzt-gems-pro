@@ -835,6 +835,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
                       const adminCategoryName = getCategoryName(account.category_id);
+                      // Use shop category name for display badge, fallback to admin category name
+                      const displayCategoryName = (() => {
+                        const matchingShop = shopCategories?.find(sc => {
+                          const matchingIds = getMatchingLztCategoryIds(sc);
+                          return matchingIds.includes(account.category_id);
+                        });
+                        return matchingShop?.name || adminCategoryName;
+                      })();
                       // Always use LZT's actual category for display, banners, and info extraction
                       const realCategory = account.data?.category?.category_name || account.data?.category?.category_title || adminCategoryName;
                       const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
@@ -860,7 +868,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                             const badgeRow = (
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
-                                <Badge className="bg-background/70 backdrop-blur-md text-[10px] uppercase font-display tracking-wider border-0 text-foreground">{realCategory}</Badge>
+                                <Badge className="bg-background/70 backdrop-blur-md text-[10px] uppercase font-display tracking-wider border-0 text-foreground">{displayCategoryName}</Badge>
                                 {valRankName && (
                                   <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
                                     {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
