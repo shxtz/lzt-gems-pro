@@ -74,12 +74,9 @@ const getShortId = (lztItemId: string) => {
   return isNaN(num) ? lztItemId.slice(-6) : String(num);
 };
 
-const getAccountImage = (data: any): string | null => {
-  if (!data || typeof data !== "object") return null;
-  const d = data as Record<string, any>;
-  if (Array.isArray(d.imagePreviewLinks) && d.imagePreviewLinks.length > 0) {
-    return d.imagePreviewLinks[0];
-  }
+const getAccountImage = (data: any, categoryName?: string): string | null => {
+  const lztImage = getLztAccountImageUrl(data, categoryName);
+  if (lztImage) return lztImage;
   return null;
 };
 
