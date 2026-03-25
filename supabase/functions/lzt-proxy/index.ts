@@ -19,12 +19,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const response = await fetch(imageUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "image/*,*/*",
-      },
-    });
+    // Build headers — add LZT auth for api.lzt.market URLs that need it
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "image/*,*/*",
+    };
+
+    if (imageUrl.includes("api.lzt.market") && !imageUrl.includes("jwt=")) {
+      const lztApiKey = Deno.env.get("LZT_API_KEY");
+      if (lztApiKey) {
+        headers["Authorization"] = `Bearer ${lztApiKey}`;
+      }
+    }
+
+    const response = await fetch(imageUrl, { headers });
 
     if (!response.ok) {
       return new Response(JSON.stringify({ error: `Failed to fetch image: ${response.status}` }), {

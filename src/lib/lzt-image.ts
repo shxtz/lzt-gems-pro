@@ -30,8 +30,8 @@ function getPreviewFromLztData(lztData: any, categoryName?: string): string | nu
     slug.includes(k)
   )?.[1] || ["weapons", "agents", "skins"];
 
-  // Try download URLs first (higher quality), then direct
-  for (const source of [links.download, links.direct]) {
+  // Try direct URLs first (they contain embedded JWT), then download
+  for (const source of [links.direct, links.download]) {
     if (!source || typeof source !== "object") continue;
     for (const key of keys) {
       if (source[key]) return source[key];
