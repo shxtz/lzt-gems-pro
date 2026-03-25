@@ -163,6 +163,42 @@ const AdminLZT = () => {
     onError: (e) => toast.error(e.message),
   });
 
+  // Fetch shop categories to sync
+  const { data: shopCategories } = useQuery({
+    queryKey: ["shop-categories-for-lzt"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("shop_categories").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Sync shop categories into lzt_categories
+  const syncCategories = useMutation({
+    mutationFn: async () => {
+      if (!shopCategories?.length) throw new Error("Nenhuma categoria da loja encontrada");
+      const existingNames = categories?.map((c) => c.name.toLowerCase()) || [];
+      const toCreate = shopCategories.filter(
+        (sc) => !existingNames.includes(sc.name.toLowerCase())
+      );
+      if (!toCreate.length) throw new Error("Todas as categorias já estão sincronizadas");
+      for (const sc of toCreate) {
+        const { error } = await supabase.from("lzt_categories").insert({
+          name: sc.name,
+          icon_url: sc.icon_url || null,
+          sort_order: sc.sort_order || 0,
+        });
+        if (error) throw error;
+      }
+      return toCreate.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+      toast.success(`${count} categoria(s) sincronizada(s)!`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Count active auto-imports
   const activeImports = categories?.filter((c) => c.auto_import).length || 0;
 
