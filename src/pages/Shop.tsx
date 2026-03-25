@@ -896,13 +896,17 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                         });
                         return matchingShop?.name || adminCategoryName;
                       })();
-                      // Always use LZT's actual category for display, banners, and info extraction
-                      const realCategory = account.data?.category?.category_name || account.data?.category?.category_title || adminCategoryName;
+                      // Use admin category name for game detection (more reliable than LZT platform name)
+                      const realCategory = adminCategoryName;
                       const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
                       const accountImg = getAccountImage(account.data, realCategory);
 
-                      // Valorant rank badge - only if REAL category is valorant
-                      const isValorant = realCategory.toLowerCase().includes("valorant");
+                      // Determine game type from admin category
+                      const catLower = adminCategoryName.toLowerCase();
+                      const isValorant = catLower.includes("valorant") || catLower.includes("riot");
+                      const isLoL = catLower.includes("league") || catLower.includes("lol");
+
+                      // Valorant rank badge - only for Valorant accounts
                       const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
                       const valRankIcon = getValorantRankIcon(valRank);
                       const valRankName = getValorantRankName(valRank);
@@ -918,10 +922,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const seed = hashId(account.lzt_item_id);
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
-                            const valInventory = account.data?.valorantInventory;
-                            const individualItems = valInventory && typeof valInventory === "object"
-                              ? getQuickPreviewItems(valInventory, 9)
-                              : [];
+
+                            // Choose inventory based on game type
+                            let individualItems: (QuickPreviewItem | LoLPreviewItem)[] = [];
+                            if (isLoL && account.data?.lolInventory) {
+                              individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
+                            } else if (!isLoL && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
+                              individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
+                            }
                             const hasIndividualItems = individualItems.length > 0;
                             const inv = getLztInventoryImages(account.data);
                             const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
