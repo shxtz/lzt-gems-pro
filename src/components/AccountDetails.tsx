@@ -55,7 +55,7 @@ const DetailCard = ({ icon: Icon, label, value, image }: { icon: any; label: str
     </div>
     <div className="min-w-0">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-sm text-foreground font-medium truncate">{String(value)}</p>
+      <p className="text-sm text-foreground font-medium break-words">{String(value)}</p>
     </div>
   </div>
 );
