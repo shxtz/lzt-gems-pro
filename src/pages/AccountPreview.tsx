@@ -592,16 +592,6 @@ const AccountPreview = () => {
               </div>
             </div>
 
-            {/* Full Valorant Inventory with enriched data */}
-            {realCategory.toLowerCase().includes("valorant") && (
-              <div className="rounded-2xl border border-border/40 bg-card p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Crosshair className="h-5 w-5 text-primary" />
-                  <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Inventário Completo</h2>
-                </div>
-                <ValorantInventoryFull lztData={d} />
-              </div>
-            )}
           </div>
 
         </motion.div>
