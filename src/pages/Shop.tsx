@@ -128,7 +128,7 @@ const countryFlag = (code: string): string => {
 
 // extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
-const isAccountCategoryCompatible = () => {
+const isAccountCategoryCompatible = (..._args: any[]) => {
   // Always show accounts - the admin assigns them to the category they want
   return true;
 };
