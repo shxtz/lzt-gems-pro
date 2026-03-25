@@ -681,6 +681,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 {/* Account Details - per category */}
                 <AccountDetails lztData={viewAccount.data} categoryName={modalRealCategory} />
 
+                {/* Full Valorant Inventory */}
+                {modalRealCategory.toLowerCase().includes("valorant") && (
+                  <ValorantInventory lztData={viewAccount.data} compact />
+                )}
+
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
                   <Button onClick={() => { setViewAccount(null); handleBuyAccount(viewAccount); }} disabled={purchasing === viewAccount.id} className="bg-gradient-gold text-primary-foreground font-display gap-2">
