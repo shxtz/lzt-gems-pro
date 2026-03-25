@@ -1,33 +1,143 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const FloatingChat = () => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<{ text: string; from: "user" | "bot" }[]>([
+  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<{ text: string; from: "user" | "bot"; id?: string }[]>([
     { text: "Olá! 👋 Como posso te ajudar hoje?", from: "bot" },
   ]);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
+  // Load or create ticket when chat opens
+  useEffect(() => {
+    if (!isOpen || !user) return;
+
+    const loadTicket = async () => {
+      // Find existing open ticket
+      const { data: existing } = await supabase
+        .from("support_tickets")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        setTicketId(existing.id);
+        // Load messages
+        const { data: msgs } = await supabase
+          .from("ticket_messages")
+          .select("*")
+          .eq("ticket_id", existing.id)
+          .order("created_at", { ascending: true });
+
+        if (msgs && msgs.length > 0) {
+          setMessages([
+            { text: "Olá! 👋 Como posso te ajudar hoje?", from: "bot" },
+            ...msgs.map((m) => ({
+              text: m.message,
+              from: (m.is_admin ? "bot" : "user") as "user" | "bot",
+              id: m.id,
+            })),
+          ]);
+        }
+      }
+    };
+
+    loadTicket();
+  }, [isOpen, user]);
+
+  // Realtime subscription for new messages
+  useEffect(() => {
+    if (!ticketId) return;
+
+    const channel = supabase
+      .channel(`ticket-${ticketId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "ticket_messages",
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        (payload) => {
+          const msg = payload.new as any;
+          if (msg.is_admin) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, { text: msg.message, from: "bot", id: msg.id }];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ticketId]);
+
+  const handleSend = async () => {
     if (!message.trim()) return;
-    setMessages((prev) => [...prev, { text: message, from: "user" }]);
+
+    if (!user) {
+      toast.error("Faça login para enviar mensagens");
+      return;
+    }
+
+    const text = message.trim();
     setMessage("");
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { text: "Obrigado pela mensagem! Em breve um atendente responderá. 😊", from: "bot" },
-      ]);
-    }, 1000);
+    setSending(true);
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    setMessages((prev) => [...prev, { text, from: "user", id: tempId }]);
+
+    try {
+      let currentTicketId = ticketId;
+
+      if (!currentTicketId) {
+        const { data: ticket, error } = await supabase
+          .from("support_tickets")
+          .insert({ user_id: user.id, subject: text.slice(0, 100) })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        currentTicketId = ticket.id;
+        setTicketId(ticket.id);
+      }
+
+      await supabase.from("ticket_messages").insert({
+        ticket_id: currentTicketId,
+        sender_id: user.id,
+        message: text,
+        is_admin: false,
+      });
+    } catch {
+      toast.error("Erro ao enviar mensagem");
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -35,7 +145,7 @@ const FloatingChat = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="mb-4 w-[340px] rounded-3xl border border-border/50 glass shadow-card-hover overflow-hidden"
+            className="mb-4 w-[calc(100vw-2rem)] sm:w-[340px] rounded-3xl border border-border/50 glass shadow-card-hover overflow-hidden"
           >
             {/* Header */}
             <div className="relative overflow-hidden px-5 py-4">
@@ -66,10 +176,10 @@ const FloatingChat = () => {
             </div>
 
             {/* Messages */}
-            <div className="h-72 overflow-y-auto p-4 space-y-3">
+            <div className="h-64 sm:h-72 overflow-y-auto p-4 space-y-3">
               {messages.map((msg, i) => (
                 <motion.div
-                  key={i}
+                  key={msg.id || i}
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.2 }}
@@ -105,15 +215,18 @@ const FloatingChat = () => {
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 rounded-xl border border-border/30 bg-muted/50 px-4 py-2.5 text-[13px] text-foreground font-body placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/30 transition-all"
+                onKeyDown={(e) => e.key === "Enter" && !sending && handleSend()}
+                placeholder={user ? "Digite sua mensagem..." : "Faça login para enviar..."}
+                disabled={!user || sending}
+                maxLength={500}
+                className="flex-1 rounded-xl border border-border/30 bg-muted/50 px-4 py-2.5 text-[13px] text-foreground font-body placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/30 transition-all disabled:opacity-50"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSend}
-                className="rounded-xl bg-gradient-gold p-2.5 text-primary-foreground transition-all hover:shadow-gold"
+                disabled={!user || sending || !message.trim()}
+                className="rounded-xl bg-gradient-gold p-2.5 text-primary-foreground transition-all hover:shadow-gold disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </motion.button>
@@ -122,9 +235,8 @@ const FloatingChat = () => {
         )}
       </AnimatePresence>
 
-      {/* Floating button with ripple */}
+      {/* Floating button */}
       <div className="relative">
-        {/* Ripple rings */}
         {!isOpen && (
           <>
             <motion.div
@@ -143,7 +255,7 @@ const FloatingChat = () => {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(!isOpen)}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-gold text-primary-foreground shadow-gold-intense z-10"
+          className="relative flex h-13 w-13 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-gradient-gold text-primary-foreground shadow-gold-intense z-10"
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
