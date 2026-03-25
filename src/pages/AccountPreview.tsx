@@ -566,13 +566,24 @@ const AccountPreview = () => {
               <div className="flex items-center gap-2 mb-5">
                 <Gamepad2 className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-lg text-foreground">Inventário Visual</h2>
+                <span className="text-[10px] text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full ml-auto">{allImages.length} categorias</span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {allImages.map((img, i) => (
                   <div key={i} className="space-y-2">
-                    <p className="text-xs font-display text-muted-foreground uppercase tracking-wider">{img.label}</p>
-                    <div className="rounded-xl overflow-hidden border border-border/20 bg-muted/10">
-                      <img src={img.url} alt={img.label} className="w-full h-auto object-contain max-h-[400px]" loading="lazy" style={{ filter: "saturate(1.1) contrast(1.05)" }} />
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-4 rounded-full bg-primary/60" />
+                      <p className="text-xs font-display text-primary uppercase tracking-wider">{img.label}</p>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-border/20 bg-black/20 relative group">
+                      <img
+                        src={img.url}
+                        alt={img.label}
+                        className="w-full h-auto object-contain max-h-[400px] group-hover:scale-[1.02] transition-transform duration-500"
+                        loading="lazy"
+                        style={{ filter: "saturate(1.15) contrast(1.05)" }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                   </div>
                 ))}
