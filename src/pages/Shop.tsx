@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
-  Gamepad2, Star, Tag
+  Gamepad2, Star, Tag, Filter, SlidersHorizontal, Globe, Shield, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,9 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import accountBannerTelegram from "@/assets/account-banner-telegram.jpg";
+import accountBannerValorant from "@/assets/account-banner-valorant.jpg";
+import accountBannerDefault from "@/assets/account-banner-default.jpg";
 
 interface LztAccount {
   id: string;
@@ -66,6 +69,111 @@ interface PixData {
   lztAccountId?: string;
 }
 
+// Helper to generate a short random-looking ID from lzt_item_id
+const getShortId = (lztItemId: string) => {
+  const num = parseInt(lztItemId.slice(-6), 10);
+  return isNaN(num) ? lztItemId.slice(-6) : String(num);
+};
+
+// Helper to get banner image from category name
+const getCategoryBanner = (categoryName: string) => {
+  const lower = categoryName.toLowerCase();
+  if (lower.includes("telegram")) return accountBannerTelegram;
+  if (lower.includes("valorant")) return accountBannerValorant;
+  return accountBannerDefault;
+};
+
+// Extract useful inventory info from account data
+const extractInventoryInfo = (data: any) => {
+  if (!data || typeof data !== "object") return [];
+
+  const info: { label: string; value: string; icon?: string }[] = [];
+  const d = data as Record<string, any>;
+
+  // Category
+  if (d.category?.category_title) {
+    info.push({ label: "Plataforma", value: d.category.category_title, icon: "platform" });
+  }
+
+  // Country
+  if (d.telegram_country) {
+    info.push({ label: "País", value: d.telegram_country, icon: "country" });
+  }
+
+  // Premium
+  if (d.telegram_premium !== undefined) {
+    info.push({ label: "Premium", value: d.telegram_premium ? "Sim" : "Não", icon: "premium" });
+  }
+
+  // Age / published date
+  if (d.published_date) {
+    const days = Math.floor((Date.now() / 1000 - d.published_date) / 86400);
+    info.push({ label: "Idade", value: `${days}+ dias`, icon: "age" });
+  }
+
+  // Contacts
+  if (d.telegram_contacts_count !== undefined) {
+    info.push({ label: "Contatos", value: String(d.telegram_contacts_count), icon: "contacts" });
+  }
+
+  // Chats
+  if (d.telegram_chats_count !== undefined) {
+    info.push({ label: "Chats", value: String(d.telegram_chats_count), icon: "chats" });
+  }
+
+  // Channels
+  if (d.telegram_channels_count !== undefined) {
+    info.push({ label: "Canais", value: String(d.telegram_channels_count), icon: "channels" });
+  }
+
+  // Bots
+  if (d.telegram_bots_count !== undefined) {
+    info.push({ label: "Bots", value: String(d.telegram_bots_count), icon: "bots" });
+  }
+
+  // Stars
+  if (d.telegram_stars_count !== undefined && d.telegram_stars_count > 0) {
+    info.push({ label: "Stars", value: String(d.telegram_stars_count), icon: "stars" });
+  }
+
+  // Gifts
+  if (d.telegram_gifts_count !== undefined && d.telegram_gifts_count > 0) {
+    info.push({ label: "Presentes", value: String(d.telegram_gifts_count), icon: "gifts" });
+  }
+
+  // Spam block
+  if (d.telegram_spam_block !== undefined) {
+    info.push({ label: "Spam Block", value: d.telegram_spam_block === -1 ? "Limpo" : "Sim", icon: "spam" });
+  }
+
+  // 2FA / Password
+  if (d.telegram_password !== undefined) {
+    info.push({ label: "2FA", value: d.telegram_password ? "Ativado" : "Desativado", icon: "2fa" });
+  }
+
+  // Origin
+  if (d.itemOriginPhrase) {
+    info.push({ label: "Origem", value: d.itemOriginPhrase, icon: "origin" });
+  }
+
+  // Seller reputation
+  if (d.seller?.sold_items_count) {
+    info.push({ label: "Vendas do seller", value: String(d.seller.sold_items_count), icon: "seller" });
+  }
+
+  return info;
+};
+
+// Get unique countries from accounts
+const getUniqueCountries = (accounts: LztAccount[]) => {
+  const countries = new Set<string>();
+  accounts.forEach((a) => {
+    const country = (a.data as any)?.telegram_country;
+    if (country) countries.add(country);
+  });
+  return Array.from(countries).sort();
+};
+
 const Shop = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -80,6 +188,12 @@ const Shop = () => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [viewAccount, setViewAccount] = useState<LztAccount | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterCountry, setFilterCountry] = useState<string>("");
+  const [filterPriceMax, setFilterPriceMax] = useState<string>("");
+  const [filterSpamFree, setFilterSpamFree] = useState(false);
+  const [filterPremium, setFilterPremium] = useState(false);
+  const [sortBy, setSortBy] = useState<"recent" | "price_asc" | "price_desc">("recent");
 
   // LZT Data
   const { data: lztCategories } = useQuery({
@@ -152,12 +266,46 @@ const Shop = () => {
     refetchInterval: 15000,
   });
 
-  // Filtered LZT accounts
-  const filteredAccounts = lztAccounts?.filter((a) => {
-    const matchCategory = !selectedCategory || a.category_id === selectedCategory;
-    const matchSearch = !searchTerm || a.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchCategory && matchSearch;
-  });
+  // Available countries for filter
+  const availableCountries = useMemo(
+    () => getUniqueCountries(lztAccounts || []),
+    [lztAccounts]
+  );
+
+  // Filtered & sorted LZT accounts
+  const filteredAccounts = useMemo(() => {
+    let accounts = lztAccounts?.filter((a) => {
+      const matchCategory = !selectedCategory || a.category_id === selectedCategory;
+      const matchSearch = !searchTerm || 
+        `CONTA BARATA #${getShortId(a.lzt_item_id)}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getCategoryName(a.category_id).toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Country filter
+      const d = a.data as any;
+      const matchCountry = !filterCountry || d?.telegram_country === filterCountry;
+      
+      // Price filter
+      const matchPrice = !filterPriceMax || Number(a.price_brl) <= Number(filterPriceMax);
+      
+      // Spam free filter
+      const matchSpam = !filterSpamFree || d?.telegram_spam_block === -1;
+      
+      // Premium filter
+      const matchPremium = !filterPremium || d?.telegram_premium === 1;
+
+      return matchCategory && matchSearch && matchCountry && matchPrice && matchSpam && matchPremium;
+    }) || [];
+
+    // Sort
+    if (sortBy === "price_asc") {
+      accounts.sort((a, b) => Number(a.price_brl) - Number(b.price_brl));
+    } else if (sortBy === "price_desc") {
+      accounts.sort((a, b) => Number(b.price_brl) - Number(a.price_brl));
+    }
+    // "recent" is default order from query
+
+    return accounts;
+  }, [lztAccounts, selectedCategory, searchTerm, filterCountry, filterPriceMax, filterSpamFree, filterPremium, sortBy]);
 
   // Count per category
   const getCategoryCount = (catId: string) =>
@@ -180,7 +328,8 @@ const Shop = () => {
     return matchSearch && matchCategory;
   });
 
-  const productCategories = [...new Set(products?.map((p) => p.category) || [])];
+  const getCategoryName = (catId: string) =>
+    lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
 
   // Buy LZT account
   const handleBuyAccount = async (account: LztAccount) => {
@@ -189,7 +338,6 @@ const Shop = () => {
       navigate("/auth");
       return;
     }
-
     setPurchasing(account.id);
     try {
       const { data: order, error: orderError } = await supabase
@@ -203,31 +351,27 @@ const Shop = () => {
         })
         .select()
         .single();
-
       if (orderError) throw orderError;
 
+      const accountName = `CONTA BARATA #${getShortId(account.lzt_item_id)}`;
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", {
         body: {
           orderId: order.id,
           amount: account.price_brl,
-          description: `${account.title || "Conta"} - Loja`,
+          description: `${accountName} - Loja`,
         },
       });
-
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
 
-      await supabase
-        .from("orders")
-        .update({ payment_id: pixResponse.txid })
-        .eq("id", order.id);
+      await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
 
       setPixData({
         qrcode: pixResponse.qrcode,
         copiaecola: pixResponse.copiaecola,
         txid: pixResponse.txid,
         orderId: order.id,
-        variationName: account.title || "Conta",
+        variationName: accountName,
         amount: account.price_brl,
         lztAccountId: account.id,
       });
@@ -277,10 +421,7 @@ const Shop = () => {
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
 
-      await supabase
-        .from("orders")
-        .update({ payment_id: pixResponse.txid })
-        .eq("id", order.id);
+      await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
 
       setPixData({
         qrcode: pixResponse.qrcode,
@@ -317,7 +458,6 @@ const Shop = () => {
         await supabase.from("orders").update({ status: "paid" }).eq("id", pixData.orderId);
         setDeliveredCredential({ credential: data.credential, name: pixData.variationName });
       } else if (pixData.lztAccountId) {
-        // Mark LZT account as sold
         const { error } = await supabase
           .from("lzt_accounts")
           .update({
@@ -328,12 +468,10 @@ const Shop = () => {
           })
           .eq("id", pixData.lztAccountId)
           .eq("status", "available");
-
         if (error) throw error;
 
         await supabase.from("orders").update({ status: "paid" }).eq("id", pixData.orderId);
 
-        // Get account data for delivery
         const { data: soldAccount } = await supabase
           .from("lzt_accounts")
           .select("*")
@@ -373,8 +511,7 @@ const Shop = () => {
     }
   };
 
-  const getCategoryName = (catId: string) =>
-    lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
+  const activeFiltersCount = [filterCountry, filterPriceMax, filterSpamFree, filterPremium].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -486,41 +623,67 @@ const Shop = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-card border border-border/40 rounded-2xl p-6 max-w-lg w-full space-y-4 relative"
+              className="bg-card border border-border/40 rounded-2xl max-w-lg w-full overflow-hidden relative"
             >
-              <button onClick={() => setViewAccount(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <button onClick={() => setViewAccount(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10">
                 <X className="h-4 w-4" />
               </button>
-              <div>
-                <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display mb-2">
-                  {getCategoryName(viewAccount.category_id)}
-                </Badge>
-                <h3 className="font-display text-lg text-foreground">{viewAccount.title || `Conta #${viewAccount.lzt_item_id}`}</h3>
+
+              {/* Banner image */}
+              <div className="h-36 overflow-hidden relative">
+                <img
+                  src={getCategoryBanner(getCategoryName(viewAccount.category_id))}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+                <div className="absolute bottom-3 left-4">
+                  <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
+                    {getCategoryName(viewAccount.category_id)}
+                  </Badge>
+                </div>
               </div>
 
-              {viewAccount.data && typeof viewAccount.data === "object" && (
-                <div className="rounded-xl bg-muted/10 border border-border/20 p-4 space-y-2 max-h-64 overflow-y-auto">
-                  {Object.entries(viewAccount.data as Record<string, any>).map(([key, value]) => (
-                    <div key={key} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
-                      <span className="text-foreground font-medium truncate max-w-[200px]">{String(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="p-6 space-y-4">
+                <h3 className="font-display text-lg text-foreground">
+                  CONTA BARATA #{getShortId(viewAccount.lzt_item_id)}
+                </h3>
 
-              <div className="flex items-center justify-between pt-2">
-                <div>
+                {/* Inventory Grid */}
+                {(() => {
+                  const info = extractInventoryInfo(viewAccount.data);
+                  return info.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                      {info.map((item, i) => (
+                        <div key={i} className="rounded-xl bg-muted/10 border border-border/20 p-3 flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            {item.icon === "country" ? <Globe className="h-4 w-4 text-primary" /> :
+                             item.icon === "premium" ? <Star className="h-4 w-4 text-primary" /> :
+                             item.icon === "age" ? <Clock className="h-4 w-4 text-primary" /> :
+                             item.icon === "spam" ? <Shield className="h-4 w-4 text-primary" /> :
+                             <Tag className="h-4 w-4 text-primary" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                            <p className="text-sm text-foreground font-medium truncate">{item.value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
+                  <Button
+                    onClick={() => { setViewAccount(null); handleBuyAccount(viewAccount); }}
+                    disabled={purchasing === viewAccount.id}
+                    className="bg-gradient-gold text-primary-foreground font-display gap-2"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Comprar Agora
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => { setViewAccount(null); handleBuyAccount(viewAccount); }}
-                  disabled={purchasing === viewAccount.id}
-                  className="bg-gradient-gold text-primary-foreground font-display gap-2"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Comprar Agora
-                </Button>
               </div>
             </motion.div>
           </motion.div>
@@ -529,7 +692,7 @@ const Shop = () => {
 
       <div className="pt-16">
         <div className="flex">
-          {/* Sidebar - Categories */}
+          {/* Sidebar */}
           <aside className="hidden lg:flex flex-col w-64 min-h-[calc(100vh-4rem)] border-r border-border/30 bg-card/50 sticky top-16 overflow-y-auto">
             <div className="p-4">
               <h3 className="font-display text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Categorias</h3>
@@ -614,24 +777,59 @@ const Shop = () => {
                   />
                 </div>
 
-                {/* Mobile tabs */}
-                <div className="flex lg:hidden gap-2">
-                  <button
-                    onClick={() => setSelectedTab("contas")}
-                    className={`px-4 py-2 rounded-xl text-xs font-display uppercase tracking-wider transition-all ${
-                      selectedTab === "contas" ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"
-                    }`}
-                  >
-                    Contas
-                  </button>
-                  <button
-                    onClick={() => setSelectedTab("produtos")}
-                    className={`px-4 py-2 rounded-xl text-xs font-display uppercase tracking-wider transition-all ${
-                      selectedTab === "produtos" ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"
-                    }`}
-                  >
-                    Produtos
-                  </button>
+                <div className="flex items-center gap-2">
+                  {/* Filter toggle */}
+                  {selectedTab === "contas" && (
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${
+                        showFilters || activeFiltersCount > 0
+                          ? "bg-primary/10 border-primary/30 text-primary"
+                          : "border-border/40 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <SlidersHorizontal className="h-3.5 w-3.5" />
+                      Filtros
+                      {activeFiltersCount > 0 && (
+                        <span className="bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                          {activeFiltersCount}
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Sort */}
+                  {selectedTab === "contas" && (
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="rounded-xl border border-border/40 bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    >
+                      <option value="recent">Mais recentes</option>
+                      <option value="price_asc">Menor preço</option>
+                      <option value="price_desc">Maior preço</option>
+                    </select>
+                  )}
+
+                  {/* Mobile tabs */}
+                  <div className="flex lg:hidden gap-2">
+                    <button
+                      onClick={() => setSelectedTab("contas")}
+                      className={`px-4 py-2 rounded-xl text-xs font-display uppercase tracking-wider transition-all ${
+                        selectedTab === "contas" ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"
+                      }`}
+                    >
+                      Contas
+                    </button>
+                    <button
+                      onClick={() => setSelectedTab("produtos")}
+                      className={`px-4 py-2 rounded-xl text-xs font-display uppercase tracking-wider transition-all ${
+                        selectedTab === "produtos" ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"
+                      }`}
+                    >
+                      Produtos
+                    </button>
+                  </div>
                 </div>
 
                 {/* Mobile category filter */}
@@ -659,6 +857,77 @@ const Shop = () => {
                   </div>
                 )}
               </div>
+
+              {/* Filters Panel */}
+              <AnimatePresence>
+                {showFilters && selectedTab === "contas" && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-4 flex flex-wrap items-end gap-4">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1.5">País</label>
+                        <select
+                          value={filterCountry}
+                          onChange={(e) => setFilterCountry(e.target.value)}
+                          className="rounded-xl border border-border/40 bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 min-w-[120px]"
+                        >
+                          <option value="">Todos</option>
+                          {availableCountries.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1.5">Preço máximo (R$)</label>
+                        <input
+                          type="number"
+                          value={filterPriceMax}
+                          onChange={(e) => setFilterPriceMax(e.target.value)}
+                          placeholder="Ex: 50"
+                          className="rounded-xl border border-border/40 bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 w-28"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border border-border/40 bg-background text-xs text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={filterSpamFree}
+                          onChange={(e) => setFilterSpamFree(e.target.checked)}
+                          className="rounded border-border accent-primary"
+                        />
+                        <Shield className="h-3.5 w-3.5 text-primary" />
+                        Sem Spam Block
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border border-border/40 bg-background text-xs text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={filterPremium}
+                          onChange={(e) => setFilterPremium(e.target.checked)}
+                          className="rounded border-border accent-primary"
+                        />
+                        <Star className="h-3.5 w-3.5 text-primary" />
+                        Premium
+                      </label>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          onClick={() => {
+                            setFilterCountry("");
+                            setFilterPriceMax("");
+                            setFilterSpamFree(false);
+                            setFilterPremium(false);
+                          }}
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          Limpar filtros
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="p-4 sm:p-6">
@@ -689,82 +958,118 @@ const Shop = () => {
               {selectedTab === "contas" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   <AnimatePresence mode="popLayout">
-                    {filteredAccounts?.map((account, index) => (
-                      <motion.div
-                        key={account.id}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300"
-                      >
-                        {/* Card Header */}
-                        <div className="bg-muted/10 px-4 py-3 flex items-center justify-between border-b border-border/20">
-                          <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">
-                            {getCategoryName(account.category_id)}
-                          </Badge>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Zap className="h-3 w-3 text-green-500" />
-                            <span className="text-[10px] text-green-500 font-medium">Automática</span>
-                          </div>
-                        </div>
+                    {filteredAccounts?.map((account, index) => {
+                      const inventoryInfo = extractInventoryInfo(account.data).slice(0, 4);
+                      const categoryName = getCategoryName(account.category_id);
+                      const banner = getCategoryBanner(categoryName);
 
-                        {/* Card Body */}
-                        <div className="p-4 space-y-3">
-                          <h3 className="font-display text-sm text-foreground line-clamp-2 min-h-[2.5rem]">
-                            {account.title || `Conta #${account.lzt_item_id}`}
-                          </h3>
-
-                          {/* Quick Info from data */}
-                          {account.data && typeof account.data === "object" && (
-                            <div className="space-y-1">
-                              {Object.entries(account.data as Record<string, any>).slice(0, 3).map(([key, value]) => (
-                                <div key={key} className="flex justify-between text-[11px]">
-                                  <span className="text-muted-foreground capitalize truncate mr-2">{key.replace(/_/g, " ")}</span>
-                                  <span className="text-foreground font-medium truncate max-w-[120px]">{String(value)}</span>
-                                </div>
-                              ))}
+                      return (
+                        <motion.div
+                          key={account.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ delay: Math.min(index * 0.02, 0.3) }}
+                          className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300"
+                        >
+                          {/* Banner Image */}
+                          <div className="h-28 overflow-hidden relative">
+                            <img
+                              src={banner}
+                              alt=""
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              width={640}
+                              height={512}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                            <div className="absolute top-2.5 left-2.5">
+                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">
+                                {categoryName}
+                              </Badge>
                             </div>
-                          )}
-
-                          {/* Price & Actions */}
-                          <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                            <span className="text-xl font-bold text-primary">
-                              R$ {Number(account.price_brl).toFixed(2)}
-                            </span>
-                            <div className="flex gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-[10px] h-8 px-2.5"
-                                onClick={() => setViewAccount(account)}
-                              >
-                                <Eye className="h-3 w-3 mr-1" /> Detalhes
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-gradient-gold text-primary-foreground text-[10px] h-8 px-3"
-                                disabled={purchasing === account.id}
-                                onClick={() => handleBuyAccount(account)}
-                              >
-                                {purchasing === account.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <><ShoppingCart className="h-3 w-3 mr-1" /> Comprar</>
-                                )}
-                              </Button>
+                            <div className="absolute top-2.5 right-2.5">
+                              <Badge variant="outline" className="bg-background/70 backdrop-blur-sm text-[10px] border-green-500/30 text-green-400">
+                                <Zap className="h-3 w-3 mr-1" /> Automática
+                              </Badge>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+
+                          {/* Card Body */}
+                          <div className="p-4 space-y-3">
+                            <h3 className="font-display text-sm text-foreground font-semibold">
+                              CONTA BARATA #{getShortId(account.lzt_item_id)}
+                            </h3>
+
+                            {/* Inventory Info Tags */}
+                            {inventoryInfo.length > 0 && (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {inventoryInfo.map((item, i) => (
+                                  <div key={i} className="flex items-center gap-1.5 text-[11px] rounded-lg bg-muted/10 px-2 py-1.5 border border-border/10">
+                                    {item.icon === "country" ? <Globe className="h-3 w-3 text-primary shrink-0" /> :
+                                     item.icon === "premium" ? <Star className="h-3 w-3 text-primary shrink-0" /> :
+                                     item.icon === "age" ? <Clock className="h-3 w-3 text-primary shrink-0" /> :
+                                     item.icon === "spam" ? <Shield className="h-3 w-3 text-primary shrink-0" /> :
+                                     <Tag className="h-3 w-3 text-primary shrink-0" />}
+                                    <span className="text-muted-foreground truncate">{item.label}:</span>
+                                    <span className="text-foreground font-medium truncate">{item.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Price & Actions */}
+                            <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                              <span className="text-xl font-bold text-primary">
+                                R$ {Number(account.price_brl).toFixed(2)}
+                              </span>
+                              <div className="flex gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-[10px] h-8 px-2.5"
+                                  onClick={() => setViewAccount(account)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" /> Detalhes
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-gradient-gold text-primary-foreground text-[10px] h-8 px-3"
+                                  disabled={purchasing === account.id}
+                                  onClick={() => handleBuyAccount(account)}
+                                >
+                                  {purchasing === account.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <><ShoppingCart className="h-3 w-3 mr-1" /> Comprar</>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
 
                   {(!filteredAccounts || filteredAccounts.length === 0) && (
                     <div className="col-span-full text-center py-20">
                       <Gamepad2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
                       <p className="text-muted-foreground text-sm">Nenhuma conta disponível nesta categoria</p>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          onClick={() => {
+                            setFilterCountry("");
+                            setFilterPriceMax("");
+                            setFilterSpamFree(false);
+                            setFilterPremium(false);
+                          }}
+                          className="text-xs text-primary hover:underline mt-2"
+                        >
+                          Limpar filtros
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -789,7 +1094,6 @@ const Shop = () => {
                           className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300 cursor-pointer"
                           onClick={() => setSelectedProduct(selectedProduct === product.id ? null : product.id)}
                         >
-                          {/* Image */}
                           <div className="aspect-video bg-muted/20 relative overflow-hidden">
                             {product.image_url ? (
                               <img src={product.image_url} alt={product.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
