@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
-import { getQuickPreviewItems } from "@/lib/valorant-api";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventoryFull from "@/components/ValorantInventory";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
