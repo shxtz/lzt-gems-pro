@@ -128,12 +128,9 @@ const countryFlag = (code: string): string => {
 
 // extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
-const isAccountCategoryCompatible = (account: LztAccount, adminCategoryName?: string) => {
-  const adminName = String(adminCategoryName || "").toLowerCase();
-  const realCategory = String(account.data?.category?.category_name || account.data?.category?.category_title || "").toLowerCase();
-
-  if (!adminName || !realCategory) return true;
-  return adminName.includes(realCategory) || realCategory.includes(adminName);
+const isAccountCategoryCompatible = (..._args: any[]) => {
+  // Always show accounts - the admin assigns them to the category they want
+  return true;
 };
 
 const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: string) => string) => {
