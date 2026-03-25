@@ -349,7 +349,8 @@ function GenericInventory({ data }: { data: any }) {
 
 function GameInventory({ data, cat }: { data: any; cat: string }) {
   const c = cat.toLowerCase();
-  if (c.includes("valorant")) return <ValorantInventory data={data} />;
+  const hasValInv = !!data?.valorantInventory || !!data?.riot_valorant_rank;
+  if (c.includes("valorant") || c.includes("riot") || hasValInv) return <ValorantInventory data={data} />;
   if (c.includes("fortnite")) return <FortniteInventory data={data} />;
   if (c.includes("lol") || c.includes("league")) return <LoLInventory data={data} />;
   if (c.includes("genshin")) return <GenshinInventory data={data} />;
