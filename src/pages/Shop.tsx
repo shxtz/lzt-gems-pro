@@ -577,8 +577,10 @@ const Shop = () => {
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
                       const categoryName = getCategoryName(account.category_id);
-                      const inventoryInfo = extractAccountInfo(account.data, categoryName).slice(0, 4);
-                      const accountImg = getAccountImage(account.data, categoryName);
+                      // Use LZT's actual category for accurate info extraction
+                      const lztCategoryName = account.data?.category?.category_name || categoryName;
+                      const inventoryInfo = extractAccountInfo(account.data, lztCategoryName).slice(0, 4);
+                      const accountImg = getAccountImage(account.data, lztCategoryName);
 
                       // Valorant rank badge
                       const isValorant = categoryName.toLowerCase().includes("valorant");
