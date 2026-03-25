@@ -859,12 +859,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                           {/* Spotlight hover effect */}
                           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl z-[1]" style={{ background: `radial-gradient(400px circle at 50% 0%, ${getCategoryTheme(realCategory).accent}15, transparent 60%)` }} />
 
-                          {/* Banner - CSS dynamic or LZT preview image */}
+                          {/* Inventory Banner */}
                           {(() => {
                             const theme = getCategoryTheme(realCategory);
                             const seed = hashId(account.lzt_item_id);
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
+                            const inv = getLztInventoryImages(account.data);
+                            const hasInventory = inv.weapons || inv.agents || inv.buddies;
 
                             const badgeRow = (
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
@@ -878,9 +880,43 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               </div>
                             );
 
+                            if (hasInventory) {
+                              const inventoryItems = [
+                                { src: inv.weapons, label: "Skins" },
+                                { src: inv.agents, label: "Agentes" },
+                                { src: inv.buddies, label: "Chaveiros" },
+                              ].filter(i => i.src);
+
+                              return (
+                                <div className="relative">
+                                  <div className={`h-36 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
+                                    <div className="absolute inset-0 bg-black/40" />
+                                    {/* Inventory grid */}
+                                    <div className="absolute inset-0 flex">
+                                      {inventoryItems.map((item, idx) => (
+                                        <div key={idx} className="flex-1 relative overflow-hidden border-r border-white/5 last:border-r-0">
+                                          <img
+                                            src={item.src!}
+                                            alt={item.label}
+                                            loading="lazy"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80 group-hover:opacity-100"
+                                            style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                                          />
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+                                          <span className="absolute bottom-1.5 left-0 right-0 text-center text-[9px] font-display uppercase tracking-wider text-white/70">{item.label}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent pointer-events-none" />
+                                    {badgeRow}
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             if (accountImg) {
                               return (
-                                <div className="h-32 overflow-hidden relative">
+                                <div className="h-36 overflow-hidden relative">
                                   <img src={accountImg} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy" style={{ filter: "saturate(1.15) contrast(1.05)" }} />
                                   <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
                                   {badgeRow}
@@ -889,12 +925,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             }
 
                             return (
-                              <div className={`h-32 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
-                                {/* Animated mesh pattern */}
+                              <div className={`h-36 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
                                 <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3C/g%3E%3C/svg%3E\")" }} />
-                                {/* Floating glow orb */}
                                 <div className="absolute opacity-25 blur-2xl rounded-full group-hover:opacity-40 transition-opacity duration-700" style={{ background: `radial-gradient(circle, ${theme.accent}, transparent)`, width: 100, height: 100, left: `${30 + (seed % 40)}%`, top: `${10 + (seed % 50)}%` }} />
-                                {/* Category icon */}
                                 <div className="absolute inset-0 flex items-center justify-center">
                                   <CategoryIcon className="h-12 w-12 text-white/10 group-hover:text-white/20 transition-all duration-500 group-hover:scale-110" strokeWidth={1} style={{ transform: `rotate(${angle % 20 - 10}deg)` }} />
                                 </div>
