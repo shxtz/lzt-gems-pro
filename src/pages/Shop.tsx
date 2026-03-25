@@ -394,7 +394,9 @@ const Shop = () => {
 
       {/* Account Detail Modal */}
       <AnimatePresence>
-        {viewAccount && (
+        {viewAccount && (() => {
+          const modalRealCategory = viewAccount.data?.category?.category_name || viewAccount.data?.category?.category_title || getCategoryName(viewAccount.category_id);
+          return (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setViewAccount(null)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-card border border-border/40 rounded-2xl max-w-lg w-full overflow-hidden relative">
               <button onClick={() => setViewAccount(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10"><X className="h-4 w-4" /></button>
@@ -402,18 +404,17 @@ const Shop = () => {
               {/* Banner - uses LZT image or fallback */}
               <div className="h-36 overflow-hidden relative">
                 <img
-                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || getCategoryBanner(getCategoryName(viewAccount.category_id), viewAccount.data)}
+                  src={getAccountImage(viewAccount.data, modalRealCategory) || getCategoryBanner(modalRealCategory, viewAccount.data)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
                   <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
-                    {getCategoryName(viewAccount.category_id)}
+                    {modalRealCategory}
                   </Badge>
                   {(() => {
-                    const catName = getCategoryName(viewAccount.category_id);
-                    if (!catName.toLowerCase().includes("valorant")) return null;
+                    if (!modalRealCategory.toLowerCase().includes("valorant")) return null;
                     const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
                     const icon = getValorantRankIcon(rank);
                     const name = getValorantRankName(rank);
@@ -434,7 +435,7 @@ const Shop = () => {
                 </h3>
 
                 {/* Account Details - per category */}
-                <AccountDetails lztData={viewAccount.data} categoryName={getCategoryName(viewAccount.category_id)} />
+                <AccountDetails lztData={viewAccount.data} categoryName={modalRealCategory} />
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
@@ -445,7 +446,8 @@ const Shop = () => {
               </div>
             </motion.div>
           </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       <div className="pt-16">
@@ -576,14 +578,14 @@ const Shop = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
-                      const categoryName = getCategoryName(account.category_id);
-                      // Use LZT's actual category for accurate info extraction
-                      const lztCategoryName = account.data?.category?.category_name || categoryName;
-                      const inventoryInfo = extractAccountInfo(account.data, lztCategoryName).slice(0, 4);
-                      const accountImg = getAccountImage(account.data, lztCategoryName);
+                      const adminCategoryName = getCategoryName(account.category_id);
+                      // Always use LZT's actual category for display, banners, and info extraction
+                      const realCategory = account.data?.category?.category_name || account.data?.category?.category_title || adminCategoryName;
+                      const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
+                      const accountImg = getAccountImage(account.data, realCategory);
 
-                      // Valorant rank badge
-                      const isValorant = categoryName.toLowerCase().includes("valorant");
+                      // Valorant rank badge - only if REAL category is valorant
+                      const isValorant = realCategory.toLowerCase().includes("valorant");
                       const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
                       const valRankIcon = getValorantRankIcon(valRank);
                       const valRankName = getValorantRankName(valRank);
@@ -593,7 +595,7 @@ const Shop = () => {
                           {/* Banner Image - LZT photo or fallback */}
                           <div className="h-28 overflow-hidden relative">
                             <img
-                              src={accountImg || getCategoryBanner(categoryName, account.data)}
+                              src={accountImg || getCategoryBanner(realCategory, account.data)}
                               alt=""
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               loading="lazy"
@@ -602,7 +604,7 @@ const Shop = () => {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{categoryName}</Badge>
+                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{realCategory}</Badge>
                               {valRankName && (
                                 <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
                                   {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
