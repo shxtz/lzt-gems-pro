@@ -12,6 +12,7 @@ const navItems = [
   { label: "Início", href: "/" },
   { label: "V-Bucks", href: "/vbucks" },
   { label: "Categorias", href: "/#categories" },
+  { label: "Loja", href: "/loja" },
 ];
 
 const Navbar = () => {
