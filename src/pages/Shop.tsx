@@ -16,71 +16,19 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import accountBannerTelegram from "@/assets/account-banner-telegram.jpg";
-import accountBannerValorant from "@/assets/account-banner-valorant.jpg";
 import accountBannerDefault from "@/assets/account-banner-default.jpg";
 
-interface LztAccount {
-  id: string;
-  lzt_item_id: string;
-  title: string | null;
-  price_brl: number;
-  price_usd: number;
-  status: string;
-  category_id: string;
-  data: any;
-  imported_at: string;
-}
-
-interface LztCategory {
-  id: string;
-  name: string;
-  icon_url: string | null;
-  margin_percent: number;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  image_url: string | null;
-  active: boolean;
-}
-
-interface Variation {
-  id: string;
-  product_id: string;
-  name: string;
-  price: number;
-  original_price: number | null;
-  credential_type: string;
-  active: boolean;
-}
-
-interface PixData {
-  qrcode: string;
-  copiaecola: string;
-  txid: string;
-  orderId: string;
-  variationId?: string;
-  variationName: string;
-  amount: number;
-  lztAccountId?: string;
-}
-
-// Helper to generate a short random-looking ID from lzt_item_id
-const getShortId = (lztItemId: string) => {
-  const num = parseInt(lztItemId.slice(-6), 10);
-  return isNaN(num) ? lztItemId.slice(-6) : String(num);
-};
-
-// Helper to get banner image from category name
-const getCategoryBanner = (categoryName: string) => {
-  const lower = categoryName.toLowerCase();
-  if (lower.includes("telegram")) return accountBannerTelegram;
-  if (lower.includes("valorant")) return accountBannerValorant;
-  return accountBannerDefault;
+// Get the LZT item thumbnail or fallback
+const getAccountImage = (data: any): string | null => {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, any>;
+  
+  // Check imagePreviewLinks first
+  if (Array.isArray(d.imagePreviewLinks) && d.imagePreviewLinks.length > 0) {
+    return d.imagePreviewLinks[0];
+  }
+  
+  return null;
 };
 
 // Extract useful inventory info from account data
