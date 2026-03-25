@@ -647,8 +647,8 @@ const AccountPreview = () => {
 
         </motion.div>
 
-        {/* FULL-WIDTH Inventory Section */}
-        {valInventory && typeof valInventory === "object" && (
+        {/* FULL-WIDTH Inventory Section - Valorant only */}
+        {isValorantAccount && valInventory && typeof valInventory === "object" && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -663,8 +663,8 @@ const AccountPreview = () => {
           </motion.div>
         )}
 
-        {/* Non-Valorant game inventory */}
-        {!hasValInventory && realCategory && !realCategory.toLowerCase().includes("valorant") && !realCategory.toLowerCase().includes("telegram") && !realCategory.toLowerCase().includes("discord") && !realCategory.toLowerCase().includes("steam") && (
+        {/* Non-Valorant game inventory (LoL, Genshin, Honkai, Fortnite, Minecraft, ZZZ) */}
+        {!isValorantAccount && realCategory && !catLower.includes("telegram") && !catLower.includes("discord") && !catLower.includes("steam") && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
