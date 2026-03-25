@@ -632,8 +632,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                 src={tab.src!}
                                 alt={tab.label}
                                 className="w-full object-cover"
-                                style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                                style={{ filter: "saturate(1.3) contrast(1.1) brightness(0.95) hue-rotate(-10deg)" }}
                               />
+                              <div className="absolute inset-0 bg-background/15 mix-blend-color pointer-events-none" />
                               <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
                             </div>
                             <div className="absolute bottom-2 left-3 z-[2]">
