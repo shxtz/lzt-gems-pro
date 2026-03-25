@@ -864,7 +864,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
               <div className="flex items-center gap-2 mb-5">
                 {selectedTab === "contas" ? (
                   <>
-                    <Star className="h-5 w-5 text-primary" />
+                    {selectedShopCategory?.icon_url ? (
+                      <img src={selectedShopCategory.icon_url} alt="" className="h-5 w-5 rounded object-contain" />
+                    ) : (
+                      <Star className="h-5 w-5 text-primary" />
+                    )}
                     <h2 className="font-display text-lg text-foreground">{selectedShopCategory?.name || "Todas as Contas"}</h2>
                     <Badge variant="outline" className="text-[10px] border-border/40 text-muted-foreground ml-1">{filteredAccounts?.length || 0} disponíveis</Badge>
                   </>
@@ -923,7 +927,16 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                             const badgeRow = (
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
-                                <Badge className="bg-background/70 backdrop-blur-md text-[10px] uppercase font-display tracking-wider border-0 text-foreground">{displayCategoryName}</Badge>
+                                <Badge className="bg-background/70 backdrop-blur-md text-[10px] uppercase font-display tracking-wider border-0 text-foreground flex items-center gap-1">
+                                  {(() => {
+                                    const matchingShop = shopCategories?.find(sc => {
+                                      const matchingIds = getMatchingLztCategoryIds(sc);
+                                      return matchingIds.includes(account.category_id);
+                                    });
+                                    return matchingShop?.icon_url ? <img src={matchingShop.icon_url} alt="" className="h-3.5 w-3.5 rounded-sm object-contain" /> : null;
+                                  })()}
+                                  {displayCategoryName}
+                                </Badge>
                                 {valRankName && (
                                   <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
                                     {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
