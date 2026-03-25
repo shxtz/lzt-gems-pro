@@ -400,32 +400,20 @@ const CategoryCard = ({
         </div>
       </div>
 
-      {/* Toggles */}
-      <div className="flex gap-4 flex-wrap">
-        <div className="flex-1 min-w-[200px] rounded-xl border border-border/30 p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-foreground font-medium flex items-center gap-1">
-              ⚡ Auto Import
-            </p>
-            <p className="text-xs text-muted-foreground">Importar novas contas automaticamente</p>
-          </div>
-          <Switch
-            checked={category.auto_import}
-            onCheckedChange={(val) => onUpdateField("auto_import", val)}
-          />
+      {/* Toggle */}
+      <div className="rounded-xl border border-border/30 p-4 flex items-center justify-between">
+        <div>
+          <p className="text-sm text-foreground font-medium flex items-center gap-1">
+            ⚡ Auto Delete + Auto Import
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Importa contas novas automaticamente e verifica a cada 1 min se continuam válidas no LZT. Remove vendidas/banidas.
+          </p>
         </div>
-        <div className="flex-1 min-w-[200px] rounded-xl border border-border/30 p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-foreground font-medium flex items-center gap-1">
-              🔄 Auto Delete + Reimport
-            </p>
-            <p className="text-xs text-muted-foreground">Limpar e reimportar periodicamente</p>
-          </div>
-          <Switch
-            checked={category.auto_delete_reimport}
-            onCheckedChange={(val) => onUpdateField("auto_delete_reimport", val)}
-          />
-        </div>
+        <Switch
+          checked={category.auto_import}
+          onCheckedChange={(val) => onUpdateField("auto_import", val)}
+        />
       </div>
 
       {/* URL + Margin */}
