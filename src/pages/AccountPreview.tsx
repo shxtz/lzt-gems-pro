@@ -463,7 +463,28 @@ const AccountPreview = () => {
 
       {/* Hero Banner */}
       <div className="relative">
-        {hasInventory ? (
+        {hasIndividualItems ? (
+          <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
+            <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
+            <div className="absolute inset-0 grid grid-cols-4 sm:grid-cols-6 gap-[2px] p-2">
+              {individualItems.map((item) => (
+                <div
+                  key={item.uuid}
+                  className="relative overflow-hidden rounded-lg flex items-center justify-center group/tile"
+                  style={{ background: "rgba(0,0,0,0.3)" }}
+                >
+                  <img
+                    src={item.imageUrl}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-full object-contain p-2 saturate-[1.6] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+          </div>
+        ) : hasInventory ? (
           <div className="h-56 sm:h-72 lg:h-80 overflow-hidden relative">
             <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
             <div className="absolute inset-0 flex">
