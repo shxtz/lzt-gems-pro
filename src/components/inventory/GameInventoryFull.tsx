@@ -96,6 +96,8 @@ interface InventoryItem {
   constellation?: number;
   eidolon?: number;
   path?: string | null;
+  champion?: string;
+  splash?: string;
 }
 
 interface GalleryImage {
