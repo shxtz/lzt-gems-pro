@@ -45,6 +45,7 @@ const CATEGORY_THEMES: Record<string, { gradient: string; accent: string; Icon: 
   lol: { gradient: "from-[#c89b3c] via-[#a67c2e] to-[#785a1e]", accent: "#c89b3c", Icon: Trophy },
   steam: { gradient: "from-[#1b2838] via-[#2a475e] to-[#1b2838]", accent: "#66c0f4", Icon: Gamepad2 },
   minecraft: { gradient: "from-[#5d8c3e] via-[#4a7a2e] to-[#3a6220]", accent: "#5d8c3e", Icon: Gamepad2 },
+  zzz: { gradient: "from-[#f5d442] via-[#d6ab29] to-[#473d1d]", accent: "#f5d442", Icon: Zap },
   brawl: { gradient: "from-[#f7c948] via-[#e6a817] to-[#c48a0e]", accent: "#f7c948", Icon: Star },
   default: { gradient: "from-primary/80 via-primary/50 to-primary/20", accent: "hsl(43,84%,55%)", Icon: Gamepad2 },
 };
@@ -161,10 +162,12 @@ function FortniteInventory({ data }: { data: any }) {
   const vbucks = data?.fortnite_vbucks || data?.vbucks;
   const region = data?.fortnite_region || data?.region;
   const lastActivity = formatDate(data?.last_activity || data?.lastActivity);
+  const cosmeticsCount = Array.isArray(data?.fortniteCosmetics) ? data.fortniteCosmetics.length : 0;
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {vbucks !== null && vbucks !== undefined && <Stat icon={Coins} label="V-Bucks" value={vbucks} highlight />}
+      {cosmeticsCount > 0 && <Stat icon={Sword} label="Cosméticos" value={cosmeticsCount} highlight />}
       {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
       {lastActivity && <Stat icon={Calendar} label="Última Atividade" value={lastActivity} />}
     </div>
@@ -324,12 +327,30 @@ function MinecraftInventory({ data }: { data: any }) {
   const hasJava = Boolean(data?.minecraft_java ?? data?.javaEdition ?? data?.mc_java);
   const hasBedrock = Boolean(data?.minecraft_bedrock ?? data?.bedrockEdition ?? data?.mc_bedrock);
   const canChangeNick = data?.minecraft_can_change_nick ?? data?.canChangeNick ?? data?.mc_change_nick;
+  const nickname = data?.minecraft_nickname;
+  const capeCount = Array.isArray(data?.minecraft_capes) ? data.minecraft_capes.length : 0;
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {hasJava && <Stat icon={Gamepad2} label="Java Edition" value="✅ Incluso" highlight />}
       {hasBedrock && <Stat icon={Gamepad2} label="Bedrock Edition" value="✅ Incluso" highlight />}
+      {nickname && <Stat icon={Key} label="Nick" value={nickname} />}
+      {capeCount > 0 && <Stat icon={Shield} label="Capas" value={capeCount} highlight />}
       {canChangeNick !== null && canChangeNick !== undefined && <Stat icon={Tag} label="Trocar Nick" value={canChangeNick ? "✅ Sim" : "❌ Não"} />}
+    </div>
+  );
+}
+
+function ZZZInventory({ data }: { data: any }) {
+  const agents: any[] = data?.zzzCharacters || data?.zenlessCharacters || [];
+  const sRankCount = agents.filter((agent: any) => `${agent?.rarityIcon || agent?.weapon?.rarityIcon || ""}`.toLowerCase().includes("rarity-s") || Number(agent?.rarity ?? 0) >= 2).length;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {agents.length > 0 && <Stat icon={Users} label="Agentes" value={agents.length} highlight />}
+        {sRankCount > 0 && <Stat icon={Star} label="S-Rank" value={sRankCount} highlight />}
+      </div>
     </div>
   );
 }
@@ -352,11 +373,13 @@ function GenericInventory({ data }: { data: any }) {
 function GameInventory({ data, cat }: { data: any; cat: string }) {
   const c = cat.toLowerCase();
   const hasValInv = !!data?.valorantInventory || !!data?.riot_valorant_rank;
-  if (c.includes("valorant") || c.includes("riot") || hasValInv) return <ValorantInventory data={data} />;
+  const isLoL = c.includes("league") || c.includes("lol");
+  if (((c.includes("valorant") || c.includes("riot")) && !isLoL) || (hasValInv && !isLoL)) return <ValorantInventory data={data} />;
   if (c.includes("fortnite")) return <FortniteInventory data={data} />;
-  if (c.includes("lol") || c.includes("league")) return <LoLInventory data={data} />;
+  if (isLoL) return <LoLInventory data={data} />;
   if (c.includes("genshin")) return <GenshinInventory data={data} />;
   if (c.includes("honkai")) return <HonkaiInventory data={data} />;
+  if (c.includes("zenless") || c.includes("zzz")) return <ZZZInventory data={data} />;
   if (c.includes("telegram")) return <TelegramInventory data={data} />;
   if (c.includes("discord")) return <DiscordInventory data={data} />;
   if (c.includes("steam")) return <SteamInventory data={data} />;
