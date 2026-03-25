@@ -655,6 +655,18 @@ const AccountPreview = () => {
             <ValorantInventoryFull lztData={d} accountId={account.id} />
           </motion.div>
         )}
+
+        {/* Non-Valorant game inventory */}
+        {!hasValInventory && realCategory && !realCategory.toLowerCase().includes("valorant") && !realCategory.toLowerCase().includes("telegram") && !realCategory.toLowerCase().includes("discord") && !realCategory.toLowerCase().includes("steam") && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-10"
+          >
+            <GameInventoryFull lztData={d} accountId={account.id} categoryName={realCategory} />
+          </motion.div>
+        )}
       </div>
 
       <Footer />
