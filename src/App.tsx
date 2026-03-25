@@ -23,6 +23,7 @@ import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLZT from "./pages/admin/AdminLZT";
 import AdminTickets from "./pages/admin/AdminTickets";
+import AdminCategories from "./pages/admin/AdminCategories";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="lzt" element={<AdminLZT />} />
                 <Route path="tickets" element={<AdminTickets />} />
+                <Route path="categories" element={<AdminCategories />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
