@@ -224,6 +224,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [filterPremium, setFilterPremium] = useState(false);
   const [sortBy, setSortBy] = useState<"recent" | "price_asc" | "price_desc">("recent");
 
+  // Pre-warm skins catalog so rarity colors are available for cards
+  useEffect(() => { prewarmSkinsCatalog(); }, []);
+
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
     queryFn: async () => {
