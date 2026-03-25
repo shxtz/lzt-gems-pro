@@ -138,7 +138,7 @@ const countryFlag = (code: string): string => {
 // extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
 const CATEGORY_ALIASES: Record<string, string[]> = {
-  valorant: ["valorant", "valorant br"],
+  valorant: ["valorant", "valorant br", "riot", "riot games"],
   "valorant-smurfs": ["valorant smurfs", "smurfs", "smurf"],
   fortnite: ["fortnite"],
   genshin: ["genshin", "genshin impact"],
