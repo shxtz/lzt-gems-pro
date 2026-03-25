@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import vbucksIcon from "@/assets/vbucks-icon.png";
+import whatsappIcon from "@/assets/whatsapp-icon.svg";
 
 interface VBucksCardProps {
   id: string;
