@@ -622,13 +622,14 @@ const Shop = () => {
                               height={512}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-                            <div className="absolute top-2.5 left-2.5">
+                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                               <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{categoryName}</Badge>
-                            </div>
-                            <div className="absolute top-2.5 right-2.5">
-                              <Badge variant="outline" className="bg-background/70 backdrop-blur-sm text-[10px] border-green-500/30 text-green-400">
-                                <Zap className="h-3 w-3 mr-1" /> Automática
-                              </Badge>
+                              {valRankName && (
+                                <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
+                                  {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
+                                  {valRankName}
+                                </Badge>
+                              )}
                             </div>
                           </div>
 
