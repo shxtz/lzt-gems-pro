@@ -67,8 +67,10 @@ async function ensureGenshinCache() {
   cacheTimestamp = Date.now();
 }
 
+let lolChampionByKey: Map<number, { id: string; name: string; key: string; tags: string[] }> | null = null;
+
 async function ensureLoLCache() {
-  if (lolChampionCache && ddragonVersion) return;
+  if (lolChampionCache && lolChampionByKey && ddragonVersion) return;
   try {
     const vRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
     const versions = await vRes.json();
@@ -76,13 +78,17 @@ async function ensureLoLCache() {
     const cRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/data/pt_BR/champion.json`);
     const champData = await cRes.json();
     lolChampionCache = new Map();
-    for (const [key, champ] of Object.entries(champData.data as Record<string, any>)) {
-      lolChampionCache.set(champ.name.toLowerCase(), { key, ...champ });
-      lolChampionCache.set(key.toLowerCase(), { key, ...champ });
+    lolChampionByKey = new Map();
+    for (const [id, champ] of Object.entries(champData.data as Record<string, any>)) {
+      const entry = { id, name: champ.name, key: champ.key, tags: champ.tags || [] };
+      lolChampionCache.set(champ.name.toLowerCase(), entry);
+      lolChampionCache.set(id.toLowerCase(), entry);
+      lolChampionByKey.set(Number(champ.key), entry);
     }
   } catch (e) {
     console.error("Failed to load LoL cache:", e);
     lolChampionCache = new Map();
+    lolChampionByKey = new Map();
     ddragonVersion = "14.24.1";
   }
 }
