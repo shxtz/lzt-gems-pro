@@ -217,8 +217,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [filterPremium, setFilterPremium] = useState(false);
   const [sortBy, setSortBy] = useState<"recent" | "price_asc" | "price_desc">("recent");
 
-  // Pre-warm skins catalog so rarity colors are available for cards
-  useEffect(() => { prewarmSkinsCatalog(); }, []);
+  // Pre-warm skins catalogs so rarity colors and champion names are available for cards
+  useEffect(() => { prewarmSkinsCatalog(); prewarmChampionsCatalog(); }, []);
 
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
