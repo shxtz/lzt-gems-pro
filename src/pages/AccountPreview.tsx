@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventoryFull from "@/components/ValorantInventory";
+import GameInventoryFull from "@/components/inventory/GameInventoryFull";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
