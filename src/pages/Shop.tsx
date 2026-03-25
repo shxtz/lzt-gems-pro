@@ -835,6 +835,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
                       const adminCategoryName = getCategoryName(account.category_id);
+                      // Use shop category name for display badge, fallback to admin category name
+                      const displayCategoryName = (() => {
+                        const matchingShop = shopCategories?.find(sc => {
+                          const matchingIds = getMatchingLztCategoryIds(sc);
+                          return matchingIds.includes(account.category_id);
+                        });
+                        return matchingShop?.name || adminCategoryName;
+                      })();
                       // Always use LZT's actual category for display, banners, and info extraction
                       const realCategory = account.data?.category?.category_name || account.data?.category?.category_title || adminCategoryName;
                       const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
