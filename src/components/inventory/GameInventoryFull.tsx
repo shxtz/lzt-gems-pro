@@ -108,6 +108,7 @@ interface GalleryImage {
 interface GameInventoryData {
   game: string;
   items: InventoryItem[];
+  collections?: Record<string, InventoryItem[]>;
   tabs: { key: string; label: string; count: number }[];
   gallery: GalleryImage[];
   theme: { primary: number[]; accent: number[]; bg: number[] };
@@ -126,7 +127,14 @@ interface Props {
 
 /* ── Proxy helper ───────────────────────────────────────── */
 function proxyUrl(url: string): string {
-  if (!SUPABASE_URL || url.startsWith("https://ddragon") || url.startsWith("https://genshin.jmp.blue")) return url;
+  if (
+    !SUPABASE_URL ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:") ||
+    !/https?:\/\/(?:prod-api|api)\.lzt\.market/i.test(url) ||
+    url.startsWith("https://ddragon") ||
+    url.startsWith("https://genshin.jmp.blue")
+  ) return url;
   return `${SUPABASE_URL}/functions/v1/lzt-proxy?image_url=${encodeURIComponent(url)}`;
 }
 
@@ -178,6 +186,7 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
   // Determine items to display based on active tab
   const allItems = useMemo(() => {
     if (!data) return [];
+    if (data.collections?.[activeTab]) return data.collections[activeTab];
     if (activeTab === "skins" && data.skins) return data.skins;
     if (activeTab === "champions" && data.champions) return data.champions;
     if (activeTab === "weapons" && data.weapons) return data.weapons;
@@ -373,7 +382,8 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
               const tier = item.tier;
               const tileColor = tier ? `rgb(${tier.bgColor[0]}, ${tier.bgColor[1]}, ${tier.bgColor[2]})` : undefined;
               const outlineColor = tier ? `rgb(${tier.color[0]}, ${tier.color[1]}, ${tier.color[2]})` : undefined;
-              const hasImage = item.icon && !failedImages.has(item.id);
+              const imageSrc = item.icon ? proxyUrl(item.icon) : item.splash ? proxyUrl(item.splash) : null;
+              const hasImage = Boolean(imageSrc) && !failedImages.has(item.id);
 
               return (
                 <motion.div
@@ -395,7 +405,7 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                   <div className={`${gameKey === 'lol' ? 'aspect-[3/4]' : 'aspect-square'} flex items-center justify-center overflow-hidden ${gameKey === 'lol' ? 'p-0' : 'p-3'}`}>
                     {hasImage ? (
                       <img
-                        src={item.icon!}
+                        src={imageSrc!}
                         alt={item.name}
                         className={`h-full w-full ${gameKey === 'lol' ? 'object-cover' : 'object-contain'} transition-transform duration-500 group-hover/tile:scale-110 drop-shadow-lg`}
                         loading="lazy"

@@ -52,23 +52,39 @@ export interface LoLPreviewItem {
 const LOL_SKIN_TIER = { key: "lol-skin", tile: [50, 40, 20] as [number, number, number], outline: [200, 155, 60] as [number, number, number], label: "Skin" };
 const LOL_CHAMP_TIER = { key: "lol-champ", tile: [25, 35, 50] as [number, number, number], outline: [100, 140, 200] as [number, number, number], label: "Campeão" };
 
+function collectNumericIds(raw: unknown): number[] {
+  const values = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object"
+      ? Object.values(raw as Record<string, unknown>)
+      : typeof raw === "string"
+        ? raw.split(/[^\d]+/)
+        : [];
+
+  return Array.from(new Set(
+    values
+      .map((value) => (typeof value === "number" ? value : Number(value)))
+      .filter((value) => Number.isFinite(value) && value > 0)
+  ));
+}
+
 export function getLoLQuickPreviewItems(lolInventory: any, limit = 9): LoLPreviewItem[] {
   if (!lolInventory) return [];
   
-  // Handle various data formats - Skin could be array, object, or missing
-  let skinIds: number[] = [];
   const rawSkins = lolInventory?.Skin || lolInventory?.skins || lolInventory?.skin || [];
-  if (Array.isArray(rawSkins)) {
-    skinIds = rawSkins.filter(id => typeof id === "number");
-  } else if (typeof rawSkins === "object" && rawSkins !== null) {
-    skinIds = Object.values(rawSkins).filter(id => typeof id === "number") as number[];
-  }
-  
-  if (skinIds.length === 0) return [];
+  const rawChampions = lolInventory?.Champion || lolInventory?.champions || lolInventory?.champion || [];
+  const skinIds = collectNumericIds(rawSkins);
+  const championIds = collectNumericIds(rawChampions);
+
+  if (skinIds.length === 0 && championIds.length === 0) return [];
 
   const items: LoLPreviewItem[] = [];
   const interestingSkins = skinIds.filter(id => id % 1000 !== 0);
-  const skinsToShow = interestingSkins.length > 0 ? interestingSkins : skinIds;
+  const skinsToShow = interestingSkins.length > 0
+    ? interestingSkins
+    : skinIds.length > 0
+      ? skinIds
+      : championIds.map((championId) => championId * 1000);
 
   for (const skinId of skinsToShow.slice(0, limit)) {
     const { championKey, skinNum } = parseSkinId(skinId);

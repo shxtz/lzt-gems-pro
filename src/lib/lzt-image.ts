@@ -8,19 +8,25 @@ const PREFERRED_KEYS: Record<string, string[]> = {
   valorant: ["weapons", "agents", "buddies"],
   riot: ["weapons", "agents", "buddies"],
   fortnite: ["skins", "pickaxes", "emotes", "gliders"],
-  genshin: ["characters", "weapons"],
-  honkai: ["characters", "weapons"],
-  zenless: ["characters", "weapons"],
+  genshin: ["genshin", "characters", "weapons"],
+  honkai: ["honkai", "characters", "weapons"],
+  zenless: ["zenless", "zzz", "characters", "weapons"],
   brawl: ["brawlers"],
   steam: ["games", "inventory"],
   lol: ["champions", "skins"],
+  minecraft: ["profile", "inventory"],
   telegram: ["profile"],
   discord: ["profile"],
 };
 
 function proxyUrl(url: string): string {
-  if (!SUPABASE_URL) return url;
+  if (!SUPABASE_URL || !/https?:\/\/(?:prod-api|api)\.lzt\.market/i.test(url)) return url;
   return `${SUPABASE_URL}/functions/v1/lzt-proxy?image_url=${encodeURIComponent(url)}`;
+}
+
+function toDataUrl(base64: string | null | undefined): string | null {
+  if (!base64 || typeof base64 !== "string") return null;
+  return base64.startsWith("data:") ? base64 : `data:image/png;base64,${base64}`;
 }
 
 function getPreviewFromLztData(lztData: any, categoryName?: string): string | null {
@@ -36,17 +42,19 @@ function getPreviewFromLztData(lztData: any, categoryName?: string): string | nu
   }
 
   const slug = (categoryName || "").toLowerCase();
-  const keys = Object.entries(PREFERRED_KEYS).find(([k]) =>
-    slug.includes(k)
-  )?.[1] || ["weapons", "agents", "skins"];
+  const preferredEntry = Object.entries(PREFERRED_KEYS).find(([k]) => slug.includes(k));
+  const keys = preferredEntry?.[1] || ["weapons", "agents", "skins"];
+  const hasGameSpecificPreference = Boolean(preferredEntry);
 
   for (const source of [links.download, links.direct]) {
     if (!source || typeof source !== "object" || Array.isArray(source)) continue;
     for (const key of keys) {
       if (source[key]) return source[key];
     }
-    const firstVal = Object.values(source).find((v) => typeof v === "string") as string | undefined;
-    if (firstVal) return firstVal;
+    if (!hasGameSpecificPreference) {
+      const firstVal = Object.values(source).find((v) => typeof v === "string") as string | undefined;
+      if (firstVal) return firstVal;
+    }
   }
 
   return null;
@@ -60,26 +68,30 @@ export function getLztAccountImageUrl(lztData: any, categoryName?: string): stri
   const previewUrl = getPreviewFromLztData(lztData, categoryName);
   if (previewUrl) return proxyUrl(previewUrl);
 
+  const zzzCharacter = lztData?.zzzCharacters?.[0] || lztData?.zenlessCharacters?.[0];
   const firstCharacterImage =
     lztData?.genshinCharacters?.[0]?.image ||
     lztData?.genshinCharacters?.[0]?.icon ||
     lztData?.honkaiCharacters?.[0]?.icon ||
-    lztData?.zenlessCharacters?.[0]?.weapon?.icon ||
-    lztData?.zenlessCharacters?.[0]?.avatar ||
-    lztData?.zenlessCharacters?.[0]?.icon ||
-    lztData?.zzzCharacters?.[0]?.weapon?.icon ||
-    lztData?.zzzCharacters?.[0]?.avatar ||
-    lztData?.zzzCharacters?.[0]?.icon;
+    zzzCharacter?.role_square_url ||
+    zzzCharacter?.skin_list?.find((skin: any) => skin?.unlocked)?.skin_square_url ||
+    zzzCharacter?.role_vertical_painting_url ||
+    zzzCharacter?.weapon?.icon ||
+    zzzCharacter?.avatar ||
+    zzzCharacter?.icon;
   if (typeof firstCharacterImage === "string") return firstCharacterImage;
+
+  const firstCape = Array.isArray(lztData?.minecraft_capes) ? lztData.minecraft_capes[0] : null;
+  const capeImage = typeof firstCape === "object" ? (firstCape?.rendered || firstCape?.icon || firstCape?.url || toDataUrl(firstCape?.data)) : null;
+  if (capeImage) return capeImage;
+
+  const minecraftSkin = toDataUrl(lztData.minecraft_skin);
+  if (minecraftSkin) return minecraftSkin;
 
   const mcId = lztData.minecraft_id;
   const mcNick = lztData.minecraft_nickname;
   if (mcId) return `https://crafatar.com/renders/body/${mcId}?overlay&scale=4`;
   if (mcNick) return `https://minotar.net/armor/body/${mcNick}/300.png`;
-
-  if (lztData.minecraft_skin && typeof lztData.minecraft_skin === "string" && lztData.minecraft_skin.length > 100) {
-    return `data:image/png;base64,${lztData.minecraft_skin}`;
-  }
 
   return null;
 }
@@ -114,13 +126,27 @@ export function getLztInventoryImages(lztData: any): InventoryImages {
     }
   }
 
+  const minecraftSkin = toDataUrl(lztData?.minecraft_skin);
+  if (minecraftSkin) result.skin = minecraftSkin;
+  if (lztData?.minecraft_id) result.skin_render = `https://crafatar.com/renders/body/${lztData.minecraft_id}?overlay&scale=8`;
+  else if (lztData?.minecraft_nickname) result.skin_render = `https://minotar.net/armor/body/${lztData.minecraft_nickname}/300.png`;
+
+  if (Array.isArray(lztData?.minecraft_capes)) {
+    lztData.minecraft_capes.slice(0, 4).forEach((cape: any, index: number) => {
+      const icon = typeof cape === "object" ? (cape?.rendered || cape?.icon || cape?.url || toDataUrl(cape?.data)) : null;
+      if (icon) result[`cape_${index + 1}`] = icon;
+    });
+  }
+
   const fallbackImages = [
     lztData?.genshinCharacters?.[0]?.image,
     lztData?.genshinCharacters?.[1]?.image,
     lztData?.honkaiCharacters?.[0]?.icon,
     lztData?.honkaiCharacters?.[1]?.icon,
+    lztData?.zenlessCharacters?.[0]?.role_square_url,
     lztData?.zenlessCharacters?.[0]?.weapon?.icon,
     lztData?.zenlessCharacters?.[0]?.icon,
+    lztData?.zzzCharacters?.[0]?.role_square_url,
     lztData?.zzzCharacters?.[0]?.weapon?.icon,
     lztData?.zzzCharacters?.[0]?.icon,
   ].filter((url): url is string => typeof url === "string" && url.length > 0);
