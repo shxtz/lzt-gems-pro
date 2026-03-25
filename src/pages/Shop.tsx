@@ -128,9 +128,18 @@ const countryFlag = (code: string): string => {
 
 // extractInventoryInfo is now imported from AccountDetails as extractAccountInfo
 
-const getUniqueCountries = (accounts: LztAccount[]) => {
+const isAccountCategoryCompatible = (account: LztAccount, adminCategoryName?: string) => {
+  const adminName = String(adminCategoryName || "").toLowerCase();
+  const realCategory = String(account.data?.category?.category_name || account.data?.category?.category_title || "").toLowerCase();
+
+  if (!adminName || !realCategory) return true;
+  return adminName.includes(realCategory) || realCategory.includes(adminName);
+};
+
+const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: string) => string) => {
   const countries = new Set<string>();
   accounts.forEach((a) => {
+    if (!isAccountCategoryCompatible(a, getCategoryName(a.category_id))) return;
     const d = a.data as any;
     const country = d?.telegram_country || d?.discord_country;
     if (country) countries.add(country);
@@ -208,7 +217,7 @@ const Shop = () => {
     refetchInterval: 15000,
   });
 
-  const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || []), [lztAccounts]);
+  const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || [], getCategoryName), [lztAccounts, lztCategories]);
 
   const getCategoryName = (catId: string) =>
     lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
@@ -216,16 +225,7 @@ const Shop = () => {
   const filteredAccounts = useMemo(() => {
     let accounts = lztAccounts?.filter((a) => {
       const adminCategoryName = getCategoryName(a.category_id);
-      const realCategory = a.data?.category?.category_name || a.data?.category?.category_title || "";
-
-      // Hide incorrectly imported accounts from the storefront
-      if (realCategory && adminCategoryName) {
-        const normalizedAdmin = adminCategoryName.toLowerCase();
-        const normalizedReal = String(realCategory).toLowerCase();
-        if (!normalizedAdmin.includes(normalizedReal) && !normalizedReal.includes(normalizedAdmin)) {
-          return false;
-        }
-      }
+      if (!isAccountCategoryCompatible(a, adminCategoryName)) return false;
 
       const matchCategory = !selectedCategory || a.category_id === selectedCategory;
       const matchSearch = !searchTerm ||
@@ -245,7 +245,7 @@ const Shop = () => {
     return accounts;
   }, [lztAccounts, selectedCategory, searchTerm, filterCountry, filterPriceMax, filterSpamFree, filterPremium, sortBy, lztCategories]);
 
-  const getCategoryCount = (catId: string) => lztAccounts?.filter((a) => a.category_id === catId).length || 0;
+  const getCategoryCount = (catId: string) => lztAccounts?.filter((a) => a.category_id === catId && isAccountCategoryCompatible(a, getCategoryName(catId))).length || 0;
   const getProductVariations = (productId: string) => variations?.filter((v) => v.product_id === productId) || [];
   const getLowestPrice = (productId: string) => {
     const pvars = getProductVariations(productId);
