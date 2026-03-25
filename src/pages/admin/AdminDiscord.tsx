@@ -80,13 +80,7 @@ const AdminDiscord = () => {
   const testWebhookMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke("discord-sale-webhook", {
-        body: {
-          orderId: "test-" + Date.now(),
-          productName: "Teste de Webhook",
-          price: "R$ 0.00",
-          buyerEmail: "teste@exemplo.com",
-          buyerDiscordId: null,
-        },
+        body: { test: true },
       });
       if (error) throw error;
     },
