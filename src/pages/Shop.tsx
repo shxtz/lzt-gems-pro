@@ -867,7 +867,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
                               <span className="text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
                               <div className="flex gap-1.5">
-                                <Button size="sm" variant="outline" className="text-[10px] h-8 px-2.5" onClick={() => setViewAccount(account)}>
+                                <Button size="sm" variant="outline" className="text-[10px] h-8 px-2.5" onClick={() => navigate(`/preview/${account.id}`)}>
                                   <Eye className="h-3 w-3 mr-1" /> Detalhes
                                 </Button>
                                 <Button size="sm" className="bg-gradient-gold text-primary-foreground text-[10px] h-8 px-3" disabled={purchasing === account.id} onClick={() => handleBuyAccount(account)}>
