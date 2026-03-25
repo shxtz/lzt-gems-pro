@@ -8,6 +8,9 @@ import {
   Store,
   MessageCircle,
   Grid3X3,
+  Users,
+  Wallet,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -32,7 +35,10 @@ const items = [
   { title: "Categorias", url: "/admin/categories", icon: Grid3X3 },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
+  { title: "Usuários", url: "/admin/users", icon: Users },
+  { title: "Saldo", url: "/admin/balance", icon: Wallet },
   { title: "Suporte", url: "/admin/tickets", icon: MessageCircle },
+  { title: "Discord", url: "/admin/discord", icon: MessageSquare },
   { title: "LZT Market", url: "/admin/lzt", icon: Store },
   { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];

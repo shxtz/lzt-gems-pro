@@ -25,6 +25,9 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLZT from "./pages/admin/AdminLZT";
 import AdminTickets from "./pages/admin/AdminTickets";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminBalance from "./pages/admin/AdminBalance";
+import AdminDiscord from "./pages/admin/AdminDiscord";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -71,6 +74,9 @@ const App = () => (
                 <Route path="lzt" element={<AdminLZT />} />
                 <Route path="tickets" element={<AdminTickets />} />
                 <Route path="categories" element={<AdminCategories />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="balance" element={<AdminBalance />} />
+                <Route path="discord" element={<AdminDiscord />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
