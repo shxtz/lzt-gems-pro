@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Settings, ShoppingBag } from "lucide-react";
+import { ShoppingCart, User, Menu, X, LogOut, ChevronDown, Settings, ShoppingBag, Shield } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
@@ -191,6 +191,17 @@ const Navbar = () => {
                         Configurações
                       </button>
                     </div>
+                    {isAdmin && (
+                      <div className="border-t border-border/20 p-1.5">
+                        <button
+                          onClick={() => { setDropdownOpen(false); navigate("/admin"); }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Shield className="h-3.5 w-3.5" />
+                          Painel Admin
+                        </button>
+                      </div>
+                    )}
                     <div className="border-t border-border/20 p-1.5">
                       <button
                         onClick={handleLogout}
