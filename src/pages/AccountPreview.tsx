@@ -473,43 +473,33 @@ const AccountPreview = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-[1fr,1fr] gap-6">
 
-          {/* LEFT — Inventory Grid */}
-          <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
-            {hasIndividualItems ? (
-              <div className="grid grid-cols-3 gap-[3px] p-[3px]">
-                {individualItems.slice(0, 9).map((item, idx) => {
-                  const { tile, outline } = item.tier;
-                  return (
-                    <div
-                      key={item.uuid + idx}
-                      className="aspect-square rounded-xl overflow-hidden relative group/tile flex items-center justify-center"
-                      style={{ background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.9), rgba(${tile.join(",")}, 0.35))` }}
-                    >
-                      <img
-                        src={item.imageUrl}
-                        alt=""
-                        loading="lazy"
-                        className="w-[85%] h-[85%] object-contain drop-shadow-lg saturate-[1.8] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute top-1.5 right-1.5">
-                        <span style={{ color: `rgba(${outline.join(",")}, 0.8)` }} className="text-[8px]">◆</span>
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* LEFT — Inventory + Details */}
+          <div className="space-y-5">
+            {/* Full Inventory with all skins */}
+            {realCategory.toLowerCase().includes("valorant") && valInventory && typeof valInventory === "object" ? (
+              <div className="rounded-2xl border border-border/40 bg-card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Crosshair className="h-5 w-5 text-primary" />
+                  <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Inventário Completo</h2>
+                </div>
+                <ValorantInventoryFull lztData={d} />
               </div>
             ) : mainImage ? (
-              <div className="aspect-square overflow-hidden relative">
-                <img src={mainImage} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
+              <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+                <div className="aspect-square overflow-hidden relative">
+                  <img src={mainImage} alt="" className="w-full h-full object-cover" style={{ filter: "saturate(1.2) contrast(1.05)" }} />
+                </div>
               </div>
             ) : (
-              <div className={`aspect-square overflow-hidden relative bg-gradient-to-br ${theme.gradient} flex items-center justify-center`}>
-                <CategoryIcon className="h-24 w-24 text-white/15" strokeWidth={0.8} />
+              <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+                <div className={`aspect-square overflow-hidden relative bg-gradient-to-br ${theme.gradient} flex items-center justify-center`}>
+                  <CategoryIcon className="h-24 w-24 text-white/15" strokeWidth={0.8} />
+                </div>
               </div>
             )}
 
-            {/* "DETALHES DA CONTA" section below images */}
-            <div className="p-5 border-t border-border/20">
+            {/* Account Details */}
+            <div className="rounded-2xl border border-border/40 bg-card p-5">
               <h3 className="text-xs font-display text-muted-foreground uppercase tracking-wider mb-4">Detalhes da Conta</h3>
               <GameInventory data={d} cat={realCategory} />
             </div>
@@ -602,16 +592,6 @@ const AccountPreview = () => {
               </div>
             </div>
 
-            {/* Full Valorant Inventory with enriched data */}
-            {realCategory.toLowerCase().includes("valorant") && (
-              <div className="rounded-2xl border border-border/40 bg-card p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Crosshair className="h-5 w-5 text-primary" />
-                  <h2 className="font-display text-sm text-foreground uppercase tracking-wider">Inventário Completo</h2>
-                </div>
-                <ValorantInventoryFull lztData={d} />
-              </div>
-            )}
           </div>
 
         </motion.div>
