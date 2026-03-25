@@ -74,18 +74,32 @@ const getShortId = (lztItemId: string) => {
   return isNaN(num) ? lztItemId.slice(-6) : String(num);
 };
 
-const getCategoryBanner = (categoryName?: string, lztData?: any): string => {
-  // Use the LZT data's actual category_name if available
-  const lztCatName = lztData?.category?.category_name || "";
-  const name = (categoryName || lztCatName || "").toLowerCase();
-  if (name.includes("telegram")) return bannerTelegram;
-  if (name.includes("discord")) return bannerDiscord;
-  if (name.includes("valorant")) return bannerValorant;
-  if (name.includes("fortnite")) return bannerFortnite;
-  if (name.includes("genshin")) return bannerValorant;
-  if (name.includes("honkai")) return bannerValorant;
-  if (name.includes("lol") || name.includes("league")) return bannerDiscord;
-  return bannerDefault;
+// Category-specific gradient themes and icons
+const CATEGORY_THEMES: Record<string, { gradient: string; accent: string; Icon: any }> = {
+  telegram: { gradient: "from-[#0088cc] via-[#0077b5] to-[#005f8d]", accent: "#0088cc", Icon: Send },
+  discord: { gradient: "from-[#5865F2] via-[#4752c4] to-[#3c45a5]", accent: "#5865F2", Icon: MessageCircle },
+  valorant: { gradient: "from-[#ff4655] via-[#bd3944] to-[#53212a]", accent: "#ff4655", Icon: Crosshair },
+  fortnite: { gradient: "from-[#9d4dbb] via-[#7b2d9e] to-[#4a1a5e]", accent: "#9d4dbb", Icon: Sword },
+  genshin: { gradient: "from-[#c8a96e] via-[#a88b4a] to-[#6b5a30]", accent: "#c8a96e", Icon: Star },
+  honkai: { gradient: "from-[#6c5ce7] via-[#5a4bd1] to-[#3d2d9e]", accent: "#6c5ce7", Icon: Star },
+  lol: { gradient: "from-[#c89b3c] via-[#a67c2e] to-[#785a1e]", accent: "#c89b3c", Icon: Trophy },
+  steam: { gradient: "from-[#1b2838] via-[#2a475e] to-[#1b2838]", accent: "#66c0f4", Icon: Gamepad2 },
+  default: { gradient: "from-primary/80 via-primary/50 to-primary/20", accent: "hsl(var(--primary))", Icon: Gamepad2 },
+};
+
+const getCategoryTheme = (categoryName: string) => {
+  const name = categoryName.toLowerCase();
+  for (const [key, theme] of Object.entries(CATEGORY_THEMES)) {
+    if (key !== "default" && name.includes(key)) return theme;
+  }
+  return CATEGORY_THEMES.default;
+};
+
+// Generate a unique seed number from item ID for visual variation
+const hashId = (id: string): number => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
 };
 
 const getAccountImage = (data: any, categoryName?: string): string | null => {
