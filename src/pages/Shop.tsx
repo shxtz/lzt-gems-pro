@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
@@ -147,7 +147,7 @@ const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: str
   return Array.from(countries).sort();
 };
 
-const Shop = () => {
+const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -219,6 +219,22 @@ const Shop = () => {
 
   const getCategoryName = (catId: string) =>
     lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
+
+  // Auto-select category from slug prop
+  useEffect(() => {
+    if (initialCategorySlug && lztCategories && lztCategories.length > 0 && !selectedCategory) {
+      const slugMap: Record<string, string> = {
+        valorant: "VALORANT", fortnite: "FORTNITE", genshin: "GENSHIN IMPACT",
+        lol: "LEAGUE OF LEGENDS", honkai: "HONKAI: STAR RAIL", minecraft: "MINECRAFT",
+        steam: "STEAM", zzz: "ZENLESS ZONE ZERO",
+      };
+      const targetName = slugMap[initialCategorySlug]?.toLowerCase();
+      if (targetName) {
+        const cat = lztCategories.find((c) => c.name.toLowerCase() === targetName);
+        if (cat) setSelectedCategory(cat.id);
+      }
+    }
+  }, [initialCategorySlug, lztCategories]);
 
   const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || [], getCategoryName), [lztAccounts, lztCategories]);
 
