@@ -932,25 +932,29 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                               return (
                                 <div className="relative">
-                                  <div className={`h-36 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
-                                    <div className="absolute inset-0 bg-black/40" />
-                                    {/* Inventory grid */}
-                                    <div className="absolute inset-0 flex">
-                                      {inventoryItems.map((item, idx) => (
-                                        <div key={idx} className="flex-1 relative overflow-hidden border-r border-white/5 last:border-r-0">
+                                  <div className="aspect-square overflow-hidden relative bg-muted/5 border-b border-border/20">
+                                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-border/15">
+                                      {inventoryItems.slice(0, 4).map((item, idx) => (
+                                        <div key={idx} className="relative overflow-hidden bg-card">
                                           <img
                                             src={item.src!}
                                             alt={item.label}
                                             loading="lazy"
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80 group-hover:opacity-100"
-                                            style={{ filter: "saturate(1.2) contrast(1.05)" }}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                                           />
-                                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
-                                          <span className="absolute bottom-1.5 left-0 right-0 text-center text-[9px] font-display uppercase tracking-wider text-white/70">{item.label}</span>
+                                        </div>
+                                      ))}
+                                      {inventoryItems.length < 4 && Array.from({ length: 4 - inventoryItems.length }).map((_, idx) => (
+                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-card flex items-center justify-center">
+                                          <CategoryIcon className="h-6 w-6 text-muted-foreground/15" strokeWidth={1} />
                                         </div>
                                       ))}
                                     </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent pointer-events-none" />
+                                    <div className="absolute top-2 right-2 z-[3]">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
+                                        <Zap className="h-2.5 w-2.5" /> Automática
+                                      </span>
+                                    </div>
                                     {badgeRow}
                                   </div>
                                 </div>
