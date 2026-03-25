@@ -59,6 +59,18 @@ export function getLztAccountImageUrl(lztData: any, categoryName?: string): stri
   if (!lztData) return null;
   const previewUrl = getPreviewFromLztData(lztData, categoryName);
   if (previewUrl) return proxyUrl(previewUrl);
+
+  // Minecraft: render skin via Crafatar from minecraft_id or nickname
+  const mcId = lztData.minecraft_id;
+  const mcNick = lztData.minecraft_nickname;
+  if (mcId) return `https://crafatar.com/renders/body/${mcId}?overlay&scale=4`;
+  if (mcNick) return `https://minotar.net/armor/body/${mcNick}/300.png`;
+
+  // Minecraft skin base64 → data URI
+  if (lztData.minecraft_skin && typeof lztData.minecraft_skin === "string" && lztData.minecraft_skin.length > 100) {
+    return `data:image/png;base64,${lztData.minecraft_skin}`;
+  }
+
   return null;
 }
 
@@ -66,23 +78,32 @@ export interface InventoryImages {
   weapons: string | null;
   agents: string | null;
   buddies: string | null;
+  [key: string]: string | null;
 }
 
 /**
- * Get all inventory images (weapons, agents, buddies) for display.
+ * Get all inventory images for display.
  * Returns proxied URLs ready for <img> tags.
+ * Supports Valorant (weapons/agents/buddies), Genshin/Honkai/ZZZ, and generic keys.
  */
 export function getLztInventoryImages(lztData: any): InventoryImages {
   const result: InventoryImages = { weapons: null, agents: null, buddies: null };
   if (!lztData) return result;
 
   const links = lztData.imagePreviewLinks || lztData.image_preview_links;
-  if (!links) return result;
+  if (!links || Array.isArray(links)) return result;
 
-  // Prefer download URLs (auth handled by proxy), fallback to direct (JWT embedded)
-  for (const key of ["weapons", "agents", "buddies"] as const) {
+  // Collect all available image keys from download and direct
+  const allKeys = new Set<string>();
+  for (const source of [links.download, links.direct]) {
+    if (source && typeof source === "object" && !Array.isArray(source)) {
+      Object.keys(source).forEach(k => allKeys.add(k));
+    }
+  }
+
+  for (const key of allKeys) {
     const url = links.download?.[key] || links.direct?.[key];
-    if (url) result[key] = proxyUrl(url);
+    if (url && typeof url === "string") result[key] = proxyUrl(url);
   }
 
   return result;
