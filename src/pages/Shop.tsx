@@ -593,7 +593,7 @@ const Shop = () => {
                           {/* Banner Image - LZT photo or fallback */}
                           <div className="h-28 overflow-hidden relative">
                             <img
-                              src={accountImg || getCategoryBanner(categoryName, account.data)}
+                              src={accountImg || getCategoryBanner(realCategory, account.data)}
                               alt=""
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               loading="lazy"
@@ -602,7 +602,7 @@ const Shop = () => {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{categoryName}</Badge>
+                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{realCategory}</Badge>
                               {valRankName && (
                                 <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
                                   {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
