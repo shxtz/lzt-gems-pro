@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_logs: {
+        Row: {
+          buyer_id: string | null
+          credential_delivered: string
+          delivered_at: string
+          id: string
+          order_id: string | null
+          stock_id: string | null
+          variation_id: string | null
+        }
+        Insert: {
+          buyer_id?: string | null
+          credential_delivered: string
+          delivered_at?: string
+          id?: string
+          order_id?: string | null
+          stock_id?: string | null
+          variation_id?: string | null
+        }
+        Update: {
+          buyer_id?: string | null
+          credential_delivered?: string
+          delivered_at?: string
+          id?: string
+          order_id?: string | null
+          stock_id?: string | null
+          variation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_logs_stock_id_fkey"
+            columns: ["stock_id"]
+            isOneToOne: false
+            referencedRelation: "product_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_logs_variation_id_fkey"
+            columns: ["variation_id"]
+            isOneToOne: false
+            referencedRelation: "product_variations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lzt_accounts: {
         Row: {
           buyer_id: string | null
@@ -204,6 +249,130 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_stock: {
+        Row: {
+          added_at: string
+          buyer_id: string | null
+          credential: string
+          id: string
+          order_id: string | null
+          sold_at: string | null
+          status: string
+          variation_id: string
+        }
+        Insert: {
+          added_at?: string
+          buyer_id?: string | null
+          credential: string
+          id?: string
+          order_id?: string | null
+          sold_at?: string | null
+          status?: string
+          variation_id: string
+        }
+        Update: {
+          added_at?: string
+          buyer_id?: string | null
+          credential?: string
+          id?: string
+          order_id?: string | null
+          sold_at?: string | null
+          status?: string
+          variation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_variation_id_fkey"
+            columns: ["variation_id"]
+            isOneToOne: false
+            referencedRelation: "product_variations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variations: {
+        Row: {
+          active: boolean
+          created_at: string
+          credential_type: string
+          id: string
+          name: string
+          original_price: number | null
+          price: number
+          product_id: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          credential_type?: string
+          id?: string
+          name: string
+          original_price?: number | null
+          price: number
+          product_id: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          credential_type?: string
+          id?: string
+          name?: string
+          original_price?: number | null
+          price?: number
+          product_id?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
