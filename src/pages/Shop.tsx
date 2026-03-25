@@ -964,9 +964,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                               loading="lazy"
                                               className="w-full h-full object-contain p-1.5 saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300"
                                             />
-                                            <div className="absolute top-0.5 right-0.5">
-                                              <span style={{ color: `rgba(${outline.join(",")}, 0.8)` }} className="text-[7px]">◆</span>
-                                            </div>
+                                            {item.tierIcon && (
+                                              <div className="absolute top-1 right-1">
+                                                <img src={item.tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
+                                              </div>
+                                            )}
                                           </div>
                                         );
                                       })}
