@@ -105,6 +105,16 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
     return counts;
   }, [skins]);
 
+  const rarityIcons = useMemo(() => {
+    const icons: Record<string, string> = {};
+    for (const s of skins) {
+      if (s.tierIcon && !icons[s.tier.key]) {
+        icons[s.tier.key] = s.tierIcon;
+      }
+    }
+    return icons;
+  }, [skins]);
+
   if (!lztData?.valorantInventory) return null;
   if (!hasSkins && !hasAgents && !hasBuddies && !loading) return null;
 
