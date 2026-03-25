@@ -71,7 +71,7 @@ const VBucksCard = ({ id, amount, price, originalPrice, popular, index }: VBucks
                 <span className="font-body text-[11px] text-muted-foreground line-through">
                   R${Number(originalPrice).toFixed(2).replace(".", ",")}
                 </span>
-                <span className="inline-block rounded bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 font-display text-[10px] font-bold text-emerald-400">
+                <span className="inline-block rounded-md bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 font-display text-[10px] font-bold text-emerald-400">
                   -{Math.round(((originalPrice - price) / originalPrice) * 100)}%
                 </span>
               </div>
@@ -127,9 +127,9 @@ const VBucksCard = ({ id, amount, price, originalPrice, popular, index }: VBucks
                   href="https://wa.me/5518991175724?text=Quero%20saber%20mais%20sobre%20a%20compra%20de%20V-Bucks"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366]/20 border border-[#25D366]/30 py-3 px-3 font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#25D366] hover:bg-[#25D366]/30 transition-colors"
-                >
-                  <MessageCircle className="h-4 w-4" />
+                   className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366]/20 border border-[#25D366]/30 py-3 px-3 font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#25D366] hover:bg-[#25D366]/30 transition-colors"
+                 >
+                   <MessageCircle className="h-6 w-6" />
                 </a>
               </motion.div>
             )}
