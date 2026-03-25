@@ -16,9 +16,13 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import accountBannerDefault from "@/assets/account-banner-default.jpg";
 import { getLztAccountImageUrl } from "@/lib/lzt-image";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import bannerTelegram from "@/assets/banner-telegram.jpg";
+import bannerDiscord from "@/assets/banner-discord.jpg";
+import bannerValorant from "@/assets/banner-valorant.jpg";
+import bannerFortnite from "@/assets/banner-fortnite.jpg";
+import bannerDefault from "@/assets/banner-default.jpg";
 
 interface LztAccount {
   id: string;
