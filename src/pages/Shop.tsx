@@ -215,10 +215,22 @@ const Shop = () => {
 
   const filteredAccounts = useMemo(() => {
     let accounts = lztAccounts?.filter((a) => {
+      const adminCategoryName = getCategoryName(a.category_id);
+      const realCategory = a.data?.category?.category_name || a.data?.category?.category_title || "";
+
+      // Hide incorrectly imported accounts from the storefront
+      if (realCategory && adminCategoryName) {
+        const normalizedAdmin = adminCategoryName.toLowerCase();
+        const normalizedReal = String(realCategory).toLowerCase();
+        if (!normalizedAdmin.includes(normalizedReal) && !normalizedReal.includes(normalizedAdmin)) {
+          return false;
+        }
+      }
+
       const matchCategory = !selectedCategory || a.category_id === selectedCategory;
       const matchSearch = !searchTerm ||
         `CONTA BARATA #${getShortId(a.lzt_item_id)}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getCategoryName(a.category_id).toLowerCase().includes(searchTerm.toLowerCase());
+        adminCategoryName.toLowerCase().includes(searchTerm.toLowerCase());
       const d = a.data as any;
       const country = d?.telegram_country || d?.discord_country;
       const matchCountry = !filterCountry || country === filterCountry;

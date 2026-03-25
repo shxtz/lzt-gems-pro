@@ -87,6 +87,9 @@ const AdminLZT = () => {
       queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
       queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
       toast.success(`${data?.imported || 0} contas importadas!`);
+      if (data?.skipped) {
+        toast.warning(`${data.skipped} conta(s) ignorada(s) por categoria incompatível com a busca configurada.`);
+      }
     },
     onError: (e) => toast.error(`Erro: ${e.message}`),
   });

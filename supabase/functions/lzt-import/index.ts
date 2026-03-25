@@ -208,10 +208,27 @@ async function importFromUrl(
   }
 
   let imported = 0;
+  let skipped = 0;
   const remaining = limit - currentCount;
   const itemsToImport = data.items.slice(0, remaining);
 
+  const { data: categoryRecord } = await supabase
+    .from("lzt_categories")
+    .select("name")
+    .eq("id", categoryId)
+    .single();
+
+  const expectedCategory = String(categoryRecord?.name || "").toLowerCase();
+
   for (const item of itemsToImport) {
+    const realCategory = String(item?.category?.category_name || item?.category?.category_title || "").toLowerCase();
+
+    // Skip accounts imported into the wrong category (e.g. Telegram inside VALORANT)
+    if (expectedCategory && realCategory && !expectedCategory.includes(realCategory) && !realCategory.includes(expectedCategory)) {
+      skipped++;
+      continue;
+    }
+
     const usdPrice = item.price || 0;
     const brlPrice = usdPrice * 5.5 * (1 + marginPercent / 100);
 
@@ -231,5 +248,5 @@ async function importFromUrl(
     if (!error) imported++;
   }
 
-  return { imported, total: data.items.length };
+  return { imported, skipped, total: data.items.length };
 }
