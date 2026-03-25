@@ -231,6 +231,9 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
 
   if (!hasItems && !hasGallery) return null;
 
+  // LoL stats badges
+  const lolStats = data?.stats;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -254,6 +257,15 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
           )}
         </div>
       </div>
+
+      {/* LoL Stats */}
+      {lolStats && (
+        <div className="flex flex-wrap gap-2">
+          {lolStats.level && <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-border/30 bg-muted/10">Nível {lolStats.level}</span>}
+          {lolStats.blueEssence && <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-border/30 bg-muted/10"><span className="h-2 w-2 rounded-full bg-blue-500" />{Number(lolStats.blueEssence).toLocaleString("pt-BR")} BE</span>}
+          {lolStats.rp && Number(lolStats.rp) > 0 && <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border border-border/30 bg-muted/10"><span className="h-2 w-2 rounded-full bg-red-500" />{Number(lolStats.rp).toLocaleString("pt-BR")} RP</span>}
+        </div>
+      )}
 
       {/* Gallery Mode */}
       <AnimatePresence>
