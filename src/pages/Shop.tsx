@@ -422,15 +422,29 @@ const Shop = () => {
               {/* Banner - uses LZT image or fallback */}
               <div className="h-36 overflow-hidden relative">
                 <img
-                  src={getAccountImage(viewAccount.data) || accountBannerDefault}
+                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || accountBannerDefault}
                   alt=""
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                <div className="absolute bottom-3 left-4">
+                <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
                   <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display">
                     {getCategoryName(viewAccount.category_id)}
                   </Badge>
+                  {(() => {
+                    const catName = getCategoryName(viewAccount.category_id);
+                    if (!catName.toLowerCase().includes("valorant")) return null;
+                    const rank = viewAccount.data?.riot_valorant_rank || viewAccount.data?.valorant_rank || viewAccount.data?.rank;
+                    const icon = getValorantRankIcon(rank);
+                    const name = getValorantRankName(rank);
+                    if (!name) return null;
+                    return (
+                      <Badge className="bg-background/80 backdrop-blur-sm text-[10px] border border-border/30 text-foreground flex items-center gap-1">
+                        {icon && <img src={icon} alt={name} className="h-3.5 w-3.5" />}
+                        {name}
+                      </Badge>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -439,25 +453,8 @@ const Shop = () => {
                   CONTA BARATA #{getShortId(viewAccount.lzt_item_id)}
                 </h3>
 
-                {/* Full Inventory Grid */}
-                {(() => {
-                  const info = extractInventoryInfo(viewAccount.data);
-                  return info.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                      {info.map((item, i) => (
-                        <div key={i} className="rounded-xl bg-muted/10 border border-border/20 p-3 flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <InfoIcon type={item.icon} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
-                            <p className="text-sm text-foreground font-medium truncate">{item.value}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null;
-                })()}
+                {/* Account Details - per category */}
+                <AccountDetails lztData={viewAccount.data} categoryName={getCategoryName(viewAccount.category_id)} />
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
