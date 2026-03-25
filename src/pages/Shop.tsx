@@ -184,7 +184,15 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchInterval: 30000,
   });
 
-  const { data: products } = useQuery({
+  const { data: shopCategories } = useQuery({
+    queryKey: ["shop-categories-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("shop_categories").select("*").eq("visible", true).order("sort_order");
+      if (error) throw error;
+      return data as { id: string; name: string; slug: string; emoji: string; icon_url: string | null; sort_order: number }[];
+    },
+  });
+
     queryKey: ["shop-products"],
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("*").eq("active", true).order("sort_order");
