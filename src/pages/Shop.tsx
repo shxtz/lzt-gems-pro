@@ -402,7 +402,7 @@ const Shop = () => {
               {/* Banner - uses LZT image or fallback */}
               <div className="h-36 overflow-hidden relative">
                 <img
-                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || accountBannerDefault}
+                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || getCategoryBanner(getCategoryName(viewAccount.category_id), viewAccount.data)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
@@ -591,7 +591,7 @@ const Shop = () => {
                           {/* Banner Image - LZT photo or fallback */}
                           <div className="h-28 overflow-hidden relative">
                             <img
-                              src={accountImg || accountBannerDefault}
+                              src={accountImg || getCategoryBanner(categoryName, account.data)}
                               alt=""
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               loading="lazy"
