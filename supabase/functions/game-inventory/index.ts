@@ -37,6 +37,68 @@ const ZZZ_TIERS: Record<string, { key: string; name: string; color: number[]; bg
 
 const MINECRAFT_TIER = { key: "item", name: "Item", color: [93, 140, 62], bgColor: [35, 55, 25] };
 
+function slugify(value: string) {
+  return value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
+function collectNumericIds(raw: any): number[] {
+  const values = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object"
+      ? Object.values(raw)
+      : typeof raw === "string"
+        ? raw.split(/[^\d]+/)
+        : [];
+
+  return Array.from(new Set(
+    values
+      .map((value) => (typeof value === "number" ? value : Number(value)))
+      .filter((value) => Number.isFinite(value) && value > 0)
+  ));
+}
+
+function uniqueBy<T>(items: T[], getKey: (item: T) => string) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = getKey(item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function parseRankValue(value: unknown, fallback = 4) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function parseZZZRank(entry: any): keyof typeof ZZZ_TIERS {
+  const iconText = `${entry?.rarityIcon || entry?.rankIcon || entry?.weapon?.rarityIcon || ""}`.toLowerCase();
+  if (iconText.includes("rarity-s") || iconText.includes("rank-s")) return "S";
+  if (iconText.includes("rarity-a") || iconText.includes("rank-a")) return "A";
+  if (iconText.includes("rarity-b") || iconText.includes("rank-b")) return "B";
+
+  const rank = entry?.rank ?? entry?.rarity ?? entry?.star;
+  if (typeof rank === "string") {
+    const normalized = rank.toUpperCase();
+    if (normalized === "S" || normalized === "A" || normalized === "B") return normalized as keyof typeof ZZZ_TIERS;
+  }
+
+  const numericRank = parseRankValue(rank, 1);
+  if (numericRank >= 2) return "S";
+  if (numericRank >= 1) return "A";
+  return "B";
+}
+
+function toDataUrl(base64: string | null | undefined) {
+  if (!base64 || typeof base64 !== "string") return null;
+  return base64.startsWith("data:") ? base64 : `data:image/png;base64,${base64}`;
+}
+
 /* ── Caches ─────────────────────────────────────────────── */
 
 let genshinCharCache: Map<string, any> | null = null;
@@ -117,55 +179,81 @@ async function handleGenshin(data: any) {
   const items: any[] = [];
   for (const c of chars) {
     const name = c.name || "";
-    const rarity = c.rarity || c.stars || 4;
+    const rarity = parseRankValue(c.rarity || c.stars, 4);
     const tier = GENSHIN_TIERS[rarity] || GENSHIN_TIERS[4];
     const cached = genshinCharCache?.get(name.toLowerCase());
-    const slug = cached?.slug || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    const icon = `https://genshin.jmp.blue/characters/${slug}/icon-big`;
+    const slug = cached?.slug || slugify(name);
+    const icon = c.image || c.icon || `https://genshin.jmp.blue/characters/${slug}/icon-big`;
     items.push({
       id: slug, name: cached?.name || name, icon, type: "character", rarity, tier,
       element: c.element || cached?.vision || null, weapon: c.weapon || cached?.weapon || null,
-      constellation: c.constellation || c.cons || 0,
+      constellation: c.actived_constellation_num || c.constellation || c.cons || 0,
     });
   }
+  const weapons = uniqueBy(
+    chars.flatMap((character: any) => {
+      const weapon = character?.weapon;
+      if (!weapon?.name) return [];
+      const rarity = parseRankValue(weapon.rarity || weapon.stars, 3);
+      return [{
+        id: String(weapon.id || `${slugify(weapon.name)}-${rarity}`),
+        name: weapon.name,
+        icon: weapon.icon || null,
+        type: "weapon",
+        rarity,
+        tier: GENSHIN_TIERS[rarity] || GENSHIN_TIERS[3],
+      }];
+    }),
+    (weapon) => weapon.id,
+  ).sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
   items.sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
   const tabs = [];
   if (items.length > 0) tabs.push({ key: "characters", label: "Personagens", count: items.length });
-  return { game: "genshin", items, tabs, theme: { primary: [200, 169, 110], accent: [198, 150, 80], bg: [40, 35, 30] } };
+  if (weapons.length > 0) tabs.push({ key: "weapons", label: "Armas", count: weapons.length });
+  return { game: "genshin", items, weapons, collections: { characters: items, weapons }, tabs, theme: { primary: [200, 169, 110], accent: [198, 150, 80], bg: [40, 35, 30] } };
 }
 
 async function handleHonkai(data: any) {
   const chars: any[] = data?.honkaiCharacters || [];
   const items = chars.map((c: any) => {
-    const rarity = c.rarity || c.stars || 4;
+    const rarity = parseRankValue(c.rarity || c.stars || c.base_type, 4);
     return {
-      id: (c.name || "").toLowerCase().replace(/\s+/g, "-"), name: c.name || "", icon: null,
+      id: slugify(c.name || "character"), name: c.name || "", icon: c.icon || c.avatar || null,
       type: "character", rarity, tier: HONKAI_TIERS[rarity] || HONKAI_TIERS[4],
-      path: c.path || c.trail || null, element: c.element || null, eidolon: c.eidolon || c.eidolons || 0,
+      path: c.path || c.trail || null, element: c.element || null, eidolon: c.rank || c.eidolon || c.eidolons || 0,
     };
   });
+  const lightcones = uniqueBy(
+    chars.flatMap((character: any) => {
+      const lightcone = character?.equip || character?.lightcone || character?.weapon;
+      if (!lightcone?.name) return [];
+      const rarity = parseRankValue(lightcone.rarity || lightcone.stars || lightcone.base_type, 4);
+      return [{
+        id: String(lightcone.id || `${slugify(lightcone.name)}-${rarity}`),
+        name: lightcone.name,
+        icon: lightcone.icon || null,
+        type: "lightcone",
+        rarity,
+        tier: HONKAI_TIERS[rarity] || HONKAI_TIERS[4],
+      }];
+    }),
+    (lightcone) => lightcone.id,
+  ).sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
   items.sort((a, b) => (b.rarity || 0) - (a.rarity || 0));
   const tabs = [];
   if (items.length > 0) tabs.push({ key: "characters", label: "Personagens", count: items.length });
-  return { game: "honkai", items, tabs, theme: { primary: [108, 92, 231], accent: [130, 110, 255], bg: [25, 20, 45] } };
+  if (lightcones.length > 0) tabs.push({ key: "lightcones", label: "Light Cones", count: lightcones.length });
+  return { game: "honkai", items, lightcones, collections: { characters: items, lightcones }, tabs, theme: { primary: [108, 92, 231], accent: [130, 110, 255], bg: [25, 20, 45] } };
 }
 
 async function handleLoL(data: any) {
   await ensureLoLCache();
 
-  const rawSkins = data?.lolInventory?.Skin ?? data?.lolInventory?.skins ?? [];
-  const skinIds: number[] = Array.isArray(rawSkins)
-    ? rawSkins.filter((id: unknown) => typeof id === "number")
-    : (rawSkins && typeof rawSkins === "object"
-        ? Object.values(rawSkins).filter((id: unknown) => typeof id === "number") as number[]
-        : []);
+  const rawSkins = data?.lolInventory?.Skin ?? data?.lolInventory?.skins ?? data?.lolInventory?.skin ?? [];
+  const skinIds = collectNumericIds(rawSkins);
 
-  const rawChampions = data?.lolInventory?.Champion ?? data?.lolInventory?.champions ?? [];
-  const championIds: number[] = Array.isArray(rawChampions)
-    ? rawChampions.filter((id: unknown) => typeof id === "number")
-    : (rawChampions && typeof rawChampions === "object"
-        ? Object.values(rawChampions).filter((id: unknown) => typeof id === "number") as number[]
-        : []);
+  const rawChampions = data?.lolInventory?.Champion ?? data?.lolInventory?.champions ?? data?.lolInventory?.champion ?? [];
+  const championIds = collectNumericIds(rawChampions);
 
   const items: any[] = [];
   const seenChampions = new Set<number>();
@@ -233,51 +321,91 @@ async function handleLoL(data: any) {
 }
 
 function handleFortnite(data: any) {
-  const cosmetics: any[] = data?.fortniteCosmetics || data?.fortnite_locker || [];
+  const rawCosmetics = data?.fortniteCosmetics || data?.fortnite_locker || data?.fortniteLocker || [];
+  const cosmetics: any[] = Array.isArray(rawCosmetics)
+    ? rawCosmetics
+    : rawCosmetics && typeof rawCosmetics === "object"
+      ? Object.values(rawCosmetics)
+      : [];
   const items = cosmetics.map((c: any) => {
     const rarity = (c.rarity || "common").toLowerCase();
+    const type = String(c.type || c.backendType || c.gameplayType || "outfit").toLowerCase();
     return {
       id: c.id || (c.name || "").toLowerCase().replace(/\s+/g, "-"), name: c.name || "Cosmético",
-      icon: c.icon || c.images?.icon || null, type: c.type || "outfit", rarity,
+      icon: c.icon || c.images?.icon || c.displayAssets?.[0]?.url || c.smallIcon || null, type, rarity,
       tier: FORTNITE_RARITIES[rarity] || FORTNITE_RARITIES.common,
     };
   });
+  const collections = {
+    outfits: items.filter((item) => item.type.includes("outfit") || item.type.includes("skin")),
+    pickaxes: items.filter((item) => item.type.includes("pickaxe")),
+    emotes: items.filter((item) => item.type.includes("emote")),
+    gliders: items.filter((item) => item.type.includes("glider")),
+  };
   const tabs = [];
-  if (items.length > 0) tabs.push({ key: "all", label: "Itens", count: items.length });
-  return { game: "fortnite", items, tabs, theme: { primary: [157, 77, 187], accent: [47, 123, 199], bg: [20, 15, 35] } };
+  if (collections.outfits.length > 0) tabs.push({ key: "outfits", label: "Skins", count: collections.outfits.length });
+  if (collections.pickaxes.length > 0) tabs.push({ key: "pickaxes", label: "Picaretas", count: collections.pickaxes.length });
+  if (collections.emotes.length > 0) tabs.push({ key: "emotes", label: "Emotes", count: collections.emotes.length });
+  if (collections.gliders.length > 0) tabs.push({ key: "gliders", label: "Planadores", count: collections.gliders.length });
+  if (tabs.length === 0 && items.length > 0) tabs.push({ key: "all", label: "Itens", count: items.length });
+  return { game: "fortnite", items, collections, tabs, theme: { primary: [157, 77, 187], accent: [47, 123, 199], bg: [20, 15, 35] } };
 }
 
 function handleMinecraft(data: any) {
-  const items: any[] = [];
-  // Editions
-  if (data?.minecraft_java) items.push({ id: "java", name: "Java Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/44/Java_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
-  if (data?.minecraft_bedrock) items.push({ id: "bedrock", name: "Bedrock Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/7/73/Bedrock_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
-  // Capes
+  const editions: any[] = [];
+  if (data?.minecraft_java) editions.push({ id: "java", name: "Java Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/44/Java_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
+  if (data?.minecraft_bedrock) editions.push({ id: "bedrock", name: "Bedrock Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/7/73/Bedrock_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
   const capes: any[] = data?.minecraft_capes || [];
-  for (const cape of capes) {
+  const capeItems = capes.map((cape: any, index: number) => {
     const capeName = typeof cape === "string" ? cape : (cape?.name || cape?.title || "Capa");
-    items.push({ id: capeName.toLowerCase().replace(/\s+/g, "-"), name: capeName, icon: typeof cape === "object" ? (cape?.icon || cape?.url || null) : null, type: "cape", rarity: 1, tier: { ...MINECRAFT_TIER, name: "Capa" } });
-  }
-  // Skin preview
+    return { id: `${slugify(capeName)}-${index}`, name: capeName, icon: typeof cape === "object" ? (cape?.rendered || cape?.icon || cape?.url || toDataUrl(cape?.data)) : null, type: "cape", rarity: 1, tier: { ...MINECRAFT_TIER, key: "cape", name: "Capa" } };
+  });
   const mcId = data?.minecraft_id;
   const mcNick = data?.minecraft_nickname;
-  if (mcId) {
-    items.push({ id: "skin", name: mcNick || "Skin", icon: `https://crafatar.com/renders/body/${mcId}?overlay&scale=4`, type: "skin", rarity: 0, tier: MINECRAFT_TIER });
+  const skinItems: any[] = [];
+  if (typeof data?.minecraft_skin === "string" && data.minecraft_skin.length > 100) {
+    skinItems.push({ id: "skin-base64", name: mcNick || "Skin", icon: toDataUrl(data.minecraft_skin), type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
   }
-  return { game: "minecraft", items, tabs: items.length > 0 ? [{ key: "all", label: "Itens", count: items.length }] : [], theme: { primary: [93, 140, 62], accent: [120, 170, 80], bg: [30, 40, 25] } };
+  if (mcId) {
+    skinItems.push({ id: "skin-render", name: mcNick || "Skin", icon: `https://crafatar.com/renders/body/${mcId}?overlay&scale=8`, type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
+  } else if (mcNick) {
+    skinItems.push({ id: "skin-render", name: mcNick, icon: `https://minotar.net/armor/body/${mcNick}/300.png`, type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
+  }
+  const collections = { skins: uniqueBy(skinItems, (item) => item.id), capes: capeItems, editions };
+  const items = [...collections.skins, ...collections.capes, ...collections.editions];
+  const tabs = [];
+  if (collections.skins.length > 0) tabs.push({ key: "skins", label: "Skin", count: collections.skins.length });
+  if (collections.capes.length > 0) tabs.push({ key: "capes", label: "Capas", count: collections.capes.length });
+  if (collections.editions.length > 0) tabs.push({ key: "editions", label: "Edições", count: collections.editions.length });
+  return { game: "minecraft", items, collections, tabs, theme: { primary: [93, 140, 62], accent: [120, 170, 80], bg: [30, 40, 25] } };
 }
 
 function handleZZZ(data: any) {
   const chars: any[] = data?.zzzCharacters || data?.zenlessCharacters || [];
   const items = chars.map((c: any) => {
-    const rank = c.rank || c.rarity || "A";
-    const rankKey = typeof rank === "number" ? (rank >= 5 ? "S" : rank >= 4 ? "A" : "B") : String(rank).toUpperCase();
+    const rankKey = parseZZZRank(c);
     return {
-      id: (c.name || "").toLowerCase().replace(/\s+/g, "-"), name: c.name || "Agente",
-      icon: c.icon || null, type: "character", rarity: rankKey, tier: ZZZ_TIERS[rankKey] || ZZZ_TIERS.A,
+      id: slugify(c.name || c.name_mi18n || "agente"), name: c.name || c.name_mi18n || "Agente",
+      icon: c.role_square_url || c.skin_list?.find((skin: any) => skin?.unlocked)?.skin_square_url || c.role_vertical_painting_url || c.icon || null, type: "character", rarity: rankKey, tier: ZZZ_TIERS[rankKey] || ZZZ_TIERS.A,
     };
   });
-  return { game: "zzz", items, tabs: items.length > 0 ? [{ key: "characters", label: "Agentes", count: items.length }] : [], theme: { primary: [245, 212, 66], accent: [60, 200, 200], bg: [15, 15, 20] } };
+  const weapons = uniqueBy(
+    chars.flatMap((agent: any) => {
+      const weapon = agent?.weapon;
+      if (!weapon?.name) return [];
+      const rankKey = parseZZZRank(weapon);
+      return [{
+        id: String(weapon.id || slugify(weapon.name)),
+        name: weapon.name,
+        icon: weapon.icon || null,
+        type: "weapon",
+        rarity: rankKey,
+        tier: ZZZ_TIERS[rankKey] || ZZZ_TIERS.A,
+      }];
+    }),
+    (weapon) => weapon.id,
+  );
+  return { game: "zzz", items, collections: { characters: items, weapons }, tabs: [...(items.length > 0 ? [{ key: "characters", label: "Agentes", count: items.length }] : []), ...(weapons.length > 0 ? [{ key: "weapons", label: "W-Engines", count: weapons.length }] : [])], theme: { primary: [245, 212, 66], accent: [60, 200, 200], bg: [15, 15, 20] } };
 }
 
 /* ── Extract gallery ────────────────────────────────────── */
@@ -285,10 +413,14 @@ function handleZZZ(data: any) {
 function extractGallery(data: any): { label: string; url: string }[] {
   const links = data?.imagePreviewLinks || data?.image_preview_links;
   if (!links) return [];
+  if (typeof links === "string") return [{ label: "Preview", url: links }];
+  if (Array.isArray(links)) {
+    return links.filter((url): url is string => typeof url === "string" && url.length > 0).map((url, index) => ({ label: `Preview ${index + 1}`, url }));
+  }
   const LABELS: Record<string, string> = {
     weapons: "Armas", agents: "Agentes", buddies: "Buddies", skins: "Skins",
     pickaxes: "Picaretas", emotes: "Emotes", gliders: "Planadores",
-    characters: "Personagens", champions: "Campeões", games: "Jogos", inventory: "Inventário", profile: "Perfil",
+    characters: "Personagens", champions: "Campeões", games: "Jogos", inventory: "Inventário", profile: "Perfil", genshin: "Genshin", honkai: "Honkai", zenless: "Zenless", zzz: "Zenless",
   };
   const gallery: { label: string; url: string }[] = [];
   const seen = new Set<string>();
