@@ -439,15 +439,22 @@ const AccountPreview = () => {
     );
   }
 
-  const realCategory = d?.category?.category_name || d?.category?.category_title || lztCategory?.name || "Conta";
+  // Use admin category name for game detection (more reliable than LZT platform name)
+  const adminCategoryName = lztCategory?.name || "Conta";
+  const realCategory = adminCategoryName;
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
   const lztInv = getLztInventoryImages(d);
 
+  // Determine game type
+  const catLower = realCategory.toLowerCase();
+  const isValorantAccount = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
+  const isLoLAccount = catLower.includes("league") || catLower.includes("lol");
+
   const enrichedSkins = enrichedInventory?.skins || [];
-  const hasIndividualItems = enrichedSkins.length > 0 || hasValInventory;
-  const hasInventory = hasIndividualItems || lztInv.weapons || lztInv.agents || lztInv.buddies;
+  const hasIndividualItems = enrichedSkins.length > 0 || (isValorantAccount && hasValInventory);
+  const hasInventory = hasIndividualItems || Object.values(lztInv).some(v => v !== null);
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
