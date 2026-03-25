@@ -170,9 +170,11 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
     load();
   }, [accountId, gameKey]);
 
-  // Determine items to display
+  // Determine items to display based on active tab
   const allItems = useMemo(() => {
     if (!data) return [];
+    if (activeTab === "skins" && data.skins) return data.skins;
+    if (activeTab === "champions" && data.champions) return data.champions;
     if (activeTab === "weapons" && data.weapons) return data.weapons;
     if (activeTab === "lightcones" && data.lightcones) return data.lightcones;
     return data.items || [];
