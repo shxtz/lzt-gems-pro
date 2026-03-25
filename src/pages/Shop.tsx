@@ -576,14 +576,14 @@ const Shop = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
-                      const categoryName = getCategoryName(account.category_id);
-                      // Use LZT's actual category for accurate info extraction
-                      const lztCategoryName = account.data?.category?.category_name || categoryName;
-                      const inventoryInfo = extractAccountInfo(account.data, lztCategoryName).slice(0, 4);
-                      const accountImg = getAccountImage(account.data, lztCategoryName);
+                      const adminCategoryName = getCategoryName(account.category_id);
+                      // Always use LZT's actual category for display, banners, and info extraction
+                      const realCategory = account.data?.category?.category_name || account.data?.category?.category_title || adminCategoryName;
+                      const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
+                      const accountImg = getAccountImage(account.data, realCategory);
 
-                      // Valorant rank badge
-                      const isValorant = categoryName.toLowerCase().includes("valorant");
+                      // Valorant rank badge - only if REAL category is valorant
+                      const isValorant = realCategory.toLowerCase().includes("valorant");
                       const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
                       const valRankIcon = getValorantRankIcon(valRank);
                       const valRankName = getValorantRankName(valRank);
