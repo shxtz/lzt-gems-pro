@@ -217,10 +217,10 @@ const Shop = () => {
     refetchInterval: 15000,
   });
 
-  const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || [], getCategoryName), [lztAccounts, lztCategories]);
-
   const getCategoryName = (catId: string) =>
     lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
+
+  const availableCountries = useMemo(() => getUniqueCountries(lztAccounts || [], getCategoryName), [lztAccounts, lztCategories]);
 
   const filteredAccounts = useMemo(() => {
     let accounts = lztAccounts?.filter((a) => {
