@@ -36,6 +36,7 @@ const App = () => (
           <CartProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/loja" element={<Shop />} />
               <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/checkout" element={<Checkout />} />
@@ -58,6 +59,7 @@ const App = () => (
               >
                 <Route index element={<AdminDashboard />} />
                 <Route path="products" element={<AdminProducts />} />
+                <Route path="produtos" element={<AdminProductsNew />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="settings" element={<AdminSettings />} />
