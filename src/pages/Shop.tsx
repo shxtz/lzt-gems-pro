@@ -17,7 +17,7 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getLztAccountImageUrl } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 
 interface LztAccount {
