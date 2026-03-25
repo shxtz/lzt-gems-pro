@@ -404,6 +404,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_categories: {
+        Row: {
+          created_at: string
+          emoji: string | null
+          icon_url: string | null
+          id: string
+          name: string
+          slug: string
+          sort_order: number | null
+          updated_at: string
+          visible: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string | null
+          icon_url?: string | null
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+          visible?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          emoji?: string | null
+          icon_url?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+          visible?: boolean | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: string

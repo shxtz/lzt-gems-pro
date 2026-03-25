@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 import valorantImg from "@/assets/categories/valorant.png";
 import fortniteImg from "@/assets/categories/fortnite.png";
@@ -10,19 +12,46 @@ import minecraftImg from "@/assets/categories/minecraft.png";
 import steamImg from "@/assets/categories/steam.png";
 import zzzImg from "@/assets/categories/zzz.png";
 
-const categories = [
-  { name: "Valorant", image: valorantImg, slug: "valorant" },
-  { name: "Fortnite", image: fortniteImg, slug: "fortnite" },
-  { name: "Genshin Impact", image: genshinImg, slug: "genshin" },
-  { name: "League of Legends", image: lolImg, slug: "lol" },
-  { name: "Honkai: Star Rail", image: honkaiImg, slug: "honkai" },
-  { name: "Minecraft", image: minecraftImg, slug: "minecraft" },
-  { name: "Steam", image: steamImg, slug: "steam" },
-  { name: "Zenless Zone Zero", image: zzzImg, slug: "zzz" },
-];
+const SLUG_IMAGES: Record<string, string> = {
+  valorant: valorantImg,
+  "valorant-smurfs": valorantImg,
+  fortnite: fortniteImg,
+  genshin: genshinImg,
+  lol: lolImg,
+  honkai: honkaiImg,
+  minecraft: minecraftImg,
+  steam: steamImg,
+  zzz: zzzImg,
+};
+
+interface ShopCategory {
+  id: string;
+  name: string;
+  slug: string;
+  emoji: string;
+  icon_url: string | null;
+  sort_order: number;
+}
 
 const CategoriesSection = () => {
   const navigate = useNavigate();
+
+  const { data: categories } = useQuery({
+    queryKey: ["home-shop-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shop_categories")
+        .select("*")
+        .eq("visible", true)
+        .order("sort_order");
+      if (error) throw error;
+      return data as ShopCategory[];
+    },
+  });
+
+  const displayCategories = categories || [];
+  const topRow = displayCategories.slice(0, 5);
+  const bottomRow = displayCategories.slice(5);
 
   return (
     <section id="categories" className="py-28 relative overflow-hidden">
@@ -47,31 +76,35 @@ const CategoriesSection = () => {
           </p>
         </motion.div>
 
-        {/* Top row - 5 items */}
+        {/* Top row */}
         <div className="flex justify-center gap-4 md:gap-6 mb-4 md:mb-6 flex-wrap">
-          {categories.slice(0, 5).map((cat, i) => (
-            <CategoryIcon key={cat.slug} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
+          {topRow.map((cat, i) => (
+            <CategoryIcon key={cat.id} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
           ))}
         </div>
 
-        {/* Bottom row - 3 items centered */}
-        <div className="flex justify-center gap-4 md:gap-6 flex-wrap">
-          {categories.slice(5).map((cat, i) => (
-            <CategoryIcon key={cat.slug} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
-          ))}
-        </div>
+        {/* Bottom row */}
+        {bottomRow.length > 0 && (
+          <div className="flex justify-center gap-4 md:gap-6 flex-wrap">
+            {bottomRow.map((cat, i) => (
+              <CategoryIcon key={cat.id} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 };
 
 interface CategoryIconProps {
-  category: { name: string; image: string; slug: string };
+  category: ShopCategory;
   index: number;
   onClick: () => void;
 }
 
 const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
+  const image = category.icon_url || SLUG_IMAGES[category.slug];
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
@@ -86,14 +119,16 @@ const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
         transition={{ type: "spring", stiffness: 400, damping: 20 }}
         className="relative w-[72px] h-[72px] md:w-[88px] md:h-[88px] rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)]"
       >
-        <img
-          src={category.image}
-          alt={category.name}
-          loading="lazy"
-          width={512}
-          height={512}
-          className="w-[52px] h-[52px] md:w-[60px] md:h-[60px] object-contain transition-transform duration-300 group-hover:scale-110"
-        />
+        {image ? (
+          <img
+            src={image}
+            alt={category.name}
+            loading="lazy"
+            className="w-[52px] h-[52px] md:w-[60px] md:h-[60px] object-contain transition-transform duration-300 group-hover:scale-110"
+          />
+        ) : (
+          <span className="text-3xl md:text-4xl">{category.emoji || "📦"}</span>
+        )}
       </motion.div>
       <span className="mt-2 text-[11px] md:text-xs font-display text-muted-foreground group-hover:text-foreground transition-colors duration-300 text-center max-w-[88px] leading-tight opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all">
         {category.name}

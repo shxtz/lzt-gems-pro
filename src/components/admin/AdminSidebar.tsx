@@ -7,6 +7,7 @@ import {
   LogOut,
   Store,
   MessageCircle,
+  Grid3X3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -28,6 +29,7 @@ const items = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "V-Bucks", url: "/admin/products", icon: Package },
   { title: "Produtos", url: "/admin/produtos", icon: Store },
+  { title: "Categorias", url: "/admin/categories", icon: Grid3X3 },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
   { title: "Suporte", url: "/admin/tickets", icon: MessageCircle },
