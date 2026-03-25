@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import vbucksIcon from "@/assets/vbucks-icon.png";
+import whatsappIcon from "@/assets/whatsapp-icon.svg";
 
 interface VBucksCardProps {
   id: string;
@@ -141,7 +142,7 @@ const VBucksCard = ({ id, amount, price, originalPrice, popular, index }: VBucks
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366]/20 border border-[#25D366]/30 py-3 px-3 font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#25D366] hover:bg-[#25D366]/30 transition-colors"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
                 </a>
               </motion.div>
             )}
