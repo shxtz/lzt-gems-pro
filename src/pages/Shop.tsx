@@ -434,12 +434,36 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         await supabase.from("orders").update({ status: "paid" }).eq("id", pixData.orderId);
         setDeliveredCredential({ credential: data.credential, name: pixData.variationName });
       } else if (pixData.lztAccountId) {
-        const { error } = await supabase.from("lzt_accounts").update({ status: "sold", buyer_id: user.id, sold_at: new Date().toISOString(), sold_price: pixData.amount }).eq("id", pixData.lztAccountId).eq("status", "available");
-        if (error) throw error;
-        await supabase.from("orders").update({ status: "paid" }).eq("id", pixData.orderId);
-        const { data: soldAccount } = await supabase.from("lzt_accounts").select("*").eq("id", pixData.lztAccountId).single();
-        const credentialInfo = soldAccount?.data ? JSON.stringify(soldAccount.data, null, 2) : "Conta entregue - verifique sua área do cliente";
-        setDeliveredCredential({ credential: credentialInfo, name: pixData.variationName });
+        // Find the account to get lzt_item_id
+        const account = lztAccounts?.find((a) => a.id === pixData.lztAccountId);
+        if (!account) { toast.error("Conta não encontrada"); return; }
+
+        // Call fast_buy on LZT — this verifies, purchases, and delivers
+        const { data: buyResult, error: buyError } = await supabase.functions.invoke("lzt-purchase", {
+          body: {
+            action: "fast_buy",
+            lzt_item_id: account.lzt_item_id,
+            account_id: pixData.lztAccountId,
+            order_id: pixData.orderId,
+            buyer_id: user.id,
+            price_brl: pixData.amount,
+          },
+        });
+
+        if (buyError) throw buyError;
+
+        if (buyResult?.needsRefund) {
+          toast.error(buyResult.error || "Erro na compra — reembolso será processado.");
+          setPixData(null);
+          return;
+        }
+
+        if (buyResult?.error) {
+          toast.error(buyResult.error);
+          return;
+        }
+
+        setDeliveredCredential({ credential: buyResult.credential, name: pixData.variationName });
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
       }
       setPixData(null);
