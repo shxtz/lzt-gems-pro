@@ -494,35 +494,38 @@ const AccountPreview = () => {
             {hasIndividualItems ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
                 <div className="grid grid-cols-3 gap-[1px] bg-border/10">
-                  {individualItems.slice(0, 9).map((item, i) => (
-                    <div
-                      key={i}
-                      className="relative aspect-square overflow-hidden bg-card"
-                      style={{
-                        background: item.tier
-                          ? `linear-gradient(135deg, rgba(${item.tier.tile.join(",")},0.25), rgba(0,0,0,0.6))`
-                          : undefined,
-                      }}
-                    >
-                      {item.imageUrl && (
-                        <img
-                          src={item.imageUrl}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-contain p-2.5"
-                          loading="lazy"
-                          style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
-                        />
-                      )}
-                      {item.tier && item.tier.key !== "gray" && (
-                        <div className="absolute top-1.5 right-1.5">
-                          <span
-                            className="block h-3.5 w-3.5 rounded-full border border-white/20"
-                            style={{ backgroundColor: `rgb(${item.tier.outline.join(",")})` }}
+                  {enrichedSkins.slice(0, 9).map((skin: any, i: number) => {
+                    const tier = skin.tier;
+                    const tileColor = tier ? `rgb(${tier.tile[0]}, ${tier.tile[1]}, ${tier.tile[2]})` : undefined;
+                    const outlineColor = tier ? `rgb(${tier.outline[0]}, ${tier.outline[1]}, ${tier.outline[2]})` : undefined;
+                    return (
+                      <div
+                        key={skin.uuid + i}
+                        className="relative aspect-square overflow-hidden bg-card"
+                        style={{
+                          background: tileColor
+                            ? `linear-gradient(135deg, ${tileColor}, rgba(0,0,0,0.6))`
+                            : undefined,
+                          border: outlineColor ? `1px solid ${outlineColor}40` : undefined,
+                        }}
+                      >
+                        {skin.icon && (
+                          <img
+                            src={skin.icon}
+                            alt={skin.name}
+                            className="absolute inset-0 w-full h-full object-contain p-2"
+                            loading="lazy"
+                            style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
                           />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                        {skin.tierIcon && (
+                          <div className="absolute top-1.5 right-1.5">
+                            <img src={skin.tierIcon} alt="" className="h-4 w-4 drop-shadow-md" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : mainImage ? (
