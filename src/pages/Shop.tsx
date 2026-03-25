@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { Search, ShoppingCart, Zap, Package, Key, Mail, AlertCircle } from "lucide-react";
+import { Search, ShoppingCart, Zap, Package, Key, Mail, QrCode, Copy, Check, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,21 @@ interface Variation {
   active: boolean;
 }
 
+interface StockCount {
+  variation_id: string;
+  count: number;
+}
+
+interface PixData {
+  qrcode: string;
+  copiaecola: string;
+  txid: string;
+  orderId: string;
+  variationId: string;
+  variationName: string;
+  amount: number;
+}
+
 const Shop = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -39,7 +54,10 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [pixData, setPixData] = useState<PixData | null>(null);
+  const [copied, setCopied] = useState(false);
   const [deliveredCredential, setDeliveredCredential] = useState<{ credential: string; variationName: string } | null>(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
 
   const { data: products } = useQuery({
     queryKey: ["shop-products"],
@@ -67,6 +85,23 @@ const Shop = () => {
     },
   });
 
+  const { data: stockCounts } = useQuery({
+    queryKey: ["shop-stock-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_stock")
+        .select("variation_id")
+        .eq("status", "available");
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data?.forEach((s) => {
+        counts[s.variation_id] = (counts[s.variation_id] || 0) + 1;
+      });
+      return counts;
+    },
+    refetchInterval: 15000,
+  });
+
   const categories = [...new Set(products?.map((p) => p.category) || [])];
 
   const filteredProducts = products?.filter((p) => {
@@ -85,6 +120,8 @@ const Shop = () => {
     return Math.min(...pvars.map((v) => Number(v.price)));
   };
 
+  const getStockCount = (variationId: string) => stockCounts?.[variationId] || 0;
+
   const handleBuyVariation = async (variation: Variation) => {
     if (!user) {
       toast.error("Faça login para comprar");
@@ -92,29 +129,111 @@ const Shop = () => {
       return;
     }
 
+    const stock = getStockCount(variation.id);
+    if (stock === 0) {
+      toast.error("Produto sem estoque disponível");
+      return;
+    }
+
     setPurchasing(variation.id);
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      // 1. Create order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user.id,
+          product_id: variation.product_id,
+          quantity: 1,
+          total_price: Number(variation.price),
+          payment_method: "pix",
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 2. Generate PIX charge
+      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", {
+        body: {
+          orderId: order.id,
+          amount: Number(variation.price),
+          description: `${variation.name} - Loja Digital`,
+        },
+      });
+
+      if (pixError) throw pixError;
+      if (pixResponse?.error) throw new Error(pixResponse.error);
+
+      // 3. Update order with payment ID
+      await supabase
+        .from("orders")
+        .update({ payment_id: pixResponse.txid })
+        .eq("id", order.id);
+
+      // 4. Show PIX modal
+      setPixData({
+        qrcode: pixResponse.qrcode,
+        copiaecola: pixResponse.copiaecola,
+        txid: pixResponse.txid,
+        orderId: order.id,
+        variationId: variation.id,
+        variationName: variation.name,
+        amount: Number(variation.price),
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao gerar pagamento PIX. Tente novamente.");
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
+  const confirmPaymentAndDeliver = async () => {
+    if (!pixData || !user) return;
+    setCheckingPayment(true);
+
+    try {
+      // Call deliver-product to consume stock and deliver
       const { data, error } = await supabase.functions.invoke("deliver-product", {
-        body: { variationId: variation.id, buyerId: user.id },
+        body: {
+          variationId: pixData.variationId,
+          buyerId: user.id,
+          orderId: pixData.orderId,
+        },
       });
 
       if (error) throw error;
       if (data.error) {
-        if (data.code === "OUT_OF_STOCK") {
-          toast.error("Produto sem estoque disponível no momento");
-        } else {
-          toast.error(data.error);
-        }
+        toast.error(data.error);
         return;
       }
 
-      setDeliveredCredential({ credential: data.credential, variationName: variation.name });
-      toast.success("Produto entregue com sucesso!");
+      // Update order status to paid
+      await supabase
+        .from("orders")
+        .update({ status: "paid" })
+        .eq("id", pixData.orderId);
+
+      setDeliveredCredential({
+        credential: data.credential,
+        variationName: pixData.variationName,
+      });
+      setPixData(null);
+      toast.success("Pagamento confirmado! Produto entregue.");
     } catch {
-      toast.error("Erro ao processar compra. Tente novamente.");
+      toast.error("Erro ao confirmar pagamento. Tente novamente.");
     } finally {
-      setPurchasing(null);
+      setCheckingPayment(false);
+    }
+  };
+
+  const copyPix = () => {
+    if (pixData?.copiaecola) {
+      navigator.clipboard.writeText(pixData.copiaecola);
+      setCopied(true);
+      toast.success("Código PIX copiado!");
+      setTimeout(() => setCopied(false), 3000);
     }
   };
 
@@ -128,6 +247,89 @@ const Shop = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+
+      {/* PIX Payment Modal */}
+      <AnimatePresence>
+        {pixData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-primary/30 rounded-2xl p-6 max-w-md w-full space-y-5 shadow-gold relative"
+            >
+              <button
+                onClick={() => setPixData(null)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <QrCode className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-display text-lg text-foreground">Pagamento PIX</h3>
+                <p className="text-xs text-muted-foreground mt-1">{pixData.variationName}</p>
+                <p className="text-lg font-bold text-primary mt-2">R$ {pixData.amount.toFixed(2)}</p>
+              </div>
+
+              {pixData.qrcode && (
+                <div className="bg-white rounded-xl p-4 mx-auto w-fit">
+                  <img
+                    src={pixData.qrcode.startsWith("data:") ? pixData.qrcode : `data:image/png;base64,${pixData.qrcode}`}
+                    alt="QR Code PIX"
+                    className="w-48 h-48"
+                  />
+                </div>
+              )}
+
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-display">Copia e Cola</p>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={pixData.copiaecola}
+                    className="flex-1 rounded-xl border border-border/40 bg-background px-3 py-2.5 text-xs text-foreground font-mono truncate"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={copyPix}
+                    className="shrink-0"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                onClick={confirmPaymentAndDeliver}
+                disabled={checkingPayment}
+                className="w-full bg-gradient-gold text-primary-foreground font-display"
+              >
+                {checkingPayment ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Confirmando...
+                  </>
+                ) : (
+                  "Já paguei - Confirmar"
+                )}
+              </Button>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Após pagar, clique em "Já paguei" para receber sua credencial instantaneamente.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delivered Credential Modal */}
       <AnimatePresence>
@@ -321,48 +523,56 @@ const Shop = () => {
                         >
                           <div className="p-4 space-y-2">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display">Escolha a variação</p>
-                            {pvars.map((v) => (
-                              <div
-                                key={v.id}
-                                className="flex items-center justify-between p-3 rounded-xl bg-muted/10 border border-border/20 hover:border-primary/30 transition-colors"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="p-1 rounded bg-muted/30">
-                                    {v.credential_type === "key" ? (
-                                      <Key className="h-3 w-3 text-primary" />
-                                    ) : (
-                                      <Mail className="h-3 w-3 text-primary" />
-                                    )}
-                                  </div>
-                                  <span className="text-sm text-foreground">{v.name}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="text-right">
-                                    <span className="text-sm font-bold text-primary">R$ {Number(v.price).toFixed(2)}</span>
-                                    {v.original_price && (
-                                      <span className="text-[10px] text-muted-foreground line-through ml-1.5">
-                                        R$ {Number(v.original_price).toFixed(2)}
+                            {pvars.map((v) => {
+                              const stock = getStockCount(v.id);
+                              return (
+                                <div
+                                  key={v.id}
+                                  className="flex items-center justify-between p-3 rounded-xl bg-muted/10 border border-border/20 hover:border-primary/30 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 rounded bg-muted/30">
+                                      {v.credential_type === "key" ? (
+                                        <Key className="h-3 w-3 text-primary" />
+                                      ) : (
+                                        <Mail className="h-3 w-3 text-primary" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <span className="text-sm text-foreground">{v.name}</span>
+                                      <span className={`text-[10px] ml-2 ${stock > 0 ? "text-green-500" : "text-destructive"}`}>
+                                        {stock > 0 ? `${stock} disponível` : "Esgotado"}
                                       </span>
-                                    )}
+                                    </div>
                                   </div>
-                                  <Button
-                                    size="sm"
-                                    className="bg-gradient-gold text-primary-foreground text-[10px]"
-                                    disabled={purchasing === v.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleBuyVariation(v);
-                                    }}
-                                  >
-                                    {purchasing === v.id ? (
-                                      <span className="animate-pulse">...</span>
-                                    ) : (
-                                      <ShoppingCart className="h-3 w-3" />
-                                    )}
-                                  </Button>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                      <span className="text-sm font-bold text-primary">R$ {Number(v.price).toFixed(2)}</span>
+                                      {v.original_price && (
+                                        <span className="text-[10px] text-muted-foreground line-through ml-1.5">
+                                          R$ {Number(v.original_price).toFixed(2)}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      className="bg-gradient-gold text-primary-foreground text-[10px]"
+                                      disabled={purchasing === v.id || stock === 0}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleBuyVariation(v);
+                                      }}
+                                    >
+                                      {purchasing === v.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <ShoppingCart className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </motion.div>
                       )}
