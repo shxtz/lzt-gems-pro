@@ -446,7 +446,8 @@ const Shop = () => {
               </div>
             </motion.div>
           </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       <div className="pt-16">
