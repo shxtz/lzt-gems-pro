@@ -92,6 +92,30 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lzt_accounts: {
         Row: {
           buyer_id: string | null
@@ -377,28 +401,37 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          balance: number | null
           created_at: string
+          discord_id: string | null
           display_name: string | null
           email: string | null
           id: string
+          restorecord_verified: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          balance?: number | null
           created_at?: string
+          discord_id?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
+          restorecord_verified?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          balance?: number | null
           created_at?: string
+          discord_id?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
+          restorecord_verified?: boolean | null
           updated_at?: string
           user_id?: string
         }
