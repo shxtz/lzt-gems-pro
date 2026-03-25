@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 import valorantImg from "@/assets/categories/valorant.png";
+import smurfImg from "@/assets/categories/valorant-smurfs.png";
 import fortniteImg from "@/assets/categories/fortnite.png";
 import genshinImg from "@/assets/categories/genshin.png";
 import lolImg from "@/assets/categories/lol.png";
@@ -14,7 +15,7 @@ import zzzImg from "@/assets/categories/zzz.png";
 
 const SLUG_IMAGES: Record<string, string> = {
   valorant: valorantImg,
-  "valorant-smurfs": valorantImg,
+  "valorant-smurfs": smurfImg,
   fortnite: fortniteImg,
   genshin: genshinImg,
   lol: lolImg,
