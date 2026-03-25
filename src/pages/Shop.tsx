@@ -962,11 +962,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                 <div className="relative">
                                   <div className="aspect-square overflow-hidden relative border-b border-border/20">
                                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
-                                      {gridItems.map((item) => {
+                                      {gridItems.map((item, idx) => {
                                         const { tile, outline } = item.tier;
+                                        const itemKey = 'uuid' in item ? item.uuid : String(item.id);
+                                        const tierIcon = 'tierIcon' in item ? item.tierIcon : null;
+                                        const isLoLItem = 'championName' in item;
                                         return (
                                           <div
-                                            key={item.uuid}
+                                            key={itemKey}
                                             className="relative overflow-hidden flex items-center justify-center group/tile"
                                             style={{
                                               background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.85), rgba(${tile.join(",")}, 0.35))`,
@@ -978,11 +981,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                               src={item.imageUrl}
                                               alt=""
                                               loading="lazy"
-                                              className="w-full h-full object-contain p-1.5 saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300"
+                                              className={`w-full h-full ${isLoLItem ? 'object-cover' : 'object-contain p-1.5'} saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300`}
                                             />
-                                            {item.tierIcon && (
+                                            {tierIcon && (
                                               <div className="absolute top-1 right-1">
-                                                <img src={item.tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
+                                                <img src={tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
                                               </div>
                                             )}
                                           </div>
