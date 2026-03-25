@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
 import VBucksPage from "./pages/VBucksPage";
+import CategoryPage from "./pages/CategoryPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/loja" element={<Shop />} />
               <Route path="/vbucks" element={<VBucksPage />} />
+              <Route path="/contas/:slug" element={<CategoryPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route
