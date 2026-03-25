@@ -477,7 +477,7 @@ const AccountPreview = () => {
           {/* LEFT — 3x3 Preview Grid + Details */}
           <div className="space-y-5">
             {/* 3x3 Preview Grid */}
-            {realCategory.toLowerCase().includes("valorant") && hasIndividualItems ? (
+            {hasIndividualItems ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
                 <div className="grid grid-cols-3 gap-[1px] bg-border/10">
                   {individualItems.slice(0, 9).map((item, i) => (
