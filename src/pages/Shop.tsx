@@ -16,9 +16,13 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import accountBannerDefault from "@/assets/account-banner-default.jpg";
 import { getLztAccountImageUrl } from "@/lib/lzt-image";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import bannerTelegram from "@/assets/banner-telegram.jpg";
+import bannerDiscord from "@/assets/banner-discord.jpg";
+import bannerValorant from "@/assets/banner-valorant.jpg";
+import bannerFortnite from "@/assets/banner-fortnite.jpg";
+import bannerDefault from "@/assets/banner-default.jpg";
 
 interface LztAccount {
   id: string;
@@ -72,6 +76,20 @@ interface PixData {
 const getShortId = (lztItemId: string) => {
   const num = parseInt(lztItemId.slice(-6), 10);
   return isNaN(num) ? lztItemId.slice(-6) : String(num);
+};
+
+const getCategoryBanner = (categoryName?: string, lztData?: any): string => {
+  // Use the LZT data's actual category_name if available
+  const lztCatName = lztData?.category?.category_name || "";
+  const name = (categoryName || lztCatName || "").toLowerCase();
+  if (name.includes("telegram")) return bannerTelegram;
+  if (name.includes("discord")) return bannerDiscord;
+  if (name.includes("valorant")) return bannerValorant;
+  if (name.includes("fortnite")) return bannerFortnite;
+  if (name.includes("genshin")) return bannerValorant;
+  if (name.includes("honkai")) return bannerValorant;
+  if (name.includes("lol") || name.includes("league")) return bannerDiscord;
+  return bannerDefault;
 };
 
 const getAccountImage = (data: any, categoryName?: string): string | null => {
@@ -384,7 +402,7 @@ const Shop = () => {
               {/* Banner - uses LZT image or fallback */}
               <div className="h-36 overflow-hidden relative">
                 <img
-                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || accountBannerDefault}
+                  src={getAccountImage(viewAccount.data, getCategoryName(viewAccount.category_id)) || getCategoryBanner(getCategoryName(viewAccount.category_id), viewAccount.data)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
@@ -559,8 +577,10 @@ const Shop = () => {
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
                       const categoryName = getCategoryName(account.category_id);
-                      const inventoryInfo = extractAccountInfo(account.data, categoryName).slice(0, 4);
-                      const accountImg = getAccountImage(account.data, categoryName);
+                      // Use LZT's actual category for accurate info extraction
+                      const lztCategoryName = account.data?.category?.category_name || categoryName;
+                      const inventoryInfo = extractAccountInfo(account.data, lztCategoryName).slice(0, 4);
+                      const accountImg = getAccountImage(account.data, lztCategoryName);
 
                       // Valorant rank badge
                       const isValorant = categoryName.toLowerCase().includes("valorant");
@@ -573,7 +593,7 @@ const Shop = () => {
                           {/* Banner Image - LZT photo or fallback */}
                           <div className="h-28 overflow-hidden relative">
                             <img
-                              src={accountImg || accountBannerDefault}
+                              src={accountImg || getCategoryBanner(categoryName, account.data)}
                               alt=""
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               loading="lazy"
