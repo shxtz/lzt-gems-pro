@@ -29,25 +29,25 @@ function getPreviewFromLztData(lztData: any, categoryName?: string): string | nu
   const links = lztData.imagePreviewLinks || lztData.image_preview_links;
   if (!links) return null;
 
+  if (typeof links === "string") return links;
+  if (Array.isArray(links)) {
+    const first = links.find((item) => typeof item === "string" && item.length > 0);
+    return first || null;
+  }
+
   const slug = (categoryName || "").toLowerCase();
   const keys = Object.entries(PREFERRED_KEYS).find(([k]) =>
     slug.includes(k)
   )?.[1] || ["weapons", "agents", "skins"];
 
-  // Prefer download URLs (higher quality, proxied with auth)
   for (const source of [links.download, links.direct]) {
-    if (!source || typeof source !== "object") continue;
+    if (!source || typeof source !== "object" || Array.isArray(source)) continue;
     for (const key of keys) {
       if (source[key]) return source[key];
     }
-    const firstVal = Object.values(source).find(
-      (v) => typeof v === "string"
-    ) as string | undefined;
+    const firstVal = Object.values(source).find((v) => typeof v === "string") as string | undefined;
     if (firstVal) return firstVal;
   }
-
-  if (typeof links === "string") return links;
-  if (Array.isArray(links) && links.length > 0) return links[0];
 
   return null;
 }
@@ -60,13 +60,23 @@ export function getLztAccountImageUrl(lztData: any, categoryName?: string): stri
   const previewUrl = getPreviewFromLztData(lztData, categoryName);
   if (previewUrl) return proxyUrl(previewUrl);
 
-  // Minecraft: render skin via Crafatar from minecraft_id or nickname
+  const firstCharacterImage =
+    lztData?.genshinCharacters?.[0]?.image ||
+    lztData?.genshinCharacters?.[0]?.icon ||
+    lztData?.honkaiCharacters?.[0]?.icon ||
+    lztData?.zenlessCharacters?.[0]?.weapon?.icon ||
+    lztData?.zenlessCharacters?.[0]?.avatar ||
+    lztData?.zenlessCharacters?.[0]?.icon ||
+    lztData?.zzzCharacters?.[0]?.weapon?.icon ||
+    lztData?.zzzCharacters?.[0]?.avatar ||
+    lztData?.zzzCharacters?.[0]?.icon;
+  if (typeof firstCharacterImage === "string") return firstCharacterImage;
+
   const mcId = lztData.minecraft_id;
   const mcNick = lztData.minecraft_nickname;
   if (mcId) return `https://crafatar.com/renders/body/${mcId}?overlay&scale=4`;
   if (mcNick) return `https://minotar.net/armor/body/${mcNick}/300.png`;
 
-  // Minecraft skin base64 → data URI
   if (lztData.minecraft_skin && typeof lztData.minecraft_skin === "string" && lztData.minecraft_skin.length > 100) {
     return `data:image/png;base64,${lztData.minecraft_skin}`;
   }
@@ -81,30 +91,43 @@ export interface InventoryImages {
   [key: string]: string | null;
 }
 
-/**
- * Get all inventory images for display.
- * Returns proxied URLs ready for <img> tags.
- * Supports Valorant (weapons/agents/buddies), Genshin/Honkai/ZZZ, and generic keys.
- */
 export function getLztInventoryImages(lztData: any): InventoryImages {
   const result: InventoryImages = { weapons: null, agents: null, buddies: null };
   if (!lztData) return result;
 
   const links = lztData.imagePreviewLinks || lztData.image_preview_links;
-  if (!links || Array.isArray(links)) return result;
+  if (Array.isArray(links)) {
+    links.forEach((url, index) => {
+      if (typeof url === "string" && url) result[`preview_${index + 1}`] = proxyUrl(url);
+    });
+  } else if (links && typeof links === "object") {
+    const allKeys = new Set<string>();
+    for (const source of [links.download, links.direct]) {
+      if (source && typeof source === "object" && !Array.isArray(source)) {
+        Object.keys(source).forEach((k) => allKeys.add(k));
+      }
+    }
 
-  // Collect all available image keys from download and direct
-  const allKeys = new Set<string>();
-  for (const source of [links.download, links.direct]) {
-    if (source && typeof source === "object" && !Array.isArray(source)) {
-      Object.keys(source).forEach(k => allKeys.add(k));
+    for (const key of allKeys) {
+      const url = links.download?.[key] || links.direct?.[key];
+      if (url && typeof url === "string") result[key] = proxyUrl(url);
     }
   }
 
-  for (const key of allKeys) {
-    const url = links.download?.[key] || links.direct?.[key];
-    if (url && typeof url === "string") result[key] = proxyUrl(url);
-  }
+  const fallbackImages = [
+    lztData?.genshinCharacters?.[0]?.image,
+    lztData?.genshinCharacters?.[1]?.image,
+    lztData?.honkaiCharacters?.[0]?.icon,
+    lztData?.honkaiCharacters?.[1]?.icon,
+    lztData?.zenlessCharacters?.[0]?.weapon?.icon,
+    lztData?.zenlessCharacters?.[0]?.icon,
+    lztData?.zzzCharacters?.[0]?.weapon?.icon,
+    lztData?.zzzCharacters?.[0]?.icon,
+  ].filter((url): url is string => typeof url === "string" && url.length > 0);
+
+  fallbackImages.slice(0, 4).forEach((url, index) => {
+    if (!result[`fallback_${index + 1}`]) result[`fallback_${index + 1}`] = url;
+  });
 
   return result;
 }

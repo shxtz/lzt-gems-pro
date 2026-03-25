@@ -24,24 +24,18 @@ Deno.serve(async (req) => {
       "Accept": "image/*,*/*",
     };
 
-    // Always send LZT API key for api.lzt.market URLs
-    if (imageUrl.includes("api.lzt.market")) {
+    if (imageUrl.includes("api.lzt.market") || imageUrl.includes("prod-api.lzt.market")) {
       const lztApiKey = Deno.env.get("LZT_API_KEY");
-      if (lztApiKey) {
-        headers["Authorization"] = `Bearer ${lztApiKey}`;
-      }
+      if (lztApiKey) headers["Authorization"] = `Bearer ${lztApiKey}`;
     }
 
     const response = await fetch(imageUrl, { headers });
 
     if (!response.ok) {
-      // If direct JWT URL fails (expired), try the download endpoint instead
       if (response.status === 401 && imageUrl.includes("/image/show?jwt=")) {
-        const match = imageUrl.match(/api\.lzt\.market\/(\d+)\/image\/show\?jwt=.*$/);
-        const jtiMatch = imageUrl.match(/"jti":"(\d+):(\w+)"/);
+        const match = imageUrl.match(/(?:prod-api|api)\.lzt\.market\/(\d+)\/image\/show\?jwt=.*$/);
         if (match) {
           const itemId = match[1];
-          // Try to extract type from JWT payload
           let imageType = "weapons";
           try {
             const jwtParts = imageUrl.split("jwt=")[1]?.split(".");
@@ -52,7 +46,7 @@ Deno.serve(async (req) => {
             }
           } catch {}
 
-          const fallbackUrl = `https://api.lzt.market/${itemId}/image?type=${imageType}`;
+          const fallbackUrl = `https://prod-api.lzt.market/${itemId}/image?type=${imageType}`;
           const lztApiKey = Deno.env.get("LZT_API_KEY");
           if (lztApiKey) {
             const fallbackRes = await fetch(fallbackUrl, {
