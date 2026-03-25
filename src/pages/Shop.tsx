@@ -17,7 +17,7 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 
 interface LztAccount {
@@ -909,8 +909,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const seed = hashId(account.lzt_item_id);
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
+                            const individualItems = getValorantInventoryItems(account.data, 9);
+                            const hasIndividualItems = individualItems.length > 0;
                             const inv = getLztInventoryImages(account.data);
-                            const hasInventory = inv.weapons || inv.agents || inv.buddies;
+                            const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
 
                             const badgeRow = (
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
@@ -923,6 +925,44 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                 )}
                               </div>
                             );
+
+                            // 3x3 grid with individual item images (Valorant skins/agents/buddies)
+                            if (hasIndividualItems) {
+                              const gridItems = individualItems.slice(0, 9);
+                              return (
+                                <div className="relative">
+                                  <div className="aspect-square overflow-hidden relative border-b border-border/20">
+                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
+                                      {gridItems.map((item, idx) => (
+                                        <div key={item.uuid} className="relative overflow-hidden bg-muted/10 flex items-center justify-center">
+                                          <img
+                                            src={item.imageUrl}
+                                            alt=""
+                                            loading="lazy"
+                                            className="w-full h-full object-contain p-1 group-hover:scale-110 transition-transform duration-500 ease-out"
+                                          />
+                                          {/* Rarity diamond */}
+                                          <div className="absolute top-1 right-1">
+                                            <span className="text-primary text-[8px]">◆</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {gridItems.length < 9 && Array.from({ length: 9 - gridItems.length }).map((_, idx) => (
+                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-muted/5 flex items-center justify-center">
+                                          <CategoryIcon className="h-4 w-4 text-muted-foreground/10" strokeWidth={1} />
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute top-2 right-2 z-[3]">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm">
+                                        <Zap className="h-2.5 w-2.5" /> Automática
+                                      </span>
+                                    </div>
+                                    {badgeRow}
+                                  </div>
+                                </div>
+                              );
+                            }
 
                             if (hasInventory) {
                               const inventoryItems = [
@@ -944,8 +984,6 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                                             style={{ filter: "saturate(1.15) contrast(1.08) brightness(1.02)" }}
                                           />
-                                          {/* Subtle warm overlay to reduce green tint */}
-                                          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(30,20,10,0.15) 0%, rgba(30,20,10,0.25) 100%)", mixBlendMode: "multiply" }} />
                                         </div>
                                       ))}
                                       {inventoryItems.length < 4 && Array.from({ length: 4 - inventoryItems.length }).map((_, idx) => (
@@ -954,10 +992,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                         </div>
                                       ))}
                                     </div>
-                                    {/* Bottom fade */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none z-[1]" />
                                     <div className="absolute top-2 right-2 z-[3]">
-                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm">
                                         <Zap className="h-2.5 w-2.5" /> Automática
                                       </span>
                                     </div>
