@@ -204,7 +204,7 @@ const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: str
 };
 
 const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -1053,6 +1053,17 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             <h3 className="font-display text-sm text-foreground font-semibold">
                               CONTA BARATA #{getShortId(account.lzt_item_id)}
                             </h3>
+                            {isAdmin && (
+                              <a
+                                href={`https://lzt.market/${account.lzt_item_id}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-block text-[10px] font-mono px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                              >
+                                LZT#{account.lzt_item_id}
+                              </a>
+                            )}
 
 
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
