@@ -43,6 +43,7 @@ const App = () => (
               <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/contas/:slug" element={<CategoryPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/preview/:id" element={<AccountPreview />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route
                 path="/minha-conta"
