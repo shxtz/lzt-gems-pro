@@ -102,14 +102,14 @@ const Navbar = () => {
 
           {user ? (
             <div className="hidden lg:flex items-center gap-2">
-              <span className="font-body text-xs text-muted-foreground">{user.email?.split("@")[0]}</span>
               <motion.button
-                onClick={handleLogout}
+                onClick={() => navigate("/minha-conta")}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="p-2 rounded-xl text-muted-foreground hover:text-destructive transition-colors"
+                className="flex items-center gap-2 rounded-xl bg-gradient-gold px-5 py-2.5 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition-all duration-300 hover:shadow-gold-intense"
               >
-                <LogOut className="h-4 w-4" />
+                <User className="h-3.5 w-3.5" />
+                Minha Conta
               </motion.button>
             </div>
           ) : (
@@ -180,11 +180,11 @@ const Navbar = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.35 }}
-                  onClick={() => { handleLogout(); setMobileOpen(false); }}
-                  className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-destructive/30 px-5 py-3 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-destructive"
+                  onClick={() => { navigate("/minha-conta"); setMobileOpen(false); }}
+                  className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-gold px-5 py-3 font-display text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground"
                 >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Sair
+                  <User className="h-3.5 w-3.5" />
+                  Minha Conta
                 </motion.button>
               ) : (
                 <motion.button

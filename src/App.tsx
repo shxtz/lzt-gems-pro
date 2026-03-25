@@ -12,6 +12,7 @@ import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./pages/AdminLayout";
 import Checkout from "./pages/Checkout";
+import ClientArea from "./pages/ClientArea";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -35,6 +36,14 @@ const App = () => (
               <Route path="/vbucks" element={<VBucksPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route
+                path="/minha-conta"
+                element={
+                  <ProtectedRoute>
+                    <ClientArea />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/login" element={<AdminLogin />} />
               <Route
                 path="/admin"
