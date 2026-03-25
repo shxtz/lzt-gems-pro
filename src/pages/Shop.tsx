@@ -17,8 +17,10 @@ import FloatingChat from "@/components/FloatingChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
+import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
+import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, type ValorantSkin } from "@/lib/valorant-api";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import ValorantInventory from "@/components/ValorantInventory";
 
 interface LztAccount {
   id: string;
@@ -679,6 +681,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 {/* Account Details - per category */}
                 <AccountDetails lztData={viewAccount.data} categoryName={modalRealCategory} />
 
+                {/* Full Valorant Inventory */}
+                {modalRealCategory.toLowerCase().includes("valorant") && (
+                  <ValorantInventory lztData={viewAccount.data} compact />
+                )}
+
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
                   <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
                   <Button onClick={() => { setViewAccount(null); handleBuyAccount(viewAccount); }} disabled={purchasing === viewAccount.id} className="bg-gradient-gold text-primary-foreground font-display gap-2">
@@ -909,7 +916,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const seed = hashId(account.lzt_item_id);
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
-                            const individualItems = getValorantInventoryItems(account.data, 9);
+                            const valInventory = account.data?.valorantInventory;
+                            const individualItems = valInventory && typeof valInventory === "object"
+                              ? getQuickPreviewItems(valInventory, 9)
+                              : [];
                             const hasIndividualItems = individualItems.length > 0;
                             const inv = getLztInventoryImages(account.data);
                             const hasInventory = hasIndividualItems || inv.weapons || inv.agents || inv.buddies;
@@ -926,29 +936,43 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               </div>
                             );
 
-                            // 3x3 grid with individual item images (Valorant skins/agents/buddies)
+                            // 3x3 grid with individual item images
                             if (hasIndividualItems) {
                               const gridItems = individualItems.slice(0, 9);
                               return (
                                 <div className="relative">
                                   <div className="aspect-square overflow-hidden relative border-b border-border/20">
                                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
-                                      {gridItems.map((item, idx) => (
-                                        <div key={item.uuid} className="relative overflow-hidden bg-muted/10 flex items-center justify-center">
-                                          <img
-                                            src={item.imageUrl}
-                                            alt=""
-                                            loading="lazy"
-                                            className="w-full h-full object-contain p-1 group-hover:scale-110 transition-transform duration-500 ease-out"
-                                          />
-                                          {/* Rarity diamond */}
-                                          <div className="absolute top-1 right-1">
-                                            <span className="text-primary text-[8px]">◆</span>
+                                      {gridItems.map((item) => {
+                                        // Default tile style - will be enriched by rarity
+                                        const defaultTile = item.type === "skin"
+                                          ? { bg: "rgba(60,60,60,0.6)", border: "rgba(120,120,120,0.4)" }
+                                          : { bg: "rgba(40,50,60,0.6)", border: "rgba(80,120,140,0.4)" };
+
+                                        return (
+                                          <div
+                                            key={item.uuid}
+                                            className="relative overflow-hidden flex items-center justify-center group/tile"
+                                            style={{
+                                              background: defaultTile.bg,
+                                              borderRight: `1px solid ${defaultTile.border}`,
+                                              borderBottom: `1px solid ${defaultTile.border}`,
+                                            }}
+                                          >
+                                            <img
+                                              src={item.imageUrl}
+                                              alt=""
+                                              loading="lazy"
+                                              className="w-full h-full object-contain p-1 saturate-[1.6] brightness-110 group-hover/tile:scale-110 transition-transform duration-300"
+                                            />
+                                            <div className="absolute top-0.5 right-0.5">
+                                              <span className="text-primary/70 text-[7px]">◆</span>
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                       {gridItems.length < 9 && Array.from({ length: 9 - gridItems.length }).map((_, idx) => (
-                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-muted/5 flex items-center justify-center">
+                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-muted/5 flex items-center justify-center" style={{ borderRight: "1px solid rgba(120,120,120,0.1)", borderBottom: "1px solid rgba(120,120,120,0.1)" }}>
                                           <CategoryIcon className="h-4 w-4 text-muted-foreground/10" strokeWidth={1} />
                                         </div>
                                       ))}
