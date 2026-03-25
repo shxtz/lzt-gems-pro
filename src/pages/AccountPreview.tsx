@@ -421,6 +421,8 @@ const AccountPreview = () => {
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
+  const inv = getLztInventoryImages(d);
+  const hasInventory = inv.weapons || inv.agents || inv.buddies;
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
   const price = Number(account.price_brl);
