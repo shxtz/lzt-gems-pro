@@ -535,23 +535,12 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 </button>
               </nav>
 
-              {/* Categorias - All game categories */}
+              {/* Categorias - Dynamic from database */}
               <h3 className="font-display text-[10px] text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <Star className="h-3 w-3 text-primary" /> Categorias
               </h3>
               <nav className="space-y-1 mb-5">
-                {[
-                  { name: "Valorant BR", slug: "valorant", Icon: Crosshair },
-                  { name: "Valorant Smurfs", slug: "valorant", Icon: Crosshair },
-                  { name: "League of Legends", slug: "lol", Icon: Trophy },
-                  { name: "Genshin Impact", slug: "genshin", Icon: Star },
-                  { name: "Honkai: Star Rail", slug: "honkai", Icon: Star },
-                  { name: "Fortnite", slug: "fortnite", Icon: Sword },
-                  { name: "Steam", slug: "steam", Icon: Gamepad2 },
-                  { name: "Minecraft", slug: "minecraft", Icon: Gamepad2 },
-                  { name: "Zenless Zone Zero", slug: "zzz", Icon: Star },
-                ].map((cat) => {
-                  // Match to actual lzt_category if exists
+                {shopCategories?.map((cat) => {
                   const matchedCat = lztCategories?.find((c) => c.name.toLowerCase().includes(cat.slug));
                   const catId = matchedCat?.id || null;
                   const count = catId ? getCategoryCount(catId) : 0;
@@ -559,7 +548,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                   return (
                     <button
-                      key={cat.name}
+                      key={cat.id}
                       onClick={() => {
                         if (catId) {
                           setSelectedCategory(catId);
@@ -575,10 +564,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        {matchedCat?.icon_url ? (
-                          <img src={matchedCat.icon_url} alt="" className="h-4 w-4 rounded" />
+                        {cat.icon_url ? (
+                          <img src={cat.icon_url} alt="" className="h-4 w-4 rounded" />
                         ) : (
-                          <cat.Icon className="h-4 w-4" />
+                          <span className="text-sm">{cat.emoji || "📦"}</span>
                         )}
                         <span className="truncate">{cat.name}</span>
                       </div>
