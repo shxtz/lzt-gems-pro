@@ -35,23 +35,43 @@ Deno.serve(async (req) => {
     const response = await fetch(imageUrl, { headers });
 
     if (!response.ok) {
+      // If direct JWT URL fails (expired), try the download endpoint instead
+      if (response.status === 401 && imageUrl.includes("/image/show?jwt=")) {
+        const match = imageUrl.match(/api\.lzt\.market\/(\d+)\/image\/show\?jwt=.*$/);
+        const jtiMatch = imageUrl.match(/"jti":"(\d+):(\w+)"/);
+        if (match) {
+          const itemId = match[1];
+          // Try to extract type from JWT payload
+          let imageType = "weapons";
+          try {
+            const jwtParts = imageUrl.split("jwt=")[1]?.split(".");
+            if (jwtParts && jwtParts[1]) {
+              const payload = JSON.parse(atob(jwtParts[1].replace(/-/g, "+").replace(/_/g, "/")));
+              const jti = payload.jti || "";
+              imageType = jti.split(":")[1] || "weapons";
+            }
+          } catch {}
+
+          const fallbackUrl = `https://api.lzt.market/${itemId}/image?type=${imageType}`;
+          const lztApiKey = Deno.env.get("LZT_API_KEY");
+          if (lztApiKey) {
+            const fallbackRes = await fetch(fallbackUrl, {
+              headers: { Authorization: `Bearer ${lztApiKey}`, Accept: "application/json" },
+            });
+            if (fallbackRes.ok) {
+              return await handleLztResponse(fallbackRes);
+            }
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ error: `Failed to fetch image: ${response.status}` }), {
         status: response.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const contentType = response.headers.get("content-type") || "image/png";
-    const body = await response.arrayBuffer();
-
-    return new Response(body, {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=86400",
-      },
-    });
+    return await handleLztResponse(response);
   } catch (err) {
     console.error("LZT Proxy error:", err);
     return new Response(JSON.stringify({ error: "Proxy error" }), {
@@ -60,3 +80,44 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+async function handleLztResponse(response: Response): Promise<Response> {
+  const contentType = response.headers.get("content-type") || "";
+
+  // If response is JSON, it contains base64 image data
+  if (contentType.includes("application/json")) {
+    try {
+      const json = await response.json();
+      if (json.base64) {
+        const binaryStr = atob(json.base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        return new Response(bytes, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=86400",
+          },
+        });
+      }
+    } catch {}
+    return new Response(JSON.stringify({ error: "Invalid image response" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // If response is already an image, pass through
+  const body = await response.arrayBuffer();
+  return new Response(body, {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": contentType || "image/png",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+}
