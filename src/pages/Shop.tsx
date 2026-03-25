@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
-  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3
+  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3,
+  Send, MessageCircle, Sword, Crosshair
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -18,11 +19,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getLztAccountImageUrl } from "@/lib/lzt-image";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
-import bannerTelegram from "@/assets/banner-telegram.jpg";
-import bannerDiscord from "@/assets/banner-discord.jpg";
-import bannerValorant from "@/assets/banner-valorant.jpg";
-import bannerFortnite from "@/assets/banner-fortnite.jpg";
-import bannerDefault from "@/assets/banner-default.jpg";
 
 interface LztAccount {
   id: string;
