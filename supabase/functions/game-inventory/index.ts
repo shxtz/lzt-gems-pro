@@ -152,19 +152,62 @@ async function handleHonkai(data: any) {
 
 async function handleLoL(data: any) {
   await ensureLoLCache();
-  const champNames: string[] = data?.lolChampions || data?.riot_lol_champions || [];
-  const items = champNames.map((name: string) => {
-    const cached = lolChampionCache?.get(name.toLowerCase());
-    const champKey = cached?.key || name;
-    return {
-      id: champKey, name: cached?.name || name,
-      icon: `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/champion/${champKey}.png`,
-      type: "champion", rarity: 0, tier: LOL_TIER, tags: cached?.tags || [],
-    };
-  });
+
+  const items: any[] = [];
+  const skinIds: number[] = data?.lolInventory?.Skin || [];
+  const seenChampions = new Set<number>();
+
+  // Process skins from lolInventory
+  for (const skinId of skinIds) {
+    const championKey = Math.floor(skinId / 1000);
+    const skinNum = skinId % 1000;
+    const champData = lolChampionByKey?.get(championKey);
+    const champId = champData?.id || `Champion${championKey}`;
+    const champName = champData?.name || champId;
+
+    seenChampions.add(championKey);
+
+    if (skinNum === 0) {
+      // Base skin = champion
+      items.push({
+        id: `champ-${championKey}`, name: champName,
+        icon: `https://ddragon.leagueoflegends.com/cdn/${ddragonVersion}/img/champion/${champId}.png`,
+        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
+        type: "champion", rarity: 0, tier: LOL_TIER, tags: champData?.tags || [],
+      });
+    } else {
+      items.push({
+        id: `skin-${skinId}`, name: `${champName} #${skinNum}`,
+        icon: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
+        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_${skinNum}.jpg`,
+        type: "skin", rarity: 1, tier: { ...LOL_TIER, label: "Skin", outline: [200, 155, 60] },
+        champion: champName,
+      });
+    }
+  }
+
+  // Separate skins and champions for tabs
+  const skins = items.filter(i => i.type === "skin");
+  const champions = items.filter(i => i.type === "champion");
+
+  // Add stats
+  const stats = {
+    level: data?.riot_lol_level,
+    rank: data?.riot_lol_rank,
+    region: data?.riot_lol_region,
+    blueEssence: data?.riot_lol_wallet_blue,
+    orangeEssence: data?.riot_lol_wallet_orange,
+    rp: data?.riot_lol_wallet_riot,
+    mythicEssence: data?.riot_lol_wallet_mythic,
+    skinCount: data?.riot_lol_skin_count || skins.length,
+    championCount: data?.riot_lol_champion_count || champions.length,
+  };
+
   const tabs = [];
-  if (items.length > 0) tabs.push({ key: "champions", label: "Campeões", count: items.length });
-  return { game: "lol", items, tabs, theme: { primary: [200, 155, 60], accent: [30, 60, 100], bg: [10, 20, 40] } };
+  if (skins.length > 0) tabs.push({ key: "skins", label: "Skins", count: skins.length });
+  if (champions.length > 0) tabs.push({ key: "champions", label: "Campeões", count: champions.length });
+
+  return { game: "lol", items, skins, champions, stats, tabs, theme: { primary: [200, 155, 60], accent: [30, 60, 100], bg: [10, 20, 40] } };
 }
 
 function handleFortnite(data: any) {
