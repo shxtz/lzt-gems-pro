@@ -178,10 +178,24 @@ const resolveCategoryKey = (value = "") => {
   return bestMatch?.key ?? null;
 };
 
-// LZT stores platform category names (riot, mihoyo, telegram, minecraft, etc.)
-// which don't match game names (Fortnite, Genshin Impact, etc.).
-// We trust the admin category assignment as the source of truth.
-const isAccountCategoryCompatible = (_account: LztAccount, _adminCategoryName: string) => {
+// Hide clearly mismatched imports so categories don't leak wrong account types.
+const isAccountCategoryCompatible = (account: LztAccount, adminCategoryName: string) => {
+  const category = normalizeCategoryText(adminCategoryName);
+  const data = account.data || {};
+  const categoryTitle = normalizeCategoryText(data?.category?.category_title || data?.category?.category_name || "");
+  const title = normalizeCategoryText(data?.title || account.title || "");
+  const hasTelegramSignals = Boolean(data?.telegram_id_count || data?.telegram_dc_id || data?.telegram_chats_count || data?.telegram_password || data?.telegram_country);
+  const hasMinecraftSignals = Boolean(data?.minecraft_id || data?.minecraft_nickname || data?.minecraft_skin);
+  const hasLoLSignals = Boolean(data?.lolInventory || data?.riot_lol_level || data?.riot_lol_rank);
+  const hasValorantSignals = Boolean(data?.valorantInventory || data?.riot_valorant_rank || data?.valorant_rank);
+
+  if (category.includes("fortnite")) {
+    return categoryTitle.includes("fortnite") || title.includes("fortnite") || (!hasTelegramSignals && !hasMinecraftSignals && !hasLoLSignals && !hasValorantSignals);
+  }
+  if (category.includes("minecraft")) return hasMinecraftSignals || categoryTitle.includes("minecraft") || title.includes("minecraft");
+  if (category.includes("league") || category.includes("lol")) return hasLoLSignals;
+  if (category.includes("valorant")) return hasValorantSignals;
+
   return true;
 };
 
