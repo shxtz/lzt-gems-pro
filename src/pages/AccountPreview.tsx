@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import { getLztAccountImageUrl, getLztInventoryImages, getValorantInventoryItems } from "@/lib/lzt-image";
 import { getQuickPreviewItems } from "@/lib/valorant-api";
 import { getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import ValorantInventory from "@/components/ValorantInventory";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -588,6 +589,17 @@ const AccountPreview = () => {
             </div>
             <GameInventory data={d} cat={realCategory} />
           </div>
+
+          {/* Full Valorant Inventory with enriched data */}
+          {realCategory.toLowerCase().includes("valorant") && (
+            <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-card">
+              <div className="flex items-center gap-2 mb-5">
+                <Crosshair className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-lg text-foreground">Inventário Completo</h2>
+              </div>
+              <ValorantInventory lztData={d} />
+            </div>
+          )}
 
           {/* Image Gallery */}
           {allImages.length > 0 && (
