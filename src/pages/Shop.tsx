@@ -514,26 +514,79 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
           {/* Sidebar */}
           <aside className="hidden lg:flex flex-col w-64 min-h-[calc(100vh-4rem)] border-r border-border/30 bg-card/50 sticky top-16 overflow-y-auto">
             <div className="p-4">
-              <h3 className="font-display text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Categorias</h3>
-              <nav className="space-y-1">
-                <button onClick={() => { setSelectedCategory(null); setSelectedTab("contas"); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${!selectedCategory && selectedTab === "contas" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}>
-                  <div className="flex items-center gap-2.5"><Gamepad2 className="h-4 w-4" /><span>Todas as Contas</span></div>
-                  <span className="text-[10px] bg-muted/30 px-2 py-0.5 rounded-full">{lztAccounts?.length || 0}</span>
+              {/* Atalhos */}
+              <h3 className="font-display text-[10px] text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Zap className="h-3 w-3 text-primary" /> Atalhos
+              </h3>
+              <nav className="space-y-1 mb-5">
+                <button onClick={() => navigate("/")} className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all">
+                  <div className="flex items-center gap-2.5"><Gamepad2 className="h-4 w-4" /><span>Loja</span></div>
+                  <ChevronRight className="h-3 w-3 opacity-40" />
                 </button>
-                {lztCategories?.map((cat) => (
-                  <button key={cat.id} onClick={() => { setSelectedCategory(cat.id); setSelectedTab("contas"); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${selectedCategory === cat.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}>
-                    <div className="flex items-center gap-2.5">
-                      {cat.icon_url ? <img src={cat.icon_url} alt="" className="h-4 w-4 rounded" /> : <Gamepad2 className="h-4 w-4" />}
-                      <span className="truncate">{cat.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] bg-muted/30 px-2 py-0.5 rounded-full">{getCategoryCount(cat.id)}</span>
-                      <ChevronRight className="h-3 w-3 opacity-40" />
-                    </div>
-                  </button>
-                ))}
+                <button onClick={() => navigate("/vbucks")} className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all">
+                  <div className="flex items-center gap-2.5"><Zap className="h-4 w-4" /><span>V-Bucks</span></div>
+                  <ChevronRight className="h-3 w-3 opacity-40" />
+                </button>
               </nav>
-              <div className="border-t border-border/20 mt-4 pt-4">
+
+              {/* Categorias - All game categories */}
+              <h3 className="font-display text-[10px] text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Star className="h-3 w-3 text-primary" /> Categorias
+              </h3>
+              <nav className="space-y-1 mb-5">
+                {[
+                  { name: "Valorant BR", slug: "valorant", Icon: Crosshair },
+                  { name: "Valorant Smurfs", slug: "valorant", Icon: Crosshair },
+                  { name: "League of Legends", slug: "lol", Icon: Trophy },
+                  { name: "Genshin Impact", slug: "genshin", Icon: Star },
+                  { name: "Honkai: Star Rail", slug: "honkai", Icon: Star },
+                  { name: "Fortnite", slug: "fortnite", Icon: Sword },
+                  { name: "Steam", slug: "steam", Icon: Gamepad2 },
+                  { name: "Minecraft", slug: "minecraft", Icon: Gamepad2 },
+                  { name: "Zenless Zone Zero", slug: "zzz", Icon: Star },
+                ].map((cat) => {
+                  // Match to actual lzt_category if exists
+                  const matchedCat = lztCategories?.find((c) => c.name.toLowerCase().includes(cat.slug));
+                  const catId = matchedCat?.id || null;
+                  const count = catId ? getCategoryCount(catId) : 0;
+                  const isActive = catId ? selectedCategory === catId : false;
+
+                  return (
+                    <button
+                      key={cat.name}
+                      onClick={() => {
+                        if (catId) {
+                          setSelectedCategory(catId);
+                          setSelectedTab("contas");
+                        } else {
+                          navigate(`/contas/${cat.slug}`);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {matchedCat?.icon_url ? (
+                          <img src={matchedCat.icon_url} alt="" className="h-4 w-4 rounded" />
+                        ) : (
+                          <cat.Icon className="h-4 w-4" />
+                        )}
+                        <span className="truncate">{cat.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {count > 0 && <span className="text-[10px] bg-muted/30 px-2 py-0.5 rounded-full">{count}</span>}
+                        <ChevronRight className="h-3 w-3 opacity-40" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Produtos */}
+              <div className="border-t border-border/20 pt-4">
                 <h3 className="font-display text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Produtos</h3>
                 <button onClick={() => { setSelectedCategory(null); setSelectedTab("produtos"); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${selectedTab === "produtos" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}>
                   <div className="flex items-center gap-2.5"><Package className="h-4 w-4" /><span>Keys & Contas</span></div>
