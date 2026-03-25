@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
-  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock
+  Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import accountBannerDefault from "@/assets/account-banner-default.jpg";
+import { getLztAccountImageUrl } from "@/lib/lzt-image";
+import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 
 interface LztAccount {
   id: string;
