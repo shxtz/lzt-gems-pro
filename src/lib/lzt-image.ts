@@ -87,3 +87,67 @@ export function getLztInventoryImages(lztData: any): InventoryImages {
 
   return result;
 }
+
+/**
+ * Individual inventory item with image URL from valorant-api.com
+ */
+export interface InventoryItem {
+  uuid: string;
+  type: "skin" | "agent" | "buddy";
+  imageUrl: string;
+}
+
+/**
+ * Extract individual inventory items from valorantInventory data.
+ * Uses valorant-api.com media URLs which are publicly accessible (no proxy needed).
+ * Returns up to `limit` items, prioritizing skins, then agents, then buddies.
+ */
+export function getValorantInventoryItems(lztData: any, limit = 9): InventoryItem[] {
+  if (!lztData) return [];
+
+  const inventory = lztData.valorantInventory;
+  if (!inventory || typeof inventory !== "object") return [];
+
+  const items: InventoryItem[] = [];
+
+  // WeaponSkins first (most visually interesting)
+  const skins = Array.isArray(inventory.WeaponSkins) ? inventory.WeaponSkins : [];
+  for (const uuid of skins) {
+    if (items.length >= limit) break;
+    if (typeof uuid === "string" && uuid.length > 10) {
+      items.push({
+        uuid,
+        type: "skin",
+        imageUrl: `https://media.valorant-api.com/weaponskins/${uuid}/displayicon.png`,
+      });
+    }
+  }
+
+  // Agents
+  const agents = Array.isArray(inventory.Agent) ? inventory.Agent : [];
+  for (const uuid of agents) {
+    if (items.length >= limit) break;
+    if (typeof uuid === "string" && uuid.length > 10) {
+      items.push({
+        uuid,
+        type: "agent",
+        imageUrl: `https://media.valorant-api.com/agents/${uuid}/displayicon.png`,
+      });
+    }
+  }
+
+  // Buddies
+  const buddies = Array.isArray(inventory.Buddy) ? inventory.Buddy : [];
+  for (const uuid of buddies) {
+    if (items.length >= limit) break;
+    if (typeof uuid === "string" && uuid.length > 10) {
+      items.push({
+        uuid,
+        type: "buddy",
+        imageUrl: `https://media.valorant-api.com/buddies/${uuid}/displayicon.png`,
+      });
+    }
+  }
+
+  return items;
+}
