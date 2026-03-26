@@ -84,10 +84,13 @@ Deno.serve(async (req) => {
             removed++;
           } else {
             // Account still valid — check if price changed
-            const newUsdPrice = item.price || 0;
-            if (newUsdPrice !== account.price_usd && newUsdPrice > 0) {
+            const newRawPrice = item.price || 0;
+            const currency = (item.price_currency || item.priceCurrency || "usd").toLowerCase();
+            const isBrl = currency === "brl" || currency === "rub_brl" || currency === "r$";
+            const baseBrl = isBrl ? newRawPrice : newRawPrice * 5.5;
+            if (newRawPrice !== account.price_usd && newRawPrice > 0) {
               const margin = marginMap[account.category_id] || 30;
-              const newBrlPrice = Math.round(newUsdPrice * 5.5 * (1 + margin / 100) * 100) / 100;
+              const newBrlPrice = Math.round(baseBrl * (1 + margin / 100) * 100) / 100;
 
               await supabase
                 .from("lzt_accounts")
