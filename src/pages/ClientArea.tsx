@@ -5,7 +5,7 @@ import { withTimeout } from "@/lib/supabase-resilience";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight } from "lucide-react";
+import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -79,6 +79,45 @@ const ClientArea = () => {
       }
     },
   });
+
+  // Fetch delivery logs for all delivered orders
+  const deliveredOrderIds = (orders ?? []).filter((o: any) => o.status === "delivered").map((o: any) => o.id);
+  const { data: deliveryLogs } = useQuery({
+    queryKey: ["client-delivery-logs", deliveredOrderIds],
+    enabled: deliveredOrderIds.length > 0,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("delivery_logs")
+            .select("order_id, credential_delivered")
+            .in("order_id", deliveredOrderIds),
+        );
+        if (error) throw error;
+        return data ?? [];
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  const credentialsByOrderId = (deliveryLogs ?? []).reduce<Record<string, string>>((acc, log: any) => {
+    acc[log.order_id] = log.credential_delivered;
+    return acc;
+  }, {});
+
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+
+  const copyCredential = (orderId: string, credential: string) => {
+    navigator.clipboard.writeText(credential);
+    setCopiedOrderId(orderId);
+    toast.success("Credencial copiada!");
+    setTimeout(() => setCopiedOrderId(null), 2000);
+  };
 
   const updateProfile = useMutation({
     mutationFn: async (name: string) => {
@@ -173,6 +212,7 @@ const ClientArea = () => {
     paid: { label: "Pago", color: "text-green-500 bg-green-500/10" },
     cancelled: { label: "Cancelado", color: "text-destructive bg-destructive/10" },
     delivered: { label: "Entregue", color: "text-primary bg-primary/10" },
+    refund_needed: { label: "Reembolso", color: "text-orange-500 bg-orange-500/10" },
   };
 
   return (
@@ -300,34 +340,78 @@ const ClientArea = () => {
                       <div className="space-y-3">
                         {orders.map((order: any) => {
                           const s = statusMap[order.status] || statusMap.pending;
+                          const credential = credentialsByOrderId[order.id];
+                          const isExpanded = expandedOrder === order.id;
                           return (
                             <div
                               key={order.id}
-                              className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-border/30 bg-background/50"
+                              className="rounded-xl border border-border/30 bg-background/50 overflow-hidden"
                             >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="rounded-lg p-2 bg-primary/10">
-                                  <Package className="h-4 w-4 text-primary" />
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="rounded-lg p-2 bg-primary/10">
+                                    <Package className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">
+                                      {order.vbucks_products?.amount
+                                        ? `${order.vbucks_products.amount} V-Bucks`
+                                        : order.lzt_item_id
+                                          ? `Conta #${order.lzt_item_id}`
+                                          : `Pedido #${order.id.slice(0, 8)}`}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-foreground truncate">
-                                    {order.vbucks_products?.amount
-                                      ? `${order.vbucks_products.amount} V-Bucks`
-                                      : `Pedido #${order.id.slice(0, 8)}`}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                                  </p>
+                                <div className="flex items-center gap-3">
+                                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${s.color}`}>
+                                    {s.label}
+                                  </span>
+                                  <span className="text-sm font-display text-foreground">
+                                    R${Number(order.total_price).toFixed(2)}
+                                  </span>
+                                  {credential && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${s.color}`}>
-                                  {s.label}
-                                </span>
-                                <span className="text-sm font-display text-foreground">
-                                  R${Number(order.total_price).toFixed(2)}
-                                </span>
-                              </div>
+                              <AnimatePresence>
+                                {isExpanded && credential && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="px-4 pb-4">
+                                      <div className="rounded-lg bg-muted/20 border border-border/30 p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display">Credencial</p>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => copyCredential(order.id, credential)}
+                                            className="h-7 px-2 text-xs"
+                                          >
+                                            {copiedOrderId === order.id ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                                            {copiedOrderId === order.id ? "Copiado" : "Copiar"}
+                                          </Button>
+                                        </div>
+                                        <p className="text-sm text-foreground font-mono break-all select-all whitespace-pre-wrap">{credential}</p>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                           );
                         })}
