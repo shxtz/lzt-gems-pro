@@ -438,13 +438,15 @@ async function handleFortnite(data: any) {
 }
 
 function handleMinecraft(data: any) {
-  const editions: any[] = [];
-  if (data?.minecraft_java) editions.push({ id: "java", name: "Java Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/4/44/Java_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
-  if (data?.minecraft_bedrock) editions.push({ id: "bedrock", name: "Bedrock Edition", icon: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/7/73/Bedrock_Edition.png", type: "edition", rarity: 0, tier: MINECRAFT_TIER });
   const capes: any[] = data?.minecraft_capes || [];
   const capeItems = capes.map((cape: any, index: number) => {
     const capeName = typeof cape === "string" ? cape : (cape?.name || cape?.title || "Capa");
-    return { id: `${slugify(capeName)}-${index}`, name: capeName, icon: typeof cape === "object" ? (cape?.rendered || cape?.icon || cape?.url || toDataUrl(cape?.data)) : null, type: "cape", rarity: 1, tier: { ...MINECRAFT_TIER, key: "cape", name: "Capa" } };
+    // Priority: rendered (base64 body render) > icon > url > raw data texture
+    let capeIcon: string | null = null;
+    if (typeof cape === "object") {
+      capeIcon = toDataUrl(cape?.rendered) || toDataUrl(cape?.icon) || cape?.url || toDataUrl(cape?.data);
+    }
+    return { id: `${slugify(capeName)}-${index}`, name: capeName, icon: capeIcon, type: "cape", rarity: 1, tier: { ...MINECRAFT_TIER, key: "cape", name: "Capa" } };
   });
   const mcId = data?.minecraft_id;
   const mcNick = data?.minecraft_nickname;
@@ -457,12 +459,11 @@ function handleMinecraft(data: any) {
   } else if (mcNick) {
     skinItems.push({ id: "skin-render", name: mcNick, icon: `https://minotar.net/armor/body/${mcNick}/300.png`, type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
   }
-  const collections = { skins: uniqueBy(skinItems, (item) => item.id), capes: capeItems, editions };
-  const items = [...collections.skins, ...collections.capes, ...collections.editions];
+  const collections = { skins: uniqueBy(skinItems, (item) => item.id), capes: capeItems };
+  const items = [...collections.skins, ...collections.capes];
   const tabs = [];
   if (collections.skins.length > 0) tabs.push({ key: "skins", label: "Skin", count: collections.skins.length });
   if (collections.capes.length > 0) tabs.push({ key: "capes", label: "Capas", count: collections.capes.length });
-  if (collections.editions.length > 0) tabs.push({ key: "editions", label: "Edições", count: collections.editions.length });
   return { game: "minecraft", items, collections, tabs, theme: { primary: [93, 140, 62], accent: [120, 170, 80], bg: [30, 40, 25] } };
 }
 
