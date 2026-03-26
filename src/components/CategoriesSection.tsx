@@ -42,6 +42,9 @@ const CategoriesSection = () => {
   const { data: categories } = useQuery({
     queryKey: ["home-shop-categories"],
     enabled: authReady,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shop_categories")
