@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogIn, UserPlus, AlertCircle, Mail, Lock, User, CheckCircle2, ExternalLink, RefreshCw } from "lucide-react";
+import { LogIn, UserPlus, AlertCircle, Mail, Lock, User, CheckCircle2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
@@ -22,58 +22,37 @@ const AuthPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Discord verification state
-  const [discordIdInput, setDiscordIdInput] = useState("");
   const [discordVerification, setDiscordVerification] = useState<DiscordVerification | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyOpened, setVerifyOpened] = useState(false);
 
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // If already logged in, redirect
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
 
+  // Check for RestoreCord callback params
+  useEffect(() => {
+    const discordId = searchParams.get("discord_id");
+    const username = searchParams.get("username");
+    const avatar = searchParams.get("avatar");
+
+    if (discordId) {
+      setDiscordVerification({
+        discord_id: discordId,
+        username: username || "Discord User",
+        avatar: avatar || null,
+      });
+      setIsLogin(false);
+      toast.success(`Discord verificado: ${username || discordId}`);
+    }
+  }, [searchParams]);
+
   const openRestoreCord = () => {
     window.open(RESTORECORD_VERIFY_URL, "_blank", "noopener,noreferrer");
-    setVerifyOpened(true);
   };
-
-  const checkDiscordVerification = useCallback(async () => {
-    if (!discordIdInput.trim()) {
-      setError("Digite seu Discord ID");
-      return;
-    }
-
-    setVerifying(true);
-    setError("");
-
-    try {
-      const { data, error: fnError } = await supabase.functions.invoke("restorecord-verify", {
-        body: { action: "check_member", discord_id: discordIdInput.trim() },
-      });
-
-      if (fnError) throw fnError;
-
-      if (data?.verified) {
-        setDiscordVerification({
-          discord_id: data.discord_id,
-          username: data.username,
-          avatar: data.avatar,
-        });
-        toast.success(`Discord verificado: ${data.username}`);
-      } else {
-        setError(data?.reason || "Verificação falhou. Verifique pelo RestoreCord primeiro.");
-      }
-    } catch (e: any) {
-      setError(e.message || "Erro ao verificar. Tente novamente.");
-    } finally {
-      setVerifying(false);
-    }
-  }, [discordIdInput]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,9 +83,7 @@ const AuthPage = () => {
       if (signUpError) {
         setError(signUpError.message.includes("Timeout") ? signUpError.message : "Erro ao criar conta. Tente outro email.");
       } else {
-        // Link Discord ID to profile after signup
         try {
-          // Get the newly created user
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
             await supabase.functions.invoke("restorecord-verify", {
@@ -180,46 +157,17 @@ const AuthPage = () => {
               ) : (
                 <>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Para criar conta, primeiro verifique no nosso servidor Discord via RestoreCord, depois insira seu Discord ID abaixo.
+                    Para criar conta, primeiro verifique no nosso servidor Discord clicando no botão abaixo.
                   </p>
 
-                  {/* Step 1: Open RestoreCord */}
                   <button
                     type="button"
                     onClick={openRestoreCord}
                     className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#5865F2] px-4 py-2.5 text-xs font-bold text-white uppercase tracking-wider hover:bg-[#4752c4] transition-colors"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    {verifyOpened ? "Verificar Novamente" : "Verificar no Discord"}
+                    Verificar no Discord
                   </button>
-
-                  {/* Step 2: Enter Discord ID */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                      Seu Discord ID (número)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={discordIdInput}
-                        onChange={(e) => setDiscordIdInput(e.target.value.replace(/\D/g, ""))}
-                        className="flex-1 rounded-lg border border-border/40 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono"
-                        placeholder="Ex: 123456789012345678"
-                      />
-                      <button
-                        type="button"
-                        onClick={checkDiscordVerification}
-                        disabled={verifying || !discordIdInput.trim()}
-                        className="flex items-center gap-1.5 rounded-lg bg-primary/20 border border-primary/30 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/30 transition disabled:opacity-50"
-                      >
-                        {verifying ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                        Verificar
-                      </button>
-                    </div>
-                    <p className="text-[9px] text-muted-foreground">
-                      Ative o Modo Desenvolvedor no Discord → Clique no seu perfil → Copiar ID
-                    </p>
-                  </div>
                 </>
               )}
             </div>
@@ -294,7 +242,7 @@ const AuthPage = () => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => { setIsLogin(!isLogin); setError(""); setDiscordVerification(null); setDiscordIdInput(""); setVerifyOpened(false); }}
+            onClick={() => { setIsLogin(!isLogin); setError(""); setDiscordVerification(null); }}
             className="font-body text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             {isLogin ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
