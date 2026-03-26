@@ -578,8 +578,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         }
       }
 
-      // Step 2: Create order + generate PIX
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending" }).select().single();
+      // Step 2: Create order with LZT info + generate PIX
+      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending", lzt_item_id: account.lzt_item_id, lzt_account_id: account.id } as any).select().single();
       if (orderError) throw orderError;
       const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: account.price_brl, description: `${accountName} - Loja` } });
