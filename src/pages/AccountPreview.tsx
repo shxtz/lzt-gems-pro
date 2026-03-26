@@ -505,6 +505,9 @@ const AccountPreview = () => {
   const enrichedSkins = enrichedInventory?.skins || [];
   const lolPreviewItems = isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : [];
 
+  // Unified preview tiles for ALL games
+  const gamePreviewItems = (!isValorantAccount && !isLoLAccount) ? getGamePreviewItems(d, realCategory, 9) : [];
+
   const previewTiles = isLoLAccount
     ? lolPreviewItems.map((item) => ({
         id: String(item.id),
@@ -520,12 +523,23 @@ const AccountPreview = () => {
           tier: skin.tier,
           tierIcon: skin.tierIcon,
         }))
-      : [];
+      : gamePreviewItems.map((item) => ({
+          id: item.id,
+          image: item.imageUrl,
+          alt: item.name,
+          tier: item.tier,
+          tierIcon: item.tierIcon,
+        }));
 
   const hasIndividualItems = previewTiles.length > 0;
-  const hasInventory = hasIndividualItems || Object.values(lztInv).some(v => v !== null);
+  // Only use LZT images as fallback when no individual items exist
+  const lztInvForDisplay = !hasIndividualItems ? lztInv : { weapons: null, agents: null, buddies: null };
+  const hasInventory = hasIndividualItems || Object.values(lztInvForDisplay).some(v => v !== null);
   const allImages = getAllPreviewImages(d, realCategory);
-  const maskedName = getMaskedName(realCategory, account.lzt_item_id);
+
+  // LoL rank icon
+  const lolRank = isLoLAccount ? d?.riot_lol_rank : null;
+  const lolRankIconUrl = getLoLRankIcon(lolRank);
   const price = Number(account.price_brl);
   const isAvailable = account.status === "available";
 
