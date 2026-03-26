@@ -81,9 +81,25 @@ interface PixData {
   lztAccountId?: string;
 }
 
-const getShortId = (lztItemId: string) => {
-  const num = parseInt(lztItemId.slice(-6), 10);
-  return isNaN(num) ? lztItemId.slice(-6) : String(num);
+const GAME_PREFIX_MAP: Record<string, string> = {
+  valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",
+  genshin: "GI", honkai: "HSR", minecraft: "MC", steam: "STM",
+  telegram: "TG", discord: "DC", zzz: "ZZZ", brawl: "BS",
+};
+
+const getGamePrefix = (cat: string): string => {
+  const n = cat.toLowerCase();
+  for (const [k, prefix] of Object.entries(GAME_PREFIX_MAP)) {
+    if (n.includes(k)) return prefix;
+  }
+  return "ACC";
+};
+
+const getMaskedName = (cat: string, lztItemId: string): string => {
+  const prefix = getGamePrefix(cat);
+  const hash = Math.abs([...lztItemId].reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0));
+  const num = String(hash).slice(-5).padStart(5, "0");
+  return `${prefix}-VB#${num}`;
 };
 
 // Category-specific gradient themes and icons
