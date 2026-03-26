@@ -776,7 +776,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     }
   };
 
-
+  const copyPix = () => {
     if (pixData?.copiaecola) {
       navigator.clipboard.writeText(pixData.copiaecola);
       setCopied(true);
