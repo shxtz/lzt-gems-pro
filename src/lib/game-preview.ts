@@ -38,6 +38,83 @@ const FORTNITE_RARITY_MAP: Record<string, typeof FN_LEGENDARY> = {
   common: FN_COMMON,
 };
 
+function toDataUrl(base64: string | null | undefined): string | null {
+  if (!base64 || typeof base64 !== "string") return null;
+  return base64.startsWith("data:") ? base64 : `data:image/png;base64,${base64}`;
+}
+
+function flattenCollection(input: any): any[] {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.flatMap(flattenCollection);
+  if (typeof input !== "object") return [];
+
+  const looksLikeItem =
+    "id" in input ||
+    "name" in input ||
+    "type" in input ||
+    "rarity" in input ||
+    "images" in input ||
+    "icon" in input ||
+    "displayAssets" in input;
+
+  if (looksLikeItem) return [input];
+  return Object.values(input).flatMap(flattenCollection);
+}
+
+function getFortniteCosmetics(data: any): any[] {
+  return flattenCollection(
+    data?.fortniteCosmetics ||
+      data?.fortnite_cosmetics ||
+      data?.fortnite_locker ||
+      data?.fortniteLocker ||
+      data?.locker ||
+      data?.cosmetics ||
+      data?.inventory?.fortnite ||
+      data?.inventory?.cosmetics,
+  );
+}
+
+function getMinecraftCapes(data: any): any[] {
+  const raw = data?.minecraft_capes || data?.minecraftCapes || data?.capes || [];
+  return Array.isArray(raw) ? raw.flatMap((entry) => (Array.isArray(entry) ? entry : [entry])) : [];
+}
+
+function getFortniteType(entry: any): string {
+  const rawType = String(
+    entry?.type?.value ||
+      entry?.type ||
+      entry?.backendType ||
+      entry?.gameplayType ||
+      entry?.itemType ||
+      entry?.category ||
+      entry?.slot ||
+      "outfit",
+  ).toLowerCase();
+
+  if (rawType.includes("outfit") || rawType.includes("character") || rawType.includes("skin") || rawType.includes("athenacharacter")) return "outfit";
+  if (rawType.includes("pickaxe") || rawType.includes("harvesting")) return "pickaxe";
+  if (rawType.includes("glider") || rawType.includes("umbrella")) return "glider";
+  if (rawType.includes("emote") || rawType.includes("dance") || rawType.includes("emoji")) return "emote";
+  if (rawType.includes("backpack") || rawType.includes("back bling")) return "backbling";
+  if (rawType.includes("wrap")) return "wrap";
+  return rawType;
+}
+
+function getFortniteIcon(entry: any): string {
+  return (
+    entry?.icon ||
+    entry?.images?.icon ||
+    entry?.images?.smallIcon ||
+    entry?.images?.featured ||
+    entry?.displayAssets?.[0]?.url ||
+    entry?.smallIcon ||
+    entry?.image ||
+    entry?.thumbnail ||
+    entry?.offerImage ||
+    ""
+  );
+}
+
 /* ── Genshin Impact ────────────────────────────────────── */
 
 export function getGenshinPreviewItems(data: any, limit = 9): GamePreviewItem[] {
@@ -104,7 +181,6 @@ export function getZZZPreviewItems(data: any, limit = 9): GamePreviewItem[] {
   return sorted.slice(0, limit).map((c, i) => {
     const name = c.name || c.role_name || "Agente";
     const rank = parseZZZRank(c);
-    // Try multiple image sources
     const imageUrl =
       c.role_square_url ||
       c.icon ||
@@ -124,33 +200,40 @@ export function getZZZPreviewItems(data: any, limit = 9): GamePreviewItem[] {
 /* ── Fortnite ──────────────────────────────────────────── */
 
 export function getFortnitePreviewItems(data: any, limit = 9): GamePreviewItem[] {
-  const cosmetics: any[] = data?.fortniteCosmetics || data?.fortnite_locker || data?.fortniteLocker || [];
-  if (!Array.isArray(cosmetics) || cosmetics.length === 0) return [];
+  const cosmetics = getFortniteCosmetics(data)
+    .map((entry, index) => {
+      const type = getFortniteType(entry);
+      const rarity = String(entry?.rarity?.value || entry?.rarity || "common").toLowerCase();
+      const name = entry?.name || entry?.title || `Cosmético ${index + 1}`;
+      return {
+        id: `fn-${String(entry?.id || name).toLowerCase().replace(/\s+/g, "-")}-${index}`,
+        name,
+        type,
+        rarity,
+        imageUrl: getFortniteIcon(entry),
+      };
+    })
+    .filter((item) => item.imageUrl);
 
-  // Prioritize outfits/skins, then sort by rarity
-  const RARITY_ORDER: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
-  const TYPE_ORDER: Record<string, number> = { outfit: 3, skin: 3, pickaxe: 2, emote: 1, glider: 1 };
+  if (cosmetics.length === 0) return [];
 
-  const sorted = [...cosmetics].sort((a, b) => {
-    const typeA = TYPE_ORDER[String(a.type || "").toLowerCase()] || 0;
-    const typeB = TYPE_ORDER[String(b.type || "").toLowerCase()] || 0;
-    if (typeA !== typeB) return typeB - typeA;
-    const rarA = RARITY_ORDER[String(a.rarity || "common").toLowerCase()] || 0;
-    const rarB = RARITY_ORDER[String(b.rarity || "common").toLowerCase()] || 0;
-    return rarB - rarA;
-  });
+  const rarityOrder: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+  const typeOrder: Record<string, number> = { outfit: 5, glider: 4, emote: 3, pickaxe: 2, backbling: 1, wrap: 1 };
 
-  return sorted.slice(0, limit).map((c, i) => {
-    const rarity = String(c.rarity || "common").toLowerCase();
-    const name = c.name || "Cosmético";
-    const icon = c.icon || c.images?.icon || c.displayAssets?.[0]?.url || c.smallIcon || "";
-    return {
-      id: `fn-${(c.id || name).toLowerCase().replace(/\s+/g, "-")}-${i}`,
-      imageUrl: icon,
-      name,
-      tier: FORTNITE_RARITY_MAP[rarity] || FN_COMMON,
-    };
-  });
+  return cosmetics
+    .sort((a, b) => {
+      const typeA = typeOrder[a.type] || 0;
+      const typeB = typeOrder[b.type] || 0;
+      if (typeA !== typeB) return typeB - typeA;
+      return (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+    })
+    .slice(0, limit)
+    .map((item) => ({
+      id: item.id,
+      imageUrl: item.imageUrl,
+      name: item.name,
+      tier: FORTNITE_RARITY_MAP[item.rarity] || FN_COMMON,
+    }));
 }
 
 /* ── Minecraft ─────────────────────────────────────────── */
@@ -158,34 +241,27 @@ export function getFortnitePreviewItems(data: any, limit = 9): GamePreviewItem[]
 export function getMinecraftPreviewItems(data: any): GamePreviewItem[] {
   const items: GamePreviewItem[] = [];
   const mcId = data?.minecraft_id;
-  const mcNick = data?.minecraft_nickname;
+  const mcNick = data?.minecraft_nickname || data?.minecraft_username || data?.username;
+  const baseSkin = toDataUrl(data?.minecraft_skin);
+  const skinUrl = data?.minecraft_skin_url || data?.skin_url || data?.skinUrl || null;
 
+  if (baseSkin) {
+    items.push({ id: "mc-skin-image", imageUrl: baseSkin, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
+  }
+  if (skinUrl) {
+    items.push({ id: "mc-skin-url", imageUrl: skinUrl, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
+  }
   if (mcId) {
-    items.push({
-      id: "mc-skin-body",
-      imageUrl: `https://crafatar.com/renders/body/${mcId}?overlay&scale=8`,
-      name: mcNick || "Skin",
-      tier: MC_TIER,
-    });
-    items.push({
-      id: "mc-skin-head",
-      imageUrl: `https://crafatar.com/avatars/${mcId}?overlay&size=128`,
-      name: "Avatar",
-      tier: MC_TIER,
-    });
+    items.push({ id: "mc-skin-body", imageUrl: `https://crafatar.com/renders/body/${mcId}?overlay&scale=8`, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
+    items.push({ id: "mc-skin-head", imageUrl: `https://crafatar.com/avatars/${mcId}?overlay&size=128`, name: "Avatar", tier: MC_TIER });
   } else if (mcNick) {
-    items.push({
-      id: "mc-skin-body",
-      imageUrl: `https://minotar.net/armor/body/${mcNick}/300.png`,
-      name: mcNick,
-      tier: MC_TIER,
-    });
+    items.push({ id: "mc-skin-body", imageUrl: `https://minotar.net/armor/body/${mcNick}/300.png`, name: mcNick, tier: { ...MC_TIER, key: "skin" } });
+    items.push({ id: "mc-skin-head", imageUrl: `https://minotar.net/avatar/${mcNick}/128.png`, name: "Avatar", tier: MC_TIER });
   }
 
-  const capes: any[] = data?.minecraft_capes || [];
-  capes.slice(0, 6).forEach((cape: any, i) => {
-    const capeName = typeof cape === "string" ? cape : (cape?.name || cape?.title || "Capa");
-    const icon = typeof cape === "object" ? (cape?.rendered || cape?.icon || cape?.url || (cape?.data ? `data:image/png;base64,${cape.data}` : null)) : null;
+  getMinecraftCapes(data).slice(0, 6).forEach((cape: any, i) => {
+    const capeName = typeof cape === "string" ? cape : cape?.name || cape?.title || "Capa";
+    const icon = typeof cape === "object" ? cape?.rendered || cape?.icon || cape?.url || toDataUrl(cape?.data) : null;
     if (icon) {
       items.push({
         id: `mc-cape-${i}`,
@@ -196,7 +272,7 @@ export function getMinecraftPreviewItems(data: any): GamePreviewItem[] {
     }
   });
 
-  return items.slice(0, 9);
+  return items.filter((item, index, arr) => arr.findIndex((entry) => entry.imageUrl === item.imageUrl) === index).slice(0, 9);
 }
 
 /* ── LoL Rank Icons ────────────────────────────────────── */
@@ -238,10 +314,6 @@ export function getLoLRankTier(rankText: string | null | undefined): string | nu
 
 /* ── Unified Extractor ─────────────────────────────────── */
 
-/**
- * Get preview items for ANY game category.
- * Returns items suitable for a 3x3 or 2x2 card grid.
- */
 export function getGamePreviewItems(data: any, categoryName: string, limit = 9): GamePreviewItem[] {
   if (!data) return [];
   const cat = categoryName.toLowerCase();
@@ -252,11 +324,11 @@ export function getGamePreviewItems(data: any, categoryName: string, limit = 9):
   if (cat.includes("fortnite")) return getFortnitePreviewItems(data, limit);
   if (cat.includes("minecraft")) return getMinecraftPreviewItems(data);
 
-  // Fallback: try to detect from data
   if (data.genshinCharacters?.length) return getGenshinPreviewItems(data, limit);
   if (data.honkaiCharacters?.length) return getHonkaiPreviewItems(data, limit);
   if (data.zzzCharacters?.length || data.zenlessCharacters?.length) return getZZZPreviewItems(data, limit);
-  if (data.fortniteCosmetics?.length || data.fortnite_locker?.length) return getFortnitePreviewItems(data, limit);
+  if (getFortniteCosmetics(data).length > 0) return getFortnitePreviewItems(data, limit);
+  if (data.minecraft_id || data.minecraft_nickname || data.minecraft_skin || data.minecraft_skin_url || getMinecraftCapes(data).length > 0) return getMinecraftPreviewItems(data);
 
   return [];
 }
