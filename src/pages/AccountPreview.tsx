@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
+import RecommendedAccounts from "@/components/marketing/RecommendedAccounts";
+import CrossSellBanner from "@/components/marketing/CrossSellBanner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -669,7 +671,12 @@ const AccountPreview = () => {
 
             {/* Price Card */}
             <div className="rounded-2xl border border-border/40 bg-card p-5 space-y-4">
-              <p className="text-3xl font-bold text-primary font-display">R$ {price.toFixed(2)}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-3xl font-bold text-primary font-display">R$ {price.toFixed(2)}</p>
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-1 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                  <Shield className="h-3 w-3" /> Verificada
+                </span>
+              </div>
               {isAvailable && (
                 <div className="flex gap-3">
                   <Button
