@@ -701,6 +701,13 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
           return;
         }
 
+        if (orderCheck?.status === "refunded") {
+          toast.info("Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+
         if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
           toast.error("Houve um problema na entrega. O pedido foi marcado para reembolso.");
           setPixData(null);
