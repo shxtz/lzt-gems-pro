@@ -11,6 +11,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
+import valorantImg from "@/assets/categories/valorant.png";
+import fortniteImg from "@/assets/categories/fortnite.png";
+import genshinImg from "@/assets/categories/genshin.png";
+import lolImg from "@/assets/categories/lol.png";
+import honkaiImg from "@/assets/categories/honkai.png";
+import minecraftImg from "@/assets/categories/minecraft.png";
+import steamImg from "@/assets/categories/steam.png";
+import zzzImg from "@/assets/categories/zzz.png";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  valorant: valorantImg,
+  fortnite: fortniteImg,
+  genshin: genshinImg,
+  lol: lolImg,
+  honkai: honkaiImg,
+  minecraft: minecraftImg,
+  steam: steamImg,
+  zzz: zzzImg,
+};
+
+function getCategoryImage(name: string): string | null {
+  const lower = name.toLowerCase();
+  for (const [key, img] of Object.entries(CATEGORY_IMAGES)) {
+    if (lower.includes(key)) return img;
+  }
+  return null;
+}
+
 /* ── Activity log types ────────────────────────────────── */
 
 interface ActivityEntry {
