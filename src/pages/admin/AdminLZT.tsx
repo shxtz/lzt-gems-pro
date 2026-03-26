@@ -11,6 +11,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
+import valorantImg from "@/assets/categories/valorant.png";
+import fortniteImg from "@/assets/categories/fortnite.png";
+import genshinImg from "@/assets/categories/genshin.png";
+import lolImg from "@/assets/categories/lol.png";
+import honkaiImg from "@/assets/categories/honkai.png";
+import minecraftImg from "@/assets/categories/minecraft.png";
+import steamImg from "@/assets/categories/steam.png";
+import zzzImg from "@/assets/categories/zzz.png";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  valorant: valorantImg,
+  fortnite: fortniteImg,
+  genshin: genshinImg,
+  lol: lolImg,
+  honkai: honkaiImg,
+  minecraft: minecraftImg,
+  steam: steamImg,
+  zzz: zzzImg,
+};
+
+function getCategoryImage(name: string): string | null {
+  const lower = name.toLowerCase();
+  for (const [key, img] of Object.entries(CATEGORY_IMAGES)) {
+    if (lower.includes(key)) return img;
+  }
+  return null;
+}
+
 /* ── Activity log types ────────────────────────────────── */
 
 interface ActivityEntry {
@@ -515,6 +543,11 @@ const CategoryCard = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {getCategoryImage(category.name) ? (
+              <img src={getCategoryImage(category.name)!} alt="" className="h-6 w-6 rounded object-contain" />
+            ) : (
+              <span className="text-lg">{category.icon_url || "📦"}</span>
+            )}
             <h3 className="font-display text-base text-foreground font-semibold">{category.name}</h3>
             {category.auto_import && (
               <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] uppercase tracking-wider gap-1">
