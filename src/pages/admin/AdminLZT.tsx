@@ -3,13 +3,28 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Plus, Trash2, Download, Search, RefreshCw, Settings2, Link2, Percent, AlertTriangle,
-  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap,
+  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap, GripVertical, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import valorantImg from "@/assets/categories/valorant.png";
 import fortniteImg from "@/assets/categories/fortnite.png";
