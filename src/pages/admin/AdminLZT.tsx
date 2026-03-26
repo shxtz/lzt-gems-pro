@@ -522,6 +522,7 @@ const CategoryCard = ({
   const [pollCycle, setPollCycle] = useState(0);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef(false);
 
   const addLog = useCallback((type: ActivityEntry["type"], message: string) => {
     setActivityLog((prev) => {
@@ -537,7 +538,19 @@ const CategoryCard = ({
 
   // Auto-poll when auto_import is enabled
   const runPollCycle = useCallback(async () => {
-    if (!category.auto_import || !category.api_url) return;
+    if (abortRef.current || !category.api_url) return;
+
+    // Re-check DB to confirm auto_import is still on
+    const { data: freshCat } = await supabase
+      .from("lzt_categories")
+      .select("auto_import")
+      .eq("id", category.id)
+      .maybeSingle();
+    if (!freshCat?.auto_import || abortRef.current) {
+      addLog("info", "Auto Import desativado — polling parado");
+      setIsPolling(false);
+      return;
+    }
 
     setIsPolling(true);
     addLog("importing", "Buscando novas contas no LZT Market...");
@@ -571,15 +584,18 @@ const CategoryCard = ({
       addLog("error", `Erro: ${err.message || "Falha na conexão"}`);
     } finally {
       setIsPolling(false);
-      setPollCycle((c) => c + 1);
+      if (!abortRef.current) setPollCycle((c) => c + 1);
     }
-  }, [category.auto_import, category.api_url, addLog, queryClient]);
+  }, [category.id, category.api_url, addLog, queryClient]);
 
   useEffect(() => {
     if (!category.auto_import) {
+      abortRef.current = true;
       if (pollRef.current) clearTimeout(pollRef.current);
       return;
     }
+
+    abortRef.current = false;
 
     // Add initial log when enabled
     if (activityLog.length === 0) {
@@ -599,24 +615,16 @@ const CategoryCard = ({
 
   // Schedule next poll after each cycle completes
   useEffect(() => {
-    if (!category.auto_import || pollCycle === 0) return;
+    if (!category.auto_import || pollCycle === 0 || abortRef.current) return;
 
     const nextPoll = setTimeout(() => {
-      runPollCycle();
+      if (!abortRef.current) runPollCycle();
     }, 60000); // Every 60 seconds
 
     pollRef.current = nextPoll;
     return () => clearTimeout(nextPoll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pollCycle, category.auto_import]);
-
-  // Clear log when auto_import is disabled
-  useEffect(() => {
-    if (!category.auto_import && activityLog.length > 0) {
-      addLog("info", "Auto Import desativado");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category.auto_import]);
 
   const fillPercent = Math.min(100, Math.round((count / category.account_limit) * 100));
 
