@@ -6,6 +6,7 @@ import { toast } from "sonner";
 interface ParsedCredential {
   login?: string;
   password?: string;
+  oldPassword?: string;
   email?: string;
   emailPassword?: string;
   provider?: string;
@@ -49,17 +50,36 @@ export function parseCredential(raw: string): ParsedCredential {
 
   for (const line of lines) {
     const lower = line.toLowerCase();
-    // Match "Label: value" patterns
-    if (lower.startsWith("login:")) {
-      result.login = line.substring(line.indexOf(":") + 1).trim();
-    } else if (lower.startsWith("senha:") && !lower.startsWith("senha email:") && !lower.startsWith("senha e-mail:")) {
-      result.password = line.substring(line.indexOf(":") + 1).trim();
-    } else if (lower.startsWith("email:") || lower.startsWith("e-mail:")) {
-      result.email = line.substring(line.indexOf(":") + 1).trim();
+    const getValue = () => line.substring(line.indexOf(":") + 1).trim();
+
+    if (lower.startsWith("login and password:")) {
+      // Skip this combined field, we already have login + password separately
+      continue;
+    } else if (lower.startsWith("login:")) {
+      result.login = getValue();
+    } else if (lower.startsWith("password:") || (lower.startsWith("senha:") && !lower.startsWith("senha email:") && !lower.startsWith("senha e-mail:"))) {
+      result.password = getValue();
+    } else if (lower.startsWith("old password:") || lower.startsWith("senha antiga:")) {
+      result.oldPassword = getValue();
+    } else if (lower.startsWith("access to email") || lower.startsWith("email:") || lower.startsWith("e-mail:")) {
+      // "Access to email (auto registered):" or "Email:"
+      const val = getValue();
+      // If the value contains sub-lines like login/password for email, skip setting as email
+      // But typically it's just a label, the actual email is the login itself
+      if (val && val.includes("@")) {
+        result.email = val;
+      } else if (!val || val === "" || lower.includes("auto registered") || lower.includes("(")) {
+        // "Access to email (auto registered):" is just a section header
+        // The email is likely the login itself
+        if (result.login && result.login.includes("@")) {
+          result.email = result.login;
+        }
+      }
     } else if (lower.startsWith("senha email:") || lower.startsWith("senha e-mail:") || lower.startsWith("email password:") || lower.startsWith("emailpassword:")) {
-      result.emailPassword = line.substring(line.indexOf(":") + 1).trim();
+      result.emailPassword = getValue();
+    } else if (lower.startsWith("provedor email:") || lower.startsWith("provedor do email:") || lower.startsWith("provedor:")) {
+      // Already parsed, skip
     } else if (!result.login && !result.raw) {
-      // Fallback: try email:password format
       const colonIdx = line.indexOf(":");
       if (colonIdx > 0) {
         result.login = line.substring(0, colonIdx).trim();
@@ -68,6 +88,11 @@ export function parseCredential(raw: string): ParsedCredential {
         result.raw = raw;
       }
     }
+  }
+
+  // If login looks like an email and no email was set, use it
+  if (!result.email && result.login && result.login.includes("@")) {
+    result.email = result.login;
   }
 
   // Detect provider from email
@@ -117,6 +142,7 @@ export default function CredentialDisplay({ credential, compact = false }: Crede
   const fields = [
     { icon: User, label: "Login", value: parsed.login },
     { icon: Lock, label: "Senha", value: parsed.password },
+    { icon: Lock, label: "Senha Antiga", value: parsed.oldPassword },
     { icon: Mail, label: "E-mail", value: parsed.email },
     { icon: Shield, label: "Senha do E-mail", value: parsed.emailPassword },
     { icon: Globe, label: "Provedor do E-mail", value: parsed.provider },
