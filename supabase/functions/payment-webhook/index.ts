@@ -405,9 +405,67 @@ Deno.serve(async (req) => {
 });
 
 async function markRefundNeeded(supabase: any, orderId: string) {
-  await supabase
+  // Get order info for auto-refund
+  const { data: order } = await supabase
     .from("orders")
-    .update({ status: "refund_needed", updated_at: new Date().toISOString() })
+    .select("user_id, total_price, status")
     .eq("id", orderId)
-    .neq("status", "delivered");
+    .single();
+
+  if (!order || order.status === "delivered") return;
+
+  // Auto-refund to balance
+  if (order.user_id && order.total_price) {
+    const amount = Number(order.total_price);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("user_id", order.user_id)
+      .single();
+
+    const newBalance = Number(profile?.balance || 0) + amount;
+    await supabase
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("user_id", order.user_id);
+
+    await supabase.from("balance_transactions").insert({
+      user_id: order.user_id,
+      amount: amount,
+      type: "refund",
+      description: `Reembolso automático - pedido #${orderId.slice(0, 8)}`,
+    });
+
+    await supabase
+      .from("orders")
+      .update({ status: "refunded", updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .neq("status", "delivered");
+
+    console.log(`Auto-refunded R$${amount.toFixed(2)} to balance for order ${orderId}`);
+
+    // Discord notification
+    const discordUrl = Deno.env.get("DISCORD_WEBHOOK_SALES");
+    if (discordUrl) {
+      await sendDiscordEmbed(discordUrl, [{
+        title: "🔄 Reembolso Automático em Saldo",
+        color: 0xFF8C00,
+        fields: [
+          { name: "Pedido", value: `\`${orderId}\``, inline: true },
+          { name: "Valor", value: `R$ ${amount.toFixed(2)}`, inline: true },
+          { name: "Novo Saldo", value: `R$ ${newBalance.toFixed(2)}`, inline: true },
+          { name: "Motivo", value: "Falha na entrega automática", inline: false },
+        ],
+        footer: { text: "VBUCKS BARATO" },
+        timestamp: new Date().toISOString(),
+      }]);
+    }
+  } else {
+    // No user_id — just mark as refund_needed
+    await supabase
+      .from("orders")
+      .update({ status: "refund_needed", updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .neq("status", "delivered");
+  }
 }
