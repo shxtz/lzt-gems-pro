@@ -85,6 +85,51 @@ interface PixData {
   lztAccountId?: string;
 }
 
+const SHOP_FALLBACK_CATEGORIES: ShopCategory[] = [
+  { id: "fallback-valorant", name: "Valorant", slug: "valorant", emoji: "🎯", icon_url: null, sort_order: 1 },
+  { id: "fallback-fortnite", name: "Fortnite", slug: "fortnite", emoji: "🪂", icon_url: null, sort_order: 2 },
+  { id: "fallback-genshin", name: "Genshin Impact", slug: "genshin", emoji: "⭐", icon_url: null, sort_order: 3 },
+  { id: "fallback-lol", name: "League of Legends", slug: "lol", emoji: "🏆", icon_url: null, sort_order: 4 },
+  { id: "fallback-honkai", name: "Honkai Star Rail", slug: "honkai", emoji: "🚄", icon_url: null, sort_order: 5 },
+  { id: "fallback-minecraft", name: "Minecraft", slug: "minecraft", emoji: "⛏️", icon_url: null, sort_order: 6 },
+  { id: "fallback-steam", name: "Steam", slug: "steam", emoji: "🎮", icon_url: null, sort_order: 7 },
+  { id: "fallback-zzz", name: "Zenless Zone Zero", slug: "zzz", emoji: "⚡", icon_url: null, sort_order: 8 },
+];
+
+const SHOP_CACHE_KEYS = {
+  lztCategories: "shop-cache:lzt-categories",
+  lztAccounts: "shop-cache:lzt-accounts",
+  shopCategories: "shop-cache:shop-categories",
+  products: "shop-cache:products",
+  variations: "shop-cache:variations",
+  stockCounts: "shop-cache:stock-counts",
+} as const;
+
+const readCachedValue = <T,>(key: string, fallback: T): T => {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const writeCachedValue = (key: string, value: unknown) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+};
+
+const withQueryTimeout = async <T,>(promise: PromiseLike<T>, ms = 8000): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error("timeout")), ms);
+  });
+
+  return Promise.race([Promise.resolve(promise), timeout]);
+};
+
 const GAME_PREFIX_MAP: Record<string, string> = {
   valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",
   genshin: "GI", honkai: "HSR", minecraft: "MC", steam: "STM",
@@ -257,71 +302,138 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
     enabled: authReady,
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    initialData: () => readCachedValue<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []),
     queryFn: async () => {
-      const { data, error } = await supabase.from("lzt_categories").select("*").order("sort_order");
-      if (error) throw error;
-      return data as LztCategory[];
+      try {
+        const { data, error } = await withQueryTimeout(
+          supabase.from("lzt_categories").select("id, name, icon_url, margin_percent").order("sort_order"),
+        );
+        if (error) throw error;
+        const nextData = (data ?? []) as LztCategory[];
+        writeCachedValue(SHOP_CACHE_KEYS.lztCategories, nextData);
+        return nextData;
+      } catch {
+        return readCachedValue<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []);
+      }
     },
   });
 
   const { data: lztAccounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["shop-lzt-accounts"],
     enabled: authReady,
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
+    initialData: () => readCachedValue<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []),
     queryFn: async () => {
-      const { data, error } = await supabase.from("lzt_accounts").select("*").eq("status", "available").order("imported_at", { ascending: false });
-      if (error) throw error;
-      return data as LztAccount[];
+      try {
+        const { data, error } = await withQueryTimeout(
+          supabase.from("lzt_accounts").select("id, lzt_item_id, title, price_brl, price_usd, status, category_id, data, imported_at").eq("status", "available").order("imported_at", { ascending: false }),
+        );
+        if (error) throw error;
+        const nextData = (data ?? []) as LztAccount[];
+        writeCachedValue(SHOP_CACHE_KEYS.lztAccounts, nextData);
+        return nextData;
+      } catch {
+        return readCachedValue<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []);
+      }
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: shopCategories } = useQuery({
     queryKey: ["shop-categories-list"],
     enabled: authReady,
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    initialData: () => readCachedValue<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES),
     queryFn: async () => {
-      const { data, error } = await supabase.from("shop_categories").select("*").eq("visible", true).order("sort_order");
-      if (error) throw error;
-      return data as ShopCategory[];
+      try {
+        const { data, error } = await withQueryTimeout(
+          supabase.from("shop_categories").select("id, name, slug, emoji, icon_url, sort_order").eq("visible", true).order("sort_order"),
+        );
+        if (error) throw error;
+        const nextData = (data && data.length > 0 ? data : SHOP_FALLBACK_CATEGORIES) as ShopCategory[];
+        writeCachedValue(SHOP_CACHE_KEYS.shopCategories, nextData);
+        return nextData;
+      } catch {
+        return readCachedValue<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES);
+      }
     },
   });
 
   const { data: products } = useQuery({
     queryKey: ["shop-products"],
     enabled: authReady,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    initialData: () => readCachedValue<Product[]>(SHOP_CACHE_KEYS.products, []),
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*").eq("active", true).order("sort_order");
-      if (error) throw error;
-      return data as Product[];
+      try {
+        const { data, error } = await withQueryTimeout(
+          supabase.from("products").select("id, name, description, category, image_url, active").eq("active", true).order("sort_order"),
+        );
+        if (error) throw error;
+        const nextData = (data ?? []) as Product[];
+        writeCachedValue(SHOP_CACHE_KEYS.products, nextData);
+        return nextData;
+      } catch {
+        return readCachedValue<Product[]>(SHOP_CACHE_KEYS.products, []);
+      }
     },
   });
 
   const { data: variations } = useQuery({
     queryKey: ["shop-variations"],
     enabled: authReady,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    initialData: () => readCachedValue<Variation[]>(SHOP_CACHE_KEYS.variations, []),
     queryFn: async () => {
-      const { data, error } = await supabase.from("product_variations").select("*").eq("active", true).order("sort_order");
-      if (error) throw error;
-      return data as Variation[];
+      try {
+        const { data, error } = await withQueryTimeout(
+          supabase.from("product_variations").select("id, product_id, name, price, original_price, credential_type, active").eq("active", true).order("sort_order"),
+        );
+        if (error) throw error;
+        const nextData = (data ?? []) as Variation[];
+        writeCachedValue(SHOP_CACHE_KEYS.variations, nextData);
+        return nextData;
+      } catch {
+        return readCachedValue<Variation[]>(SHOP_CACHE_KEYS.variations, []);
+      }
     },
   });
 
   const { data: stockCounts } = useQuery({
     queryKey: ["shop-stock-counts"],
     enabled: authReady,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
+    initialData: () => readCachedValue<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {}),
     queryFn: async () => {
-      const { data, error } = await supabase.from("product_stock").select("variation_id").eq("status", "available");
-      if (error) throw error;
-      const counts: Record<string, number> = {};
-      data?.forEach((s) => { counts[s.variation_id] = (counts[s.variation_id] || 0) + 1; });
-      return counts;
+      try {
+        const { data, error } = await withQueryTimeout(
+          supabase.from("product_stock").select("variation_id").eq("status", "available"),
+        );
+        if (error) throw error;
+        const counts: Record<string, number> = {};
+        data?.forEach((s) => {
+          counts[s.variation_id] = (counts[s.variation_id] || 0) + 1;
+        });
+        writeCachedValue(SHOP_CACHE_KEYS.stockCounts, counts);
+        return counts;
+      } catch {
+        return readCachedValue<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {});
+      }
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   const getCategoryName = (catId: string) =>
