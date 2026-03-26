@@ -196,12 +196,23 @@ function LoLInventory({ data }: { data: any }) {
   const region = data?.riot_lol_region || data?.region;
   const level = data?.riot_lol_level;
   const rank = data?.riot_lol_rank;
+  const rankIcon = getLoLRankIcon(rank);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {rank && rank !== "Unranked" && <Stat icon={Trophy} label="Elo" value={rank} highlight />}
-      {level && <Stat icon={BarChart3} label="Nível" value={level} />}
-      {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
+    <div className="space-y-4">
+      {rank && rank !== "Unranked" && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 flex items-center gap-4">
+          {rankIcon && <img src={rankIcon} alt={rank} className="h-16 w-16 object-contain drop-shadow-lg" />}
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display">Elo Atual</p>
+            <p className="text-2xl font-bold text-primary font-display">{rank}</p>
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {level && <Stat icon={BarChart3} label="Nível" value={level} />}
+        {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
+      </div>
     </div>
   );
 }
