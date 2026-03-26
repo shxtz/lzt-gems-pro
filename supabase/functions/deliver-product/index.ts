@@ -71,6 +71,56 @@ Deno.serve(async (req) => {
       credential_delivered: stockItem.credential,
     });
 
+    // Send delivery email to buyer
+    try {
+      // Get buyer email and product info
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", buyerId)
+        .single();
+
+      const { data: variation } = await supabase
+        .from("product_variations")
+        .select("name, price, product_id, products(name)")
+        .eq("id", variationId)
+        .single();
+
+      const { data: order } = orderId
+        ? await supabase.from("orders").select("total_price").eq("id", orderId).single()
+        : { data: null };
+
+      if (profile?.email) {
+        const productName = (variation as any)?.products?.name
+          ? `${(variation as any).products.name} — ${variation?.name}`
+          : variation?.name || "Produto";
+
+        const totalPrice = order?.total_price
+          ? Number(order.total_price).toFixed(2).replace(".", ",")
+          : variation?.price
+            ? Number(variation.price).toFixed(2).replace(".", ",")
+            : undefined;
+
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "delivery-confirmation",
+            recipientEmail: profile.email,
+            idempotencyKey: `delivery-${orderId || stockItem.id}`,
+            templateData: {
+              productName,
+              credential: stockItem.credential,
+              orderId: orderId || stockItem.id,
+              totalPrice,
+            },
+          },
+        });
+        console.log(`[DELIVERY EMAIL] Sent to ${profile.email} for order ${orderId}`);
+      }
+    } catch (emailErr) {
+      // Non-fatal: log but don't fail the delivery
+      console.error("Failed to send delivery email:", emailErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
