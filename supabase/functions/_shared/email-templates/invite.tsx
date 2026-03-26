@@ -1,23 +1,37 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
-import { Body, Button, Container, Head, Heading, Html, Link, Preview, Text, Hr } from 'npm:@react-email/components@0.0.22'
+import { Body, Button, Container, Head, Heading, Html, Link, Preview, Text, Img, Section, Hr } from 'npm:@react-email/components@0.0.22'
+
+const LOGO_URL = 'https://augzjiubwfmybwncbbgv.supabase.co/storage/v1/object/public/category-icons/email-logo.png'
 
 interface InviteEmailProps { siteName: string; siteUrl: string; confirmationUrl: string }
 
 export const InviteEmail = ({ siteName, siteUrl, confirmationUrl }: InviteEmailProps) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Você foi convidado para {siteName}</Preview>
+    <Preview>Você foi convidado para a {siteName}!</Preview>
     <Body style={main}>
-      <Container style={container}>
-        <Text style={brand}>⬡ VBUCKS BARATO</Text>
-        <Hr style={divider} />
-        <Heading style={h1}>Você foi convidado!</Heading>
-        <Text style={text}>
-          Você recebeu um convite para a <Link href={siteUrl} style={link}><strong>{siteName}</strong></Link>. Clique no botão abaixo para aceitar e criar sua conta.
-        </Text>
-        <Button style={button} href={confirmationUrl}>Aceitar Convite</Button>
-        <Text style={footer}>Se você não esperava este convite, ignore este e-mail.</Text>
+      <Container style={wrapper}>
+        <Section style={header}>
+          <Img src={LOGO_URL} alt="VBUCKS BARATO" width="140" height="auto" style={logo} />
+        </Section>
+        <Section style={heroBar} />
+        <Section style={content}>
+          <Heading style={h1}>Você recebeu um convite! 🎉</Heading>
+          <Text style={text}>
+            Alguém te convidou para fazer parte da <Link href={siteUrl} style={link}><strong style={goldText}>VBUCKS BARATO</strong></Link> — a melhor loja de V-Bucks e contas gamer do Brasil.
+          </Text>
+          <Text style={text}>Clique no botão abaixo para aceitar e criar sua conta:</Text>
+          <Section style={buttonWrapper}>
+            <Button style={button} href={confirmationUrl}>🎮 ACEITAR CONVITE</Button>
+          </Section>
+          <Hr style={divider} />
+          <Text style={small}>Se você não esperava este convite, ignore este e-mail.</Text>
+        </Section>
+        <Section style={footer}>
+          <Text style={footerText}>© {new Date().getFullYear()} VBUCKS BARATO — Todos os direitos reservados</Text>
+          <Text style={footerSub}>Feito por Ajazz & Bypass</Text>
+        </Section>
       </Container>
     </Body>
   </Html>
@@ -25,12 +39,20 @@ export const InviteEmail = ({ siteName, siteUrl, confirmationUrl }: InviteEmailP
 
 export default InviteEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Urbanist', Arial, sans-serif" }
-const container = { padding: '30px 25px' }
-const brand = { fontSize: '11px', fontWeight: 'bold' as const, color: '#D4A843', letterSpacing: '0.2em', margin: '0 0 16px', textAlign: 'center' as const }
-const divider = { borderColor: '#eaeaea', margin: '0 0 24px' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#1a1108', margin: '0 0 20px' }
-const text = { fontSize: '14px', color: '#6b6560', lineHeight: '1.6', margin: '0 0 20px' }
-const link = { color: '#B8860B', textDecoration: 'underline' }
-const button = { backgroundColor: '#D4A843', color: '#1a1108', fontSize: '14px', fontWeight: 'bold' as const, borderRadius: '12px', padding: '14px 28px', textDecoration: 'none' }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const main = { backgroundColor: '#f5f0e8', fontFamily: "'Urbanist', 'Segoe UI', Arial, sans-serif" }
+const wrapper = { maxWidth: '520px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden' as const, boxShadow: '0 8px 40px rgba(78, 40, 2, 0.08)' }
+const header = { backgroundColor: '#1a1108', padding: '28px 0', textAlign: 'center' as const }
+const logo = { margin: '0 auto' }
+const heroBar = { height: '4px', background: 'linear-gradient(90deg, #D4A843, #ecb32c, #D4A843)' }
+const content = { padding: '36px 32px 28px' }
+const h1 = { fontSize: '22px', fontWeight: '800' as const, color: '#1a1108', margin: '0 0 16px', lineHeight: '1.3' }
+const goldText = { color: '#D4A843' }
+const text = { fontSize: '14px', color: '#5c5147', lineHeight: '1.7', margin: '0 0 16px' }
+const link = { color: '#B8860B', textDecoration: 'none' }
+const buttonWrapper = { textAlign: 'center' as const, margin: '24px 0' }
+const button = { backgroundColor: '#D4A843', color: '#1a1108', fontSize: '13px', fontWeight: '800' as const, borderRadius: '10px', padding: '14px 36px', textDecoration: 'none', letterSpacing: '0.05em', textTransform: 'uppercase' as const }
+const divider = { borderColor: '#ede8df', margin: '24px 0 16px' }
+const small = { fontSize: '12px', color: '#a09888', lineHeight: '1.5', margin: '0' }
+const footer = { backgroundColor: '#1a1108', padding: '20px 32px', textAlign: 'center' as const }
+const footerText = { fontSize: '11px', color: '#8a7a60', margin: '0 0 4px' }
+const footerSub = { fontSize: '10px', color: '#5c4a30', margin: '0' }
