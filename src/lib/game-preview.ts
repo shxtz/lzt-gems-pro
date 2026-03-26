@@ -129,10 +129,17 @@ function getFortniteIcon(entry: any): string {
     entry?.offerImage;
   if (explicit) return explicit;
 
-  // Build URL from LZT cosmetic ID (e.g. "cid_515_athena_commando_m_barbequelarry")
+  // Build URL from LZT cosmetic ID (e.g. "CID_515_Athena_Commando_M_BarbequeLarry")
   const cosmeticId = entry?.id;
   if (typeof cosmeticId === "string" && cosmeticId.length > 3) {
-    return `https://fortnite-api.com/images/cosmetics/br/${encodeURIComponent(cosmeticId)}/icon.png`;
+    // fortnite-api.com expects the original case-sensitive ID
+    return `https://fortnite-api.com/images/cosmetics/br/${cosmeticId}/icon.png`;
+  }
+
+  // Try building from name as last resort
+  const name = entry?.name;
+  if (typeof name === "string" && name.length > 1) {
+    return `https://fortnite-api.com/images/cosmetics/br/search?name=${encodeURIComponent(name)}`;
   }
   return "";
 }
