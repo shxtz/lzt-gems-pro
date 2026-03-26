@@ -1105,7 +1105,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
 
-                            const gridLimit = 9;
+                            const gridLimit = 15; // fetch extra to compensate for broken images
                             let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
                             if (isLoL && account.data?.lolInventory) {
                               individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
@@ -1191,6 +1191,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                         return (
                                           <div
                                             key={itemKey}
+                                            data-tile
                                             className="group/tile relative flex items-center justify-center overflow-hidden"
                                             style={{
                                               background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.95), rgba(${tile.join(",")}, 0.45))`,
@@ -1203,7 +1204,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                               alt=""
                                               loading="lazy"
                                               className={`h-full w-full ${isLoLItem ? "object-cover" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
-                                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                              onError={(e) => { const tile = (e.target as HTMLImageElement).closest('[data-tile]'); if (tile) (tile as HTMLElement).style.display = "none"; }}
                                             />
                                             {tierIcon && (
                                               <div className="absolute right-1 top-1">
