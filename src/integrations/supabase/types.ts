@@ -791,31 +791,25 @@ export type Database = {
     Views: {
       lzt_categories_public: {
         Row: {
-          account_limit: number | null
           created_at: string | null
           icon_url: string | null
           id: string | null
-          margin_percent: number | null
           name: string | null
           sort_order: number | null
           updated_at: string | null
         }
         Insert: {
-          account_limit?: number | null
           created_at?: string | null
           icon_url?: string | null
           id?: string | null
-          margin_percent?: number | null
           name?: string | null
           sort_order?: number | null
           updated_at?: string | null
         }
         Update: {
-          account_limit?: number | null
           created_at?: string | null
           icon_url?: string | null
           id?: string | null
-          margin_percent?: number | null
           name?: string | null
           sort_order?: number | null
           updated_at?: string | null
