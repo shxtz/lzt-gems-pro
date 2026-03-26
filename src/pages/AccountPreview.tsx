@@ -423,7 +423,7 @@ function GameInventory({ data, cat }: { data: any; cat: string }) {
 const AccountPreview = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
@@ -432,11 +432,11 @@ const AccountPreview = () => {
         .from("lzt_accounts")
         .select("*")
         .eq("id", id!)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: authReady && !!id,
   });
 
   const { data: lztCategory } = useQuery({
@@ -446,11 +446,11 @@ const AccountPreview = () => {
         .from("lzt_categories")
         .select("name")
         .eq("id", account!.category_id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!account?.category_id,
+    enabled: authReady && !!account?.category_id,
   });
 
   const d = account?.data as any;

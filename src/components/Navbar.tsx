@@ -22,12 +22,12 @@ const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { totalItems } = useCart();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, authReady } = useAuth();
   const navigate = useNavigate();
 
   const { data: profile } = useQuery({
     queryKey: ["navbar-profile", user?.id],
-    enabled: !!user,
+    enabled: authReady && !!user,
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")

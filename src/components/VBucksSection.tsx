@@ -3,6 +3,7 @@ import { Zap, ShoppingBag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import vbucksIcon from "@/assets/vbucks-icon.png";
 import UpsellModal from "@/components/vbucks/UpsellModal";
 
@@ -116,9 +117,11 @@ const fallbackOptions: VBucksProduct[] = [
 
 const VBucksSection = () => {
   const [selectedProduct, setSelectedProduct] = useState<VBucksProduct | null>(null);
+  const { authReady } = useAuth();
 
   const { data: products } = useQuery({
     queryKey: ["vbucks-products"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vbucks_products")
