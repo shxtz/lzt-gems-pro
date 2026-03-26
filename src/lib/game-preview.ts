@@ -34,6 +34,7 @@ const FORTNITE_RARITY_MAP: Record<string, typeof FN_LEGENDARY> = {
   legendary: FN_LEGENDARY,
   epic: FN_EPIC,
   rare: FN_RARE,
+  superrare: FN_RARE,
   uncommon: FN_UNCOMMON,
   common: FN_COMMON,
 };
