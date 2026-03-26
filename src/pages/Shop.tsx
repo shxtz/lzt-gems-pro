@@ -821,18 +821,12 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (!couponCode.trim()) return;
     setApplyingCoupon(true);
     try {
-      const { data } = await supabase
-        .from("coupons")
-        .select("*")
-        .eq("code", couponCode.toUpperCase().trim())
-        .eq("active", true)
-        .maybeSingle();
-      if (!data) { toast.error("Cupom inválido ou expirado"); return; }
-      if (data.max_uses && (data.current_uses || 0) >= data.max_uses) { toast.error("Cupom esgotado"); return; }
-      if (data.expires_at && new Date(data.expires_at) < new Date()) { toast.error("Cupom expirado"); return; }
-      setCouponDiscount(data.discount_percent);
-      setCouponId(data.id);
-      toast.success(`Cupom aplicado! ${data.discount_percent}% de desconto`);
+      const { data, error } = await supabase.rpc("validate_coupon", { coupon_code: couponCode.trim() });
+      const coupon = Array.isArray(data) ? data[0] : data;
+      if (error || !coupon) { toast.error("Cupom inválido ou expirado"); return; }
+      setCouponDiscount(coupon.discount_percent);
+      setCouponId(coupon.id);
+      toast.success(`Cupom aplicado! ${coupon.discount_percent}% de desconto`);
     } catch { toast.error("Erro ao validar cupom"); }
     finally { setApplyingCoupon(false); }
   };

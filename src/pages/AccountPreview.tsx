@@ -789,12 +789,12 @@ const AccountPreview = () => {
     if (!couponCode.trim()) return;
     setApplyingCoupon(true);
     try {
-      const { data } = await supabase.from("coupons").select("*").eq("code", couponCode.toUpperCase().trim()).eq("active", true).maybeSingle();
-      if (!data) { toast.error("Cupom inválido"); return; }
-      if (data.max_uses && (data.current_uses || 0) >= data.max_uses) { toast.error("Cupom esgotado"); return; }
-      setCouponDiscount(data.discount_percent);
-      setCouponId(data.id);
-      toast.success(`Cupom aplicado! ${data.discount_percent}% off`);
+      const { data, error } = await supabase.rpc("validate_coupon", { coupon_code: couponCode.trim() });
+      const coupon = Array.isArray(data) ? data[0] : data;
+      if (error || !coupon) { toast.error("Cupom inválido"); return; }
+      setCouponDiscount(coupon.discount_percent);
+      setCouponId(coupon.id);
+      toast.success(`Cupom aplicado! ${coupon.discount_percent}% off`);
     } catch { toast.error("Erro ao validar cupom"); }
     finally { setApplyingCoupon(false); }
   };
