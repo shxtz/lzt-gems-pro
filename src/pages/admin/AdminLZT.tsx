@@ -36,6 +36,9 @@ function getCategoryImage(name: string): string | null {
   for (const [key, img] of Object.entries(CATEGORY_IMAGES)) {
     if (lower.includes(key)) return img;
   }
+  // Extra aliases
+  if (lower.includes("league")) return CATEGORY_IMAGES.lol;
+  if (lower.includes("zenless")) return CATEGORY_IMAGES.zzz;
   return null;
 }
 
@@ -554,6 +557,8 @@ const CategoryCard = ({
           <div className="flex items-center gap-3">
             {getCategoryImage(category.name) ? (
               <img src={getCategoryImage(category.name)!} alt="" className="h-6 w-6 rounded object-contain" />
+            ) : category.icon_url?.startsWith("http") ? (
+              <img src={category.icon_url} alt="" className="h-6 w-6 rounded object-contain" />
             ) : (
               <span className="text-lg">{category.icon_url || "📦"}</span>
             )}
