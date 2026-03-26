@@ -238,30 +238,54 @@ Deno.serve(async (req) => {
       // ═══ SEND DISCORD: PAYMENT CONFIRMED ═══
       const discordSalesUrl = Deno.env.get("DISCORD_WEBHOOK_SALES");
       if (discordSalesUrl) {
-        const orderType = order.lzt_item_id ? "Conta LZT" : "Produto";
+        // Get product name
+        let productName = "Produto";
+        if (order.lzt_item_id) {
+          const { data: lztAcc } = await supabase
+            .from("lzt_accounts")
+            .select("lzt_item_id")
+            .eq("id", order.lzt_account_id)
+            .maybeSingle();
+          productName = lztAcc ? `LZT-${lztAcc.lzt_item_id}` : `LZT-${order.lzt_item_id}`;
+        } else if (order.product_id) {
+          const { data: prod } = await supabase.from("products").select("name").eq("id", order.product_id).maybeSingle();
+          productName = prod?.name || "Produto";
+        }
+
+        const discordMention = buyer?.discord_id ? `<@${buyer.discord_id}>` : "N/A";
+        const maskDoc = (doc: string) => {
+          const c = doc.replace(/\D/g, "");
+          if (c.length === 11) return `***.${c.slice(3,6)}.${c.slice(6,9)}-**`;
+          if (c.length === 14) return `${c.slice(0,2)}.***.***/****-${c.slice(12)}`;
+          return doc;
+        };
+        const nowBR = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const lztLink = order.lzt_item_id ? `\n[Ver no LZT](https://lzt.market/${order.lzt_item_id}/)` : "";
+
         await sendDiscordEmbed(discordSalesUrl, [{
-          title: "💰 Compra Aprovada",
-          color: 0x00FF00,
+          title: "💎 VBUCKS BARATO - Pagamentos | Compra aprovada",
+          color: 0xFFD700,
           fields: [
-            { name: "ID Pedido", value: `\`${order.id}\``, inline: false },
-            { name: "Produto", value: orderType, inline: true },
-            { name: "Data/Hora", value: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }), inline: true },
-            { name: "Método", value: "Pix - Efi Pay", inline: true },
-            { name: "Protocolo", value: `\`${txid}\``, inline: false },
-            { name: "Email", value: buyer?.email || "N/A", inline: true },
-            { name: "Cliente", value: `${pixInfo.clientName || "N/A"}${pixInfo.clientDoc ? ` (${pixInfo.clientDoc})` : ""}`, inline: true },
-            { name: "Discord ID", value: buyer?.discord_id || "N/A", inline: true },
-            { name: "Doc", value: pixInfo.clientDoc || "N/A", inline: true },
-            { name: "Chave Pix", value: pixInfo.pixKey ? `\`${pixInfo.pixKey}\`` : "N/A", inline: true },
-            { name: "Instituição", value: pixInfo.institution || "N/A", inline: true },
-            { name: "Código Banco", value: pixInfo.bankCode || "N/A", inline: true },
-            { name: "E2EID", value: pixInfo.e2eid ? `\`${pixInfo.e2eid}\`` : "N/A", inline: false },
-            { name: "TXID", value: `\`${txid}\``, inline: true },
-            { name: "Total Pago", value: `R$ ${Number(order.total_price).toFixed(2)}`, inline: true },
+            { name: "**ID PEDIDO:**", value: `\`${order.id}\``, inline: false },
+            { name: "**PRODUTO:**", value: `${productName}${lztLink}`, inline: false },
+            { name: "**COMPRADOR:**", value: `${buyer?.email || "N/A"}\n🆔 ID: \`${order.user_id || "N/A"}\`\n✨ Discord: ${discordMention}`, inline: false },
+            { name: "**DATA/HORA:**", value: nowBR, inline: false },
+            { name: "**METODO DE PAGAMENTO:**", value: order.payment_method === "balance" ? "Saldo" : "Pix - Efi Pay", inline: false },
+            { name: "**INFORMAÇÕES ADICIONAIS:**", value: [
+              `• Protocolo: \`${txid}\``,
+              `• Email: ${buyer?.email || "N/A"}`,
+              `• Cliente: ${pixInfo.clientName || "N/A"}`,
+              `• Doc: ${pixInfo.clientDoc ? maskDoc(pixInfo.clientDoc) : "N/A"}`,
+              `• Chave Pix: \`${pixInfo.pixKey || "N/A"}\``,
+              `• Código Banco: ${pixInfo.bankCode || "N/A"}`,
+              `• E2EID: \`${pixInfo.e2eid || "N/A"}\``,
+              `• TXID: \`${txid}\``,
+            ].join("\n"), inline: false },
+            { name: "**TOTAL PAGO:**", value: `**R$ ${Number(order.total_price).toFixed(2).replace(".", ",")}**`, inline: false },
             { name: "Status", value: "✅ Compra aprovada", inline: true },
-            { name: "Entrega", value: order.lzt_item_id ? "Automática (LZT)" : "Automática (Estoque)", inline: true },
+            { name: "Entrega", value: order.lzt_item_id ? "Automática (LZT)" : "Automática (credenciais)", inline: true },
           ],
-          footer: { text: "VBUCKS BARATO" },
+          footer: { text: `VBUCKS BARATO • Pagamento confirmado • ${nowBR}` },
           timestamp: now,
         }]);
       }
