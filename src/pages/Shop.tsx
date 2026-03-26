@@ -27,6 +27,26 @@ import ScarcityBadge from "@/components/marketing/ScarcityBadge";
 import SocialProofBar from "@/components/marketing/SocialProofBar";
 import CrossSellBanner from "@/components/marketing/CrossSellBanner";
 
+import valorantImg from "@/assets/categories/valorant.png";
+import fortniteImg from "@/assets/categories/fortnite.png";
+import genshinImg from "@/assets/categories/genshin.png";
+import lolImg from "@/assets/categories/lol.png";
+import honkaiImg from "@/assets/categories/honkai.png";
+import minecraftImg from "@/assets/categories/minecraft.png";
+import steamImg from "@/assets/categories/steam.png";
+import zzzImg from "@/assets/categories/zzz.png";
+
+const SHOP_SLUG_IMAGES: Record<string, string> = {
+  valorant: valorantImg,
+  fortnite: fortniteImg,
+  genshin: genshinImg,
+  lol: lolImg,
+  honkai: honkaiImg,
+  minecraft: minecraftImg,
+  steam: steamImg,
+  zzz: zzzImg,
+};
+
 interface LztAccount {
   id: string;
   lzt_item_id: string;
