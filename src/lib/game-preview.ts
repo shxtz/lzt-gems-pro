@@ -115,7 +115,8 @@ function getFortniteType(entry: any): string {
 }
 
 function getFortniteIcon(entry: any): string {
-  return (
+  // Try explicit icon fields first
+  const explicit =
     entry?.icon ||
     entry?.images?.icon ||
     entry?.images?.smallIcon ||
@@ -124,9 +125,15 @@ function getFortniteIcon(entry: any): string {
     entry?.smallIcon ||
     entry?.image ||
     entry?.thumbnail ||
-    entry?.offerImage ||
-    ""
-  );
+    entry?.offerImage;
+  if (explicit) return explicit;
+
+  // Build URL from LZT cosmetic ID (e.g. "cid_515_athena_commando_m_barbequelarry")
+  const cosmeticId = entry?.id;
+  if (typeof cosmeticId === "string" && cosmeticId.length > 3) {
+    return `https://fortnite-api.com/images/cosmetics/br/${encodeURIComponent(cosmeticId)}/icon.png`;
+  }
+  return "";
 }
 
 /* ── Genshin Impact ────────────────────────────────────── */
