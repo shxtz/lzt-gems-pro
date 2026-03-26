@@ -144,7 +144,7 @@ const Navbar = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/checkout")}
-            className="relative flex items-center justify-center h-10 w-10 rounded-xl text-muted-foreground transition-all duration-300 hover:text-primary glass-gold border border-border/20"
+            className="relative flex items-center justify-center rounded-xl text-muted-foreground transition-all duration-300 hover:text-primary glass-gold border border-border/20 px-3 py-2"
           >
             <ShoppingCart className="h-[18px] w-[18px]" />
             {totalItems > 0 && (
