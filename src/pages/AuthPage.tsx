@@ -24,7 +24,7 @@ const AuthPage = () => {
     if (isLogin) {
       const { error } = await signIn(email, password);
       if (error) {
-        setError("Email ou senha inválidos");
+        setError(error.message.includes("Timeout") ? error.message : "Email ou senha inválidos");
       } else {
         toast.success("Login realizado com sucesso!");
         navigate("/");
@@ -37,7 +37,7 @@ const AuthPage = () => {
       }
       const { error } = await signUp(email, password);
       if (error) {
-        setError("Erro ao criar conta. Tente outro email.");
+        setError(error.message.includes("Timeout") ? error.message : "Erro ao criar conta. Tente outro email.");
       } else {
         toast.success("Conta criada! Verifique seu email para confirmar.");
       }
