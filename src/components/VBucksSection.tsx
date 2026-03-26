@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Zap, ShoppingBag, Crown } from "lucide-react";
+import { ShoppingBag, Crown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { withTimeout } from "@/lib/supabase-resilience";
