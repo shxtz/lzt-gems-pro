@@ -237,24 +237,31 @@ const AdminLZT = () => {
     },
   });
 
-  // Auto-sync shop categories into lzt_categories
+  // Auto-sync shop categories into lzt_categories (create missing + update name/icon)
   useEffect(() => {
     if (!shopCategories?.length || !categories) return;
-    const existingNames = categories.map((c) => c.name.toLowerCase());
-    const toCreate = shopCategories.filter(
-      (sc) => !existingNames.includes(sc.name.toLowerCase())
-    );
-    if (!toCreate.length) return;
     (async () => {
-      for (const sc of toCreate) {
-        await supabase.from("lzt_categories").insert({
-          name: sc.name,
-          icon_url: sc.icon_url || null,
-          sort_order: sc.sort_order || 0,
-        });
+      let changed = 0;
+      for (const sc of shopCategories) {
+        const existing = categories.find((c) => c.name.toLowerCase() === sc.name.toLowerCase());
+        if (!existing) {
+          // Create missing
+          await supabase.from("lzt_categories").insert({
+            name: sc.name,
+            icon_url: sc.icon_url || null,
+            sort_order: sc.sort_order || 0,
+          });
+          changed++;
+        } else if (existing.icon_url !== sc.icon_url) {
+          // Sync icon if changed
+          await supabase.from("lzt_categories").update({ icon_url: sc.icon_url }).eq("id", existing.id);
+          changed++;
+        }
       }
-      queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
-      toast.success(`${toCreate.length} categoria(s) sincronizada(s) automaticamente!`);
+      if (changed > 0) {
+        queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+        toast.success(`${changed} categoria(s) sincronizada(s) automaticamente!`);
+      }
     })();
   }, [shopCategories, categories]);
 
