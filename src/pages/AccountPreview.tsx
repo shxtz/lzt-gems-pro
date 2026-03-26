@@ -182,11 +182,7 @@ function ValorantInventory({ data }: { data: any }) {
 function FortniteInventory({ data }: { data: any }) {
   const vbucks = data?.fortnite_balance || data?.fortnite_vbucks || data?.vbucks;
   const level = data?.fortnite_level || data?.fortnite_book_level;
-  const country = data?.fortnite_country;
-  const platform = data?.fortnite_platform;
   const region = data?.fortnite_region || data?.region;
-  const lastActivity = formatDate(data?.last_activity || data?.lastActivity);
-  const emailType = data?.email_type;
   const skinCount = Array.isArray(data?.fortniteSkins) ? data.fortniteSkins.length : 0;
   const danceCount = Array.isArray(data?.fortniteDance) ? data.fortniteDance.length : 0;
   const pickaxeCount = Array.isArray(data?.fortnitePickaxe) ? data.fortnitePickaxe.length : 0;
