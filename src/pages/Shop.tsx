@@ -250,13 +250,24 @@ const isAccountCategoryCompatible = (account: LztAccount, adminCategoryName: str
   const hasMinecraftSignals = Boolean(data?.minecraft_id || data?.minecraft_nickname || data?.minecraft_skin);
   const hasLoLSignals = Boolean(data?.lolInventory || data?.riot_lol_level || data?.riot_lol_rank);
   const hasValorantSignals = Boolean(data?.valorantInventory || data?.riot_valorant_rank || data?.valorant_rank);
+  const hasDiscordSignals = Boolean(data?.discord_country || data?.discordAccountConditionLabel || data?.discordNitroType || data?.discord_verified !== undefined);
+  const hasTikTokSignals = categoryTitle.includes("tiktok");
+  const hasGenshinSignals = Boolean(data?.genshinCharacters?.length);
+  const hasHonkaiSignals = Boolean(data?.honkaiCharacters?.length);
+  const hasZZZSignals = Boolean(data?.zzzCharacters?.length || data?.zenlessCharacters?.length);
 
   if (category.includes("fortnite")) {
-    return categoryTitle.includes("fortnite") || title.includes("fortnite") || (!hasTelegramSignals && !hasMinecraftSignals && !hasLoLSignals && !hasValorantSignals);
+    // Must be an actual Fortnite account - check LZT category or explicit fortnite data
+    const hasFortniteSignals = categoryTitle.includes("fortnite") || title.includes("fortnite") ||
+      Boolean(data?.fortnite_vbucks || data?.fortniteCosmetics?.length || data?.fortnite_locker);
+    return hasFortniteSignals;
   }
   if (category.includes("minecraft")) return hasMinecraftSignals || categoryTitle.includes("minecraft") || title.includes("minecraft");
   if (category.includes("league") || category.includes("lol")) return hasLoLSignals;
   if (category.includes("valorant")) return hasValorantSignals;
+  if (category.includes("genshin")) return hasGenshinSignals || categoryTitle.includes("genshin");
+  if (category.includes("honkai")) return hasHonkaiSignals || categoryTitle.includes("honkai");
+  if (category.includes("zzz") || category.includes("zenless")) return hasZZZSignals || categoryTitle.includes("zenless");
 
   return true;
 };
