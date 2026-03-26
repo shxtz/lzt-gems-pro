@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Copy, Check, X, Eye, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, X, Eye, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,44 @@ const AdminOrders = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       toast.success("Status atualizado!");
     },
+  });
+
+  const refundToBalance = useMutation({
+    mutationFn: async ({ orderId, userId, amount }: { orderId: string; userId: string; amount: number }) => {
+      // 1. Add balance
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      const newBalance = Number(profile?.balance || 0) + amount;
+      const { error: balErr } = await supabase
+        .from("profiles")
+        .update({ balance: newBalance })
+        .eq("user_id", userId);
+      if (balErr) throw balErr;
+
+      // 2. Record transaction
+      const { error: txErr } = await supabase.from("balance_transactions").insert({
+        user_id: userId,
+        amount: amount,
+        type: "refund",
+        description: `Reembolso em saldo - pedido #${orderId.slice(0, 8)}`,
+      });
+      if (txErr) throw txErr;
+
+      // 3. Update order status
+      const { error: orderErr } = await supabase
+        .from("orders")
+        .update({ status: "refunded", updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+      if (orderErr) throw orderErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success("Reembolso em saldo realizado com sucesso!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao reembolsar"),
   });
 
   const getProfile = (userId: string | null) => profiles?.find((p) => p.user_id === userId);
