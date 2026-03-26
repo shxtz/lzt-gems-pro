@@ -177,9 +177,17 @@ const AdminLZT = () => {
     },
   });
 
-  // Clear all accounts
+  // Clear all accounts + disable all auto imports
   const clearAll = useMutation({
     mutationFn: async () => {
+      // First disable auto_import on all categories
+      const { error: updateError } = await supabase
+        .from("lzt_categories")
+        .update({ auto_import: false, auto_delete_reimport: false })
+        .eq("auto_import", true);
+      if (updateError) throw updateError;
+
+      // Then clear all accounts
       const { data, error } = await supabase.functions.invoke("lzt-import", {
         body: { action: "clear_all" },
       });
@@ -187,8 +195,9 @@ const AdminLZT = () => {
       return data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
       queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
-      toast.success("Todas as contas removidas!");
+      toast.success("Todas as importações pausadas e contas removidas!");
     },
   });
 
