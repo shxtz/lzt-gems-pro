@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -487,33 +486,26 @@ const AccountPreview = () => {
   const lztInv = getLztInventoryImages(d);
 
   const enrichedSkins = enrichedInventory?.skins || [];
-  const lolPreviewItems = useMemo(
-    () => (isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : []),
-    [d?.lolInventory, isLoLAccount]
-  );
+  const lolPreviewItems = isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : [];
 
-  const previewTiles = useMemo(() => {
-    if (isLoLAccount) {
-      return lolPreviewItems.map((item) => ({
+  const previewTiles = isLoLAccount
+    ? lolPreviewItems.map((item) => ({
         id: String(item.id),
         image: item.imageUrl,
         alt: item.skinName,
         tier: item.tier,
-      }));
-    }
+      }))
+    : isValorantAccount
+      ? enrichedSkins.map((skin: any) => ({
+          id: skin.uuid,
+          image: skin.icon,
+          alt: skin.name,
+          tier: skin.tier,
+          tierIcon: skin.tierIcon,
+        }))
+      : [];
 
-    if (!isValorantAccount) return [];
-
-    return enrichedSkins.map((skin: any) => ({
-      id: skin.uuid,
-      image: skin.icon,
-      alt: skin.name,
-      tier: skin.tier,
-      tierIcon: skin.tierIcon,
-    }));
-  }, [enrichedSkins, isLoLAccount, isValorantAccount, lolPreviewItems]);
-
-  const hasIndividualItems = previewTiles.length > 0 || (isValorantAccount && hasValInventory);
+  const hasIndividualItems = previewTiles.length > 0;
   const hasInventory = hasIndividualItems || Object.values(lztInv).some(v => v !== null);
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
