@@ -603,7 +603,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (stock === 0) { toast.error("Produto sem estoque disponível"); return; }
     setPurchasing(variation.id);
     try {
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, product_id: variation.product_id, quantity: 1, total_price: Number(variation.price), payment_method: "pix", status: "pending" }).select().single();
+      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, product_id: variation.id, quantity: 1, total_price: Number(variation.price), payment_method: "pix", status: "pending" } as any).select().single();
       if (orderError) throw orderError;
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: Number(variation.price), description: `${variation.name} - Loja Digital` } });
       if (pixError) throw pixError;
