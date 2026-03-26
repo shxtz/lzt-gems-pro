@@ -237,31 +237,26 @@ const AdminLZT = () => {
     },
   });
 
-  // Sync shop categories into lzt_categories
-  const syncCategories = useMutation({
-    mutationFn: async () => {
-      if (!shopCategories?.length) throw new Error("Nenhuma categoria da loja encontrada");
-      const existingNames = categories?.map((c) => c.name.toLowerCase()) || [];
-      const toCreate = shopCategories.filter(
-        (sc) => !existingNames.includes(sc.name.toLowerCase())
-      );
-      if (!toCreate.length) throw new Error("Todas as categorias já estão sincronizadas");
+  // Auto-sync shop categories into lzt_categories
+  useEffect(() => {
+    if (!shopCategories?.length || !categories) return;
+    const existingNames = categories.map((c) => c.name.toLowerCase());
+    const toCreate = shopCategories.filter(
+      (sc) => !existingNames.includes(sc.name.toLowerCase())
+    );
+    if (!toCreate.length) return;
+    (async () => {
       for (const sc of toCreate) {
-        const { error } = await supabase.from("lzt_categories").insert({
+        await supabase.from("lzt_categories").insert({
           name: sc.name,
           icon_url: sc.icon_url || null,
           sort_order: sc.sort_order || 0,
         });
-        if (error) throw error;
       }
-      return toCreate.length;
-    },
-    onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
-      toast.success(`${count} categoria(s) sincronizada(s)!`);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+      toast.success(`${toCreate.length} categoria(s) sincronizada(s) automaticamente!`);
+    })();
+  }, [shopCategories, categories]);
 
   // Count active auto-imports
   const activeImports = categories?.filter((c) => c.auto_import).length || 0;
@@ -352,13 +347,6 @@ const AdminLZT = () => {
 
       {/* Add category buttons */}
       <div className="flex gap-3 flex-wrap">
-        <button
-          onClick={() => syncCategories.mutate()}
-          disabled={syncCategories.isPending}
-          className="flex items-center gap-2 rounded-xl bg-accent/20 border border-accent/30 px-4 py-2 text-xs font-bold text-accent-foreground uppercase hover:bg-accent/30 transition disabled:opacity-50"
-        >
-          <RefreshCw className={`h-3 w-3 ${syncCategories.isPending ? "animate-spin" : ""}`} /> Sincronizar com Loja
-        </button>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <button className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground uppercase">
