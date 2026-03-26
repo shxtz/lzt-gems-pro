@@ -543,6 +543,11 @@ const CategoryCard = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {getCategoryImage(category.name) ? (
+              <img src={getCategoryImage(category.name)!} alt="" className="h-6 w-6 rounded object-contain" />
+            ) : (
+              <span className="text-lg">{category.icon_url || "📦"}</span>
+            )}
             <h3 className="font-display text-base text-foreground font-semibold">{category.name}</h3>
             {category.auto_import && (
               <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] uppercase tracking-wider gap-1">
