@@ -56,6 +56,85 @@ const validateKeyCredential = (line: string): { valid: boolean; error?: string }
   return { valid: true };
 };
 
+const LztAccountsSection = () => {
+  const { data: lztCategories } = useQuery({
+    queryKey: ["admin-lzt-cats-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lzt_categories").select("id, name, icon_url").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: lztAccounts } = useQuery({
+    queryKey: ["admin-lzt-accounts-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lzt_accounts")
+        .select("id, title, price_brl, status, category_id, lzt_item_id")
+        .order("imported_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const summary = useMemo(() => {
+    if (!lztAccounts || !lztCategories) return [];
+    const map: Record<string, { name: string; icon_url: string | null; available: number; sold: number }> = {};
+    lztCategories.forEach((c) => { map[c.id] = { name: c.name, icon_url: c.icon_url, available: 0, sold: 0 }; });
+    lztAccounts.forEach((a) => {
+      if (map[a.category_id]) {
+        if (a.status === "available") map[a.category_id].available++;
+        else if (a.status === "sold") map[a.category_id].sold++;
+      }
+    });
+    return Object.entries(map).map(([id, v]) => ({ id, ...v }));
+  }, [lztAccounts, lztCategories]);
+
+  const totalAvailable = summary.reduce((a, s) => a + s.available, 0);
+  const totalSold = summary.reduce((a, s) => a + s.sold, 0);
+
+  if (!lztAccounts || lztAccounts.length === 0) return null;
+
+  return (
+    <div className="mt-8 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-lg text-foreground">Contas LZT Anunciadas</h2>
+          <p className="text-xs text-muted-foreground">Contas importadas do LZT Market — gerencie na aba "LZT Market"</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge variant="default" className="text-xs">{totalAvailable} disponíveis</Badge>
+          <Badge variant="secondary" className="text-xs">{totalSold} vendidas</Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {summary.filter(s => s.available > 0 || s.sold > 0).map((cat) => (
+          <div key={cat.id} className="rounded-xl border border-border/40 bg-card p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {cat.icon_url ? (
+                <img src={cat.icon_url} alt={cat.name} className="h-full w-full object-cover" />
+              ) : (
+                <Package className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm text-foreground truncate">{cat.name}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-green-500">{cat.available} disp.</span>
+                <span className="text-xs text-muted-foreground">·</span>
+                <span className="text-xs text-muted-foreground">{cat.sold} vendidas</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const AdminProductsNew = () => {
   const queryClient = useQueryClient();
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
