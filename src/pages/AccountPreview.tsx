@@ -432,7 +432,7 @@ function GameInventory({ data, cat }: { data: any; cat: string }) {
 const AccountPreview = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, authReady } = useAuth();
+  const { user, authReady, isAdmin } = useAuth();
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
@@ -693,6 +693,16 @@ const AccountPreview = () => {
               <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                 {maskedName}
               </h1>
+              {isAdmin && (
+                <a
+                  href={`https://lzt.market/${account.lzt_item_id}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary transition-colors hover:bg-primary/20"
+                >
+                  LZT#{account.lzt_item_id}
+                </a>
+              )}
               {isAvailable && (
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Disponível</span>
