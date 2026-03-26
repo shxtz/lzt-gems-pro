@@ -15,7 +15,9 @@ Deno.serve(async (req) => {
   try {
     const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
     const guildId = Deno.env.get("DISCORD_GUILD_ID");
-    const customerRoleId = Deno.env.get("DISCORD_CUSTOMER_ROLE_ID");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!botToken || !guildId) {
       return new Response(
@@ -24,7 +26,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, discord_id, user_id } = await req.json();
+    const { action, discord_id, display_name } = await req.json();
 
     // Check if a Discord user is in the guild (verified via RestoreCord)
     if (action === "check_member") {
@@ -67,24 +69,109 @@ Deno.serve(async (req) => {
 
     // Save Discord ID to user profile after signup
     if (action === "link_profile") {
-      if (!discord_id || !user_id) {
+      if (!discord_id || !publishableKey) {
         return new Response(
-          JSON.stringify({ error: "discord_id and user_id required" }),
+          JSON.stringify({ error: "discord_id required" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const authClient = createClient(supabaseUrl, publishableKey, {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      });
+
+      const {
+        data: { user },
+        error: authError,
+      } = await authClient.auth.getUser();
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const membershipResponse = await fetch(`${DISCORD_API}/guilds/${guildId}/members/${discord_id}`, {
+        headers: { Authorization: `Bot ${botToken}` },
+      });
+
+      if (!membershipResponse.ok) {
+        return new Response(
+          JSON.stringify({ error: "Sua verificação expirou ou o usuário não está mais no servidor Discord." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const member = await membershipResponse.json();
+      const username = member.user?.global_name || member.user?.username || "Discord User";
+      const avatar = member.user?.avatar
+        ? `https://cdn.discordapp.com/avatars/${discord_id}/${member.user.avatar}.png`
+        : null;
+
       const supabase = createClient(supabaseUrl, serviceKey);
 
-      const { error } = await supabase
+      const { data: existingDiscordOwner, error: existingDiscordOwnerError } = await supabase
         .from("profiles")
-        .update({
-          discord_id,
-          restorecord_verified: true,
-        })
-        .eq("user_id", user_id);
+        .select("user_id")
+        .eq("discord_id", discord_id)
+        .neq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingDiscordOwnerError) {
+        return new Response(
+          JSON.stringify({ error: existingDiscordOwnerError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (existingDiscordOwner) {
+        return new Response(
+          JSON.stringify({ error: "Este Discord já está vinculado a outra conta." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: existingProfile, error: existingProfileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingProfileError) {
+        return new Response(
+          JSON.stringify({ error: existingProfileError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const profilePayload = {
+        discord_id,
+        restorecord_verified: true,
+        display_name: display_name || username,
+        avatar_url: avatar,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = existingProfile
+        ? await supabase.from("profiles").update(profilePayload).eq("user_id", user.id)
+        : await supabase.from("profiles").insert({
+            user_id: user.id,
+            email: user.email ?? null,
+            ...profilePayload,
+          });
 
       if (error) {
         return new Response(
@@ -94,7 +181,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ success: true, user_id: user.id }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
