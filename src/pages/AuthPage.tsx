@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
-const RESTORECORD_VERIFY_URL = "https://restorecord.com/verify/vbucksbarato";
+const RESTORECORD_VERIFY_URL = "https://discord.com/oauth2/authorize?client_id=1158525654359355524&redirect_uri=https://restorecord.com/api/callback&response_type=code&scope=identify+guilds.join&state=1427086108063174698&prompt=none";
 const DISCORD_CALLBACK_PATH = "/auth/discord-callback";
 
 interface DiscordVerification {
