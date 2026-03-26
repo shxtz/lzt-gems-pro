@@ -211,3 +211,212 @@ function json(data: any, status = 200) {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
+
+// ──────────────────────────────────────────────
+// Robust credential extraction (mirrors Python bot logic)
+// ──────────────────────────────────────────────
+
+const EMAIL_PROVIDERS: Record<string, string> = {
+  "gmail.com": "Google (Gmail)", "googlemail.com": "Google (Gmail)",
+  "outlook.com": "Microsoft (Outlook)", "hotmail.com": "Microsoft (Hotmail)",
+  "live.com": "Microsoft (Live)", "msn.com": "Microsoft (MSN)",
+  "yahoo.com": "Yahoo Mail", "yahoo.com.br": "Yahoo Mail",
+  "icloud.com": "Apple (iCloud)", "me.com": "Apple (iCloud)", "mac.com": "Apple (iCloud)",
+  "protonmail.com": "ProtonMail", "proton.me": "ProtonMail",
+  "uol.com.br": "UOL", "bol.com.br": "BOL", "terra.com.br": "Terra",
+  "ig.com.br": "iG", "globo.com": "Globo", "zoho.com": "Zoho Mail",
+  "rambler.ru": "Rambler", "mail.ru": "Mail.ru",
+  "yandex.ru": "Yandex", "yandex.com": "Yandex",
+  "firstmail.ltd": "FirstMail", "bonjourfmail.com": "BonjourFMail",
+};
+
+function getVal(obj: any, ...keys: string[]): string | undefined {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v && typeof v === "string" && v.trim()) return v.trim();
+  }
+  return undefined;
+}
+
+function detectProvider(email?: string, providerRaw?: string): string {
+  // If we got a URL like https://outlook.com, extract domain
+  if (providerRaw) {
+    try {
+      const url = new URL(providerRaw);
+      const host = url.hostname.replace(/^www\./, "");
+      return EMAIL_PROVIDERS[host] || host;
+    } catch {
+      // Not a URL, use as-is or look up
+      const lower = providerRaw.toLowerCase();
+      for (const [domain, name] of Object.entries(EMAIL_PROVIDERS)) {
+        if (lower === domain || lower === name.toLowerCase() || domain.startsWith(lower + ".")) {
+          return name;
+        }
+      }
+      return providerRaw;
+    }
+  }
+  if (email) {
+    const domain = email.split("@")[1]?.toLowerCase() || "";
+    return EMAIL_PROVIDERS[domain] || domain || "Desconhecido";
+  }
+  return "";
+}
+
+function extractPurchaseCredentials(buyData: any): string {
+  // Collect candidate objects to search
+  const candidates: any[] = [];
+  const root = buyData || {};
+  for (const key of ["item", "account", "data", "payload", "result"]) {
+    if (root[key] && typeof root[key] === "object") {
+      candidates.push(root[key]);
+      // Nested sub-objects
+      for (const subKey of ["item", "account", "data", "payload", "result"]) {
+        if (root[key][subKey] && typeof root[key][subKey] === "object") {
+          candidates.push(root[key][subKey]);
+        }
+      }
+    }
+  }
+  candidates.push(root);
+
+  // Login data structures
+  const loginStructs: any[] = [];
+  const emailStructs: any[] = [];
+  for (const c of candidates) {
+    for (const k of ["loginData", "login_data", "credentials"]) {
+      if (c[k] && typeof c[k] === "object") loginStructs.push(c[k]);
+    }
+    for (const k of ["emailLoginData", "email_login_data", "emailData"]) {
+      if (c[k] && typeof c[k] === "object") emailStructs.push(c[k]);
+    }
+  }
+
+  // 1. Extract login
+  let login: string | undefined;
+  for (const s of loginStructs) {
+    login = getVal(s, "login", "username", "user", "email");
+    if (login) break;
+  }
+  if (!login) {
+    for (const c of candidates) {
+      login = getVal(c, "login", "username", "account_login", "user_login");
+      if (login) break;
+    }
+  }
+
+  // 2. Extract password
+  let password: string | undefined;
+  for (const s of loginStructs) {
+    password = getVal(s, "password", "pass", "passwd");
+    if (password) break;
+  }
+  if (!password) {
+    for (const c of candidates) {
+      password = getVal(c, "password", "pass", "account_password");
+      if (password) break;
+    }
+  }
+
+  // 3. Extract old password
+  let oldPassword: string | undefined;
+  for (const s of loginStructs) {
+    oldPassword = getVal(s, "old_password", "oldPassword", "previous_password");
+    if (oldPassword) break;
+  }
+  if (!oldPassword) {
+    for (const c of candidates) {
+      oldPassword = getVal(c, "old_password", "oldPassword", "previous_password");
+      if (oldPassword) break;
+    }
+  }
+
+  // 4. Extract email
+  let email: string | undefined;
+  for (const s of emailStructs) {
+    email = getVal(s, "login", "email", "username");
+    if (email) break;
+  }
+  if (!email) {
+    for (const c of candidates) {
+      email = getVal(c, "temp_email", "email", "email_login", "mail");
+      if (email) break;
+    }
+  }
+  // If no separate email but login looks like email, use it
+  if (!email && login && login.includes("@")) {
+    email = login;
+  }
+
+  // 5. Extract email password
+  let emailPass: string | undefined;
+  for (const s of emailStructs) {
+    emailPass = getVal(s, "password", "pass", "passwd");
+    if (emailPass) break;
+  }
+  if (!emailPass) {
+    for (const c of candidates) {
+      emailPass = getVal(c, "email_password", "mail_password", "temp_email_password");
+      if (emailPass) break;
+    }
+  }
+
+  // 6. Extract provider
+  let providerRaw: string | undefined;
+  for (const c of candidates) {
+    providerRaw = getVal(c, "emailLoginUrl", "email_login_url", "email_provider", "item_domain", "provider");
+    if (providerRaw) break;
+  }
+
+  // 7. Fallback: free text extraction
+  if (!login || !password) {
+    let freeText = "";
+    for (const c of candidates) {
+      for (const k of ["delivery", "deliveryData", "delivery_data", "message", "description", "text"]) {
+        const v = c[k];
+        if (v && typeof v === "string") freeText += "\n" + v;
+        else if (v && typeof v === "object") freeText += "\n" + JSON.stringify(v);
+      }
+    }
+    if (freeText) {
+      if (!login) {
+        const m = freeText.match(/(?:login|username)\s*[:=]\s*(\S+)/i);
+        if (m) login = m[1];
+      }
+      if (!password) {
+        const m = freeText.match(/(?:senha|password|pass)\s*[:=]\s*(\S+)/i);
+        if (m) password = m[1];
+      }
+      if (!email) {
+        const m = freeText.match(/(?:email|e-mail)\s*[:=]\s*(\S+@\S+)/i);
+        if (m) email = m[1];
+      }
+      if (!emailPass) {
+        const m = freeText.match(/(?:senha\s*(?:do\s*)?e?-?mail|email\s*password|mail\s*password)\s*[:=]\s*(\S+)/i);
+        if (m) emailPass = m[1];
+      }
+      if (!providerRaw) {
+        const m = freeText.match(/(https?:\/\/[^\s]+)/i);
+        if (m) providerRaw = m[1];
+      }
+    }
+  }
+
+  // Build credential string
+  const provider = detectProvider(email, providerRaw);
+  const parts: string[] = [];
+  if (login) parts.push(`Login: ${login}`);
+  if (password) parts.push(`Password: ${password}`);
+  if (oldPassword) parts.push(`Old password: ${oldPassword}`);
+  if (email) parts.push(`Access to email (auto registered):\nLogin: ${email}`);
+  if (emailPass) parts.push(`Password: ${emailPass}`);
+  if (provider) parts.push(`Provedor Email: ${provider}`);
+
+  if (parts.length > 0) return parts.join("\n");
+
+  // Ultimate fallback: stringify anything we got
+  const raw = buyData?.item?.account;
+  if (raw) return typeof raw === "string" ? raw : JSON.stringify(raw, null, 2);
+
+  return "Conta comprada — verifique sua área do cliente";
+}
