@@ -488,6 +488,15 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
           Nenhum item encontrado com este filtro.
         </div>
       )}
+
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          gameTheme={{ primary: theme.primary, primaryRgb: theme.primaryRgb }}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   );
 }
