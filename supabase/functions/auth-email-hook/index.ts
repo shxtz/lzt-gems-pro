@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'Confirme seu e-mail — VBUCKS BARATO',
+  invite: 'Você foi convidado — VBUCKS BARATO',
+  magiclink: 'Seu link de acesso — VBUCKS BARATO',
+  recovery: 'Redefinir sua senha — VBUCKS BARATO',
+  email_change: 'Confirme a alteração de e-mail — VBUCKS BARATO',
+  reauthentication: 'Código de verificação — VBUCKS BARATO',
 }
 
 // Template mapping
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "lzt-gems-pro"
+const SITE_NAME = "VBUCKS BARATO"
 const SENDER_DOMAIN = "notify.vbucksbarato.com"
 const ROOT_DOMAIN = "vbucksbarato.com"
 const FROM_DOMAIN = "vbucksbarato.com" // Domain shown in From address (may be root or sender subdomain)
@@ -46,7 +46,7 @@ const FROM_DOMAIN = "vbucksbarato.com" // Domain shown in From address (may be r
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://lzt-gems-pro.lovable.app"
+const SAMPLE_PROJECT_URL = "https://vbucksbarato.com"
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {
