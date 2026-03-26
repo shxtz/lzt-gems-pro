@@ -1295,7 +1295,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                           })()}
 
                           <div className="space-y-2 p-3 sm:space-y-3 sm:p-4 min-w-0">
-                            <h3 className="truncate font-display text-sm font-semibold text-foreground">
+                            <h3 className="truncate font-display text-sm font-semibold text-foreground flex items-center gap-1.5">
+                              {(() => {
+                                const matchingShop = shopCategories?.find((sc) => {
+                                  const matchingIds = getMatchingLztCategoryIds(sc);
+                                  return matchingIds.includes(account.category_id);
+                                });
+                                return matchingShop?.icon_url ? <img src={matchingShop.icon_url} alt="" className="h-4 w-4 rounded-sm object-contain shrink-0" /> : null;
+                              })()}
                               {getMaskedName(getCategoryName(account.category_id), account.lzt_item_id)}
                             </h3>
                             {isAdmin && (
