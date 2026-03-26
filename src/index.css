@@ -472,3 +472,29 @@
   outline: 2px solid hsl(43 84% 55% / 0.5);
   outline-offset: 2px;
 }
+
+/* ── Fortnite Featured Card Animations ── */
+.fortnite-border-glow {
+  box-shadow: inset 0 0 0 1px hsl(43 84% 55% / 0.15), 0 0 40px -10px hsl(43 84% 55% / 0.2), 0 0 80px -20px hsl(43 84% 55% / 0.1);
+  transition: box-shadow 0.7s ease;
+}
+.fortnite-featured-card:hover .fortnite-border-glow {
+  box-shadow: inset 0 0 0 1px hsl(43 84% 55% / 0.35), 0 0 60px -10px hsl(43 84% 55% / 0.35), 0 0 120px -20px hsl(43 84% 55% / 0.15);
+}
+
+.fortnite-pulse {
+  animation: fortnite-pulse-anim 3s ease-in-out infinite;
+}
+@keyframes fortnite-pulse-anim {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.fortnite-shine {
+  animation: fortnite-shine-sweep 4s ease-in-out infinite;
+}
+@keyframes fortnite-shine-sweep {
+  0% { transform: translateX(-100%) rotate(12deg); }
+  50% { transform: translateX(100%) rotate(12deg); }
+  100% { transform: translateX(100%) rotate(12deg); }
+}

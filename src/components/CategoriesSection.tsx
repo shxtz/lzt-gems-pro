@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,8 +94,10 @@ const CategoriesSection = () => {
   });
 
   const displayCategories = categories || FALLBACK_HOME_CATEGORIES;
-  const topRow = displayCategories.slice(0, 5);
-  const bottomRow = displayCategories.slice(5);
+
+  // Separate Fortnite from the rest
+  const fortnite = displayCategories.find((c) => c.slug === "fortnite");
+  const others = displayCategories.filter((c) => c.slug !== "fortnite");
 
   return (
     <section id="categories" className="py-20 sm:py-28 md:py-36 relative overflow-hidden">
@@ -105,12 +108,8 @@ const CategoriesSection = () => {
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_right,hsl(30_90%_42%/0.04),transparent_50%)]" />
       </div>
 
-      {/* Top separator line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-      {/* Bottom separator line */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
-
-      {/* Floating ember particles */}
       <div className="absolute inset-0 pointer-events-none ember-bg opacity-50" />
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -119,7 +118,7 @@ const CategoriesSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="text-center mb-12 sm:mb-20"
+          className="text-center mb-12 sm:mb-16"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.8 }}
@@ -138,21 +137,15 @@ const CategoriesSection = () => {
           </p>
         </motion.div>
 
-        {/* Top row */}
-        <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 mb-4 sm:mb-6 md:mb-8 flex-wrap">
-          {topRow.map((cat, i) => (
+        {/* ── FORTNITE FEATURED HERO CARD ── */}
+        {fortnite && <FortniteFeaturedCard category={fortnite} onClick={() => navigate(`/contas/${fortnite.slug}`)} />}
+
+        {/* ── OTHER CATEGORIES GRID ── */}
+        <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 flex-wrap mt-10 sm:mt-14">
+          {others.map((cat, i) => (
             <CategoryIcon key={cat.id} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
           ))}
         </div>
-
-        {/* Bottom row */}
-        {bottomRow.length > 0 && (
-          <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 flex-wrap">
-            {bottomRow.map((cat, i) => (
-              <CategoryIcon key={cat.id} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
-            ))}
-          </div>
-        )}
       </div>
     </section>
   );
@@ -201,6 +194,99 @@ const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
       <span className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] md:text-xs font-display font-bold text-muted-foreground group-hover:text-primary transition-all duration-400 text-center max-w-[80px] sm:max-w-[100px] leading-tight sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-2 sm:group-hover:translate-y-0">
         {category.name}
       </span>
+    </motion.div>
+  );
+};
+
+/* ─── FORTNITE FEATURED HERO CARD ─── */
+const FortniteFeaturedCard = ({ category, onClick }: { category: ShopCategory; onClick: () => void }) => {
+  const image = category.icon_url || SLUG_IMAGES[category.slug];
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (v) => `${Math.floor(v).toLocaleString("pt-BR")}+`);
+
+  useEffect(() => {
+    const ctrl = animate(count, 4800, { duration: 2.5, ease: "easeOut" });
+    return () => ctrl.stop();
+  }, [count]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.92 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      className="relative mx-auto max-w-xl w-full"
+    >
+      <motion.div
+        whileHover={{ y: -6, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 300, damping: 22 }}
+        onClick={onClick}
+        className="fortnite-featured-card group relative cursor-pointer rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-background p-5 sm:p-7 flex items-center gap-5 sm:gap-7 overflow-hidden"
+      >
+        {/* Animated border glow */}
+        <div className="absolute inset-0 rounded-3xl pointer-events-none fortnite-border-glow" />
+
+        {/* Pulsing radial background */}
+        <div className="absolute inset-0 rounded-3xl pointer-events-none bg-[radial-gradient(ellipse_at_30%_50%,hsl(43_84%_55%/0.12),transparent_60%)] fortnite-pulse" />
+
+        {/* Diagonal shine sweep */}
+        <div className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden">
+          <div className="fortnite-shine absolute -inset-full bg-gradient-to-r from-transparent via-primary/10 to-transparent rotate-12" />
+        </div>
+
+        {/* Icon */}
+        <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center overflow-hidden group-hover:shadow-[0_0_50px_-5px_hsl(var(--primary)/0.4)] transition-shadow duration-700">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(43_84%_55%/0.15),transparent_70%)]" />
+          {image && (
+            <img
+              src={image}
+              alt={category.name}
+              className="relative z-10 w-14 h-14 sm:w-[70px] sm:h-[70px] object-contain transition-transform duration-700 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_hsl(43_84%_55%/0.5)]"
+            />
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 relative z-10">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/15 border border-primary/25 text-primary font-display text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+              🔥 Mais Vendido
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive font-display text-[9px] font-bold uppercase tracking-wider animate-pulse">
+              ⚡ Hot
+            </span>
+          </div>
+          <h3 className="font-display text-xl sm:text-2xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors duration-300">
+            {category.name}
+          </h3>
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground mt-0.5 font-medium">
+            Contas com skins raras • Entrega automática
+          </p>
+          <div className="flex items-center gap-3 mt-2.5">
+            <div className="flex items-center gap-1">
+              <div className="flex -space-x-1">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 border border-primary/30" />
+                ))}
+              </div>
+              <motion.span className="font-display text-[10px] sm:text-xs text-primary font-bold ml-1">
+                {rounded}
+              </motion.span>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">vendidos</span>
+            </div>
+            <span className="w-[1px] h-3 bg-border/40" />
+            <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">⭐ 4.9/5</span>
+          </div>
+        </div>
+
+        {/* CTA Arrow */}
+        <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-[0_0_30px_-5px_hsl(var(--primary)/0.4)] group-hover:shadow-[0_0_50px_-5px_hsl(var(--primary)/0.6)] transition-shadow duration-500">
+          <svg className="w-5 h-5 text-primary-foreground group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </div>
+      </motion.div>
     </motion.div>
   );
 };
