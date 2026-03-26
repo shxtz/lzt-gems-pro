@@ -915,208 +915,12 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
               {/* LZT Accounts Grid */}
               {selectedTab === "contas" && (
-                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
-                      const adminCategoryName = getCategoryName(account.category_id);
-                      // Use shop category name for display badge, fallback to admin category name
-                      const displayCategoryName = (() => {
-                        const matchingShop = shopCategories?.find(sc => {
-                          const matchingIds = getMatchingLztCategoryIds(sc);
-                          return matchingIds.includes(account.category_id);
-                        });
-                        return matchingShop?.name || adminCategoryName;
-                      })();
-                      // Use admin category name for game detection (more reliable than LZT platform name)
-                      const realCategory = adminCategoryName;
-                      const inventoryInfo = extractAccountInfo(account.data, realCategory).slice(0, 4);
-                      const accountImg = getAccountImage(account.data, realCategory);
-
-                      // Determine game type from admin category
-                      const catLower = adminCategoryName.toLowerCase();
-                      const isValorant = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
-                      const isLoL = catLower.includes("league") || catLower.includes("lol");
-
-                      // Valorant rank badge - only for Valorant accounts
-                      const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
-                      const valRankIcon = getValorantRankIcon(valRank);
-                      const valRankName = getValorantRankName(valRank);
-
-                      // LoL rank badge
-                      const lolRank = isLoL ? (account.data?.riot_lol_rank) : null;
-                      const lolRankIcon = getLoLRankIcon(lolRank);
-
-                      return (
-                        <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative cursor-pointer" onClick={() => navigate(`/preview/${account.id}`)}>
-                          {/* Spotlight hover effect */}
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl z-[1]" style={{ background: `radial-gradient(400px circle at 50% 0%, ${getCategoryTheme(realCategory).accent}15, transparent 60%)` }} />
-
-                          {/* Inventory Banner */}
-                          {(() => {
-                            const theme = getCategoryTheme(realCategory);
-                            const seed = hashId(account.lzt_item_id);
-                            const CategoryIcon = theme.Icon;
-                            const angle = seed % 360;
-
-                            // Choose inventory based on game type - unified for ALL games
-                            let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
-                            if (isLoL && account.data?.lolInventory) {
-                              individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
-                            } else if (isValorant && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
-                              individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
-                            } else {
-                              // Use unified preview for Genshin, Honkai, ZZZ, Fortnite, Minecraft
-                              individualItems = getGamePreviewItems(account.data, adminCategoryName, 9);
-                            }
-                            const hasIndividualItems = individualItems.length > 0;
-                            // Only fall back to LZT images if no individual items
-                            const inv = !hasIndividualItems ? getLztInventoryImages(account.data) : { weapons: null, agents: null, buddies: null };
-                            const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
-
-                            const badgeRow = (
-                              <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 flex flex-wrap items-center gap-1 sm:gap-1.5 z-[2] max-w-[calc(100%-2.5rem)]">
-                                <Badge className="bg-background/70 backdrop-blur-md text-[8px] sm:text-[10px] uppercase font-display tracking-wider border-0 text-foreground flex items-center gap-1 px-1.5 sm:px-2 py-0.5">
-                                  {(() => {
-                                    const matchingShop = shopCategories?.find(sc => {
-                                      const matchingIds = getMatchingLztCategoryIds(sc);
-                                      return matchingIds.includes(account.category_id);
-                                    });
-                                    return matchingShop?.icon_url ? <img src={matchingShop.icon_url} alt="" className="h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-sm object-contain" /> : null;
-                                  })()}
-                                  <span className="truncate max-w-[60px] sm:max-w-none">{displayCategoryName}</span>
-                                </Badge>
-                                {valRankName && (
-                                  <Badge className="bg-background/70 backdrop-blur-md text-[8px] sm:text-[10px] border-0 text-foreground flex items-center gap-1 px-1.5 sm:px-2 py-0.5">
-                                    {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-                                    <span className="hidden sm:inline">{valRankName}</span>
-                                  </Badge>
-                                )}
-                                {lolRank && lolRank !== "Unranked" && (
-                                  <Badge className="bg-background/70 backdrop-blur-md text-[8px] sm:text-[10px] border-0 text-foreground flex items-center gap-1 px-1.5 sm:px-2 py-0.5">
-                                    {lolRankIcon && <img src={lolRankIcon} alt={lolRank} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                                    <span className="hidden sm:inline">{lolRank}</span>
-                                  </Badge>
-                                )}
-                              </div>
-                            );
-
-                            // 3x3 grid with individual item images
-                            if (hasIndividualItems) {
-                              const gridItems = individualItems.slice(0, 9);
-                              return (
-                                <div className="relative">
-                                  <div className="aspect-square overflow-hidden relative border-b border-border/20">
-                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
-                                      {gridItems.map((item, idx) => {
-                                        const { tile, outline } = item.tier;
-                                        const itemKey = 'uuid' in item ? item.uuid : String(item.id);
-                                        const tierIcon = 'tierIcon' in item ? item.tierIcon : null;
-                                        const isLoLItem = 'championName' in item;
-                                        return (
-                                          <div
-                                            key={itemKey}
-                                            className="relative overflow-hidden flex items-center justify-center group/tile"
-                                            style={{
-                                              background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.85), rgba(${tile.join(",")}, 0.35))`,
-                                              borderRight: `1px solid rgba(${outline.join(",")}, 0.25)`,
-                                              borderBottom: `1px solid rgba(${outline.join(",")}, 0.25)`,
-                                            }}
-                                          >
-                                            <img
-                                              src={item.imageUrl}
-                                              alt=""
-                                              loading="lazy"
-                                              className={`w-full h-full ${isLoLItem ? 'object-cover' : 'object-contain p-1.5'} saturate-[1.8] brightness-110 drop-shadow-md group-hover/tile:scale-110 transition-transform duration-300`}
-                                            />
-                                            {tierIcon && (
-                                              <div className="absolute top-1 right-1">
-                                                <img src={tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                      {gridItems.length < 9 && Array.from({ length: 9 - gridItems.length }).map((_, idx) => (
-                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-muted/5 flex items-center justify-center" style={{ borderRight: "1px solid rgba(120,120,120,0.1)", borderBottom: "1px solid rgba(120,120,120,0.1)" }}>
-                                          <CategoryIcon className="h-4 w-4 text-muted-foreground/10" strokeWidth={1} />
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="absolute top-2 right-2 z-[3]">
-                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm">
-                                        <Zap className="h-2.5 w-2.5" /> Automática
-                                      </span>
-                                    </div>
-                                    {badgeRow}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            if (hasInventory) {
-                              // Collect all available inventory images dynamically
-                              const inventoryItems = Object.entries(inv)
-                                .filter(([_, src]) => src !== null)
-                                .map(([key, src]) => ({ src: src as string, label: key }))
-                                .slice(0, 4);
-
-                              return (
-                                <div className="relative">
-                                  <div className="aspect-square overflow-hidden relative bg-background border-b border-border/20">
-                                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[2px] bg-border/10">
-                                      {inventoryItems.slice(0, 4).map((item, idx) => (
-                                        <div key={idx} className="relative overflow-hidden bg-background">
-                                          <img
-                                            src={item.src!}
-                                            alt={item.label}
-                                            loading="lazy"
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                                            style={{ filter: "saturate(1.15) contrast(1.08) brightness(1.02)" }}
-                                          />
-                                        </div>
-                                      ))}
-                                      {inventoryItems.length < 4 && Array.from({ length: 4 - inventoryItems.length }).map((_, idx) => (
-                                        <div key={`empty-${idx}`} className="relative overflow-hidden bg-background flex items-center justify-center">
-                                          <CategoryIcon className="h-6 w-6 text-muted-foreground/15" strokeWidth={1} />
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="absolute top-2 right-2 z-[3]">
-                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm">
-                                        <Zap className="h-2.5 w-2.5" /> Automática
-                                      </span>
-                                    </div>
-                                    {badgeRow}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            if (accountImg) {
-                              return (
-                                <div className="h-36 overflow-hidden relative">
-                                  <img src={accountImg} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy" style={{ filter: "saturate(1.15) contrast(1.05)" }} />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
-                                  {badgeRow}
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <div className={`h-36 overflow-hidden relative bg-gradient-to-br ${theme.gradient}`}>
-                                <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3C/g%3E%3C/svg%3E\")" }} />
-                                <div className="absolute opacity-25 blur-2xl rounded-full group-hover:opacity-40 transition-opacity duration-700" style={{ background: `radial-gradient(circle, ${theme.accent}, transparent)`, width: 100, height: 100, left: `${30 + (seed % 40)}%`, top: `${10 + (seed % 50)}%` }} />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <CategoryIcon className="h-12 w-12 text-white/10 group-hover:text-white/20 transition-all duration-500 group-hover:scale-110" strokeWidth={1} style={{ transform: `rotate(${angle % 20 - 10}deg)` }} />
-                                </div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-                                {badgeRow}
-                              </div>
-                            );
-                          })()}
-
-                          <div className="p-2.5 sm:p-4 space-y-2 sm:space-y-3">
-                            <h3 className="font-display text-xs sm:text-sm text-foreground font-semibold truncate">
+...
+                          <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                            <h3 className="font-display text-sm text-foreground font-semibold truncate">
                               {getMaskedName(getCategoryName(account.category_id), account.lzt_item_id)}
                             </h3>
                             {isAdmin && (
@@ -1131,10 +935,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               </a>
                             )}
 
-                            <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                              <span className="text-base sm:text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
-                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-[10px] sm:text-xs font-bold h-7 sm:h-9 px-2.5 sm:px-4" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
-                                {purchasing === account.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <><ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" /> <span className="hidden sm:inline">Comprar</span><span className="sm:hidden">Buy</span></>}
+                            <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/20">
+                              <span className="text-xl font-bold text-primary whitespace-nowrap">R$ {Number(account.price_brl).toFixed(2)}</span>
+                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-xs font-bold h-9 px-4 shrink-0" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
+                                {purchasing === account.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Comprar</>}
                               </Button>
                             </div>
                           </div>
