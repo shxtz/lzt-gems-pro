@@ -48,38 +48,85 @@ export function parseCredential(raw: string): ParsedCredential {
   const lines = raw.trim().split("\n").map((l) => l.trim()).filter(Boolean);
   const result: ParsedCredential = {};
 
+  // Track whether we're in the "email section" after seeing "Access to email"
+  let inEmailSection = false;
+
   for (const line of lines) {
     const lower = line.toLowerCase();
     const getValue = () => line.substring(line.indexOf(":") + 1).trim();
 
+    // Skip combined field
     if (lower.startsWith("login and password:")) {
-      // Skip this combined field, we already have login + password separately
       continue;
-    } else if (lower.startsWith("login:")) {
-      result.login = getValue();
-    } else if (lower.startsWith("password:") || (lower.startsWith("senha:") && !lower.startsWith("senha email:") && !lower.startsWith("senha e-mail:"))) {
-      result.password = getValue();
-    } else if (lower.startsWith("old password:") || lower.startsWith("senha antiga:")) {
-      result.oldPassword = getValue();
-    } else if (lower.startsWith("access to email") || lower.startsWith("email:") || lower.startsWith("e-mail:")) {
-      // "Access to email (auto registered):" or "Email:"
+    }
+
+    // Detect "Access to email" header — next login/password belong to email
+    if (lower.startsWith("access to email")) {
+      inEmailSection = true;
+      // If it contains an email inline like "Access to email: user@domain.com"
       const val = getValue();
-      // If the value contains sub-lines like login/password for email, skip setting as email
-      // But typically it's just a label, the actual email is the login itself
       if (val && val.includes("@")) {
         result.email = val;
-      } else if (!val || val === "" || lower.includes("auto registered") || lower.includes("(")) {
-        // "Access to email (auto registered):" is just a section header
-        // The email is likely the login itself
-        if (result.login && result.login.includes("@")) {
-          result.email = result.login;
-        }
       }
-    } else if (lower.startsWith("senha email:") || lower.startsWith("senha e-mail:") || lower.startsWith("email password:") || lower.startsWith("emailpassword:")) {
+      continue;
+    }
+
+    // Provider fields
+    if (lower.startsWith("provedor email:") || lower.startsWith("provedor do email:") || lower.startsWith("provedor:")) {
+      result.provider = getValue();
+      continue;
+    }
+
+    // Email password explicit fields
+    if (lower.startsWith("senha email:") || lower.startsWith("senha e-mail:") || lower.startsWith("email password:") || lower.startsWith("emailpassword:")) {
       result.emailPassword = getValue();
-    } else if (lower.startsWith("provedor email:") || lower.startsWith("provedor do email:") || lower.startsWith("provedor:")) {
-      // Already parsed, skip
-    } else if (!result.login && !result.raw) {
+      continue;
+    }
+
+    // Old password
+    if (lower.startsWith("old password:") || lower.startsWith("senha antiga:")) {
+      result.oldPassword = getValue();
+      continue;
+    }
+
+    // Login field
+    if (lower.startsWith("login:")) {
+      const val = getValue();
+      if (inEmailSection && !result.email) {
+        result.email = val;
+      } else if (!result.login) {
+        result.login = val;
+      } else if (!result.email && val.includes("@")) {
+        // Second login field with @ is likely email
+        result.email = val;
+      }
+      continue;
+    }
+
+    // Password field — context-sensitive
+    if (lower.startsWith("password:") || (lower.startsWith("senha:") && !lower.startsWith("senha email:") && !lower.startsWith("senha e-mail:"))) {
+      const val = getValue();
+      if (inEmailSection && result.email && !result.emailPassword) {
+        result.emailPassword = val;
+      } else if (!result.password) {
+        result.password = val;
+      } else if (!result.emailPassword) {
+        result.emailPassword = val;
+      }
+      continue;
+    }
+
+    // Email explicit field
+    if (lower.startsWith("email:") || lower.startsWith("e-mail:")) {
+      const val = getValue();
+      if (val && val.includes("@")) {
+        result.email = val;
+      }
+      continue;
+    }
+
+    // Fallback: try colon-separated
+    if (!result.login && !result.raw) {
       const colonIdx = line.indexOf(":");
       if (colonIdx > 0) {
         result.login = line.substring(0, colonIdx).trim();
@@ -95,8 +142,8 @@ export function parseCredential(raw: string): ParsedCredential {
     result.email = result.login;
   }
 
-  // Detect provider from email
-  if (result.email) {
+  // Detect provider from email if not already set
+  if (result.email && !result.provider) {
     result.provider = detectProvider(result.email);
   }
 
