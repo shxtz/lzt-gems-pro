@@ -540,6 +540,7 @@ const AccountPreview = () => {
   // LoL rank icon
   const lolRank = isLoLAccount ? d?.riot_lol_rank : null;
   const lolRankIconUrl = getLoLRankIcon(lolRank);
+  const maskedName = getMaskedName(realCategory, account.lzt_item_id);
   const price = Number(account.price_brl);
   const isAvailable = account.status === "available";
 
