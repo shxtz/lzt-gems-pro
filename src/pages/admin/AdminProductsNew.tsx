@@ -57,6 +57,10 @@ const validateKeyCredential = (line: string): { valid: boolean; error?: string }
 };
 
 const LztAccountsSection = () => {
+  const queryClient = useQueryClient();
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const { data: lztCategories } = useQuery({
     queryKey: ["admin-lzt-cats-products"],
     queryFn: async () => {
@@ -66,7 +70,7 @@ const LztAccountsSection = () => {
     },
   });
 
-  const { data: lztAccounts } = useQuery({
+  const { data: lztAccounts, refetch: refetchAccounts } = useQuery({
     queryKey: ["admin-lzt-accounts-products"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -78,6 +82,20 @@ const LztAccountsSection = () => {
       return data;
     },
   });
+
+  const deleteAccount = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase.from("lzt_accounts").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Conta removida com sucesso");
+      refetchAccounts();
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+    } catch {
+      toast.error("Erro ao remover conta");
+    }
+    setDeletingId(null);
+  };
 
   const summary = useMemo(() => {
     if (!lztAccounts || !lztCategories) return [];
@@ -95,6 +113,9 @@ const LztAccountsSection = () => {
   const totalAvailable = summary.reduce((a, s) => a + s.available, 0);
   const totalSold = summary.reduce((a, s) => a + s.sold, 0);
 
+  const accountsForCategory = (catId: string) =>
+    lztAccounts?.filter((a) => a.category_id === catId && a.status === "available") || [];
+
   if (!lztAccounts || lztAccounts.length === 0) return null;
 
   return (
@@ -102,7 +123,7 @@ const LztAccountsSection = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-lg text-foreground">Contas LZT Anunciadas</h2>
-          <p className="text-xs text-muted-foreground">Contas importadas do LZT Market — gerencie na aba "LZT Market"</p>
+          <p className="text-xs text-muted-foreground">Clique em uma categoria para ver e gerenciar as contas</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="default" className="text-xs">{totalAvailable} disponíveis</Badge>
@@ -110,24 +131,65 @@ const LztAccountsSection = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="space-y-3">
         {summary.filter(s => s.available > 0 || s.sold > 0).map((cat) => (
-          <div key={cat.id} className="rounded-xl border border-border/40 bg-card p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden flex-shrink-0">
-              {cat.icon_url ? (
-                <img src={cat.icon_url} alt={cat.name} className="h-full w-full object-cover" />
-              ) : (
-                <Package className="h-5 w-5 text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display text-sm text-foreground truncate">{cat.name}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-green-500">{cat.available} disp.</span>
-                <span className="text-xs text-muted-foreground">·</span>
-                <span className="text-xs text-muted-foreground">{cat.sold} vendidas</span>
+          <div key={cat.id} className="rounded-xl border border-border/40 bg-card overflow-hidden">
+            <div
+              className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/10 transition-colors"
+              onClick={() => setExpandedCat(expandedCat === cat.id ? null : cat.id)}
+            >
+              <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {cat.icon_url ? (
+                  <img src={cat.icon_url} alt={cat.name} className="h-full w-full object-cover" />
+                ) : (
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                )}
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-sm text-foreground truncate">{cat.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-green-500">{cat.available} disp.</span>
+                  <span className="text-xs text-muted-foreground">·</span>
+                  <span className="text-xs text-muted-foreground">{cat.sold} vendidas</span>
+                </div>
+              </div>
+              {expandedCat === cat.id ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </div>
+
+            <AnimatePresence>
+              {expandedCat === cat.id && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-border/20"
+                >
+                  <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
+                    {accountsForCategory(cat.id).length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">Nenhuma conta disponível</p>
+                    ) : (
+                      accountsForCategory(cat.id).map((acc) => (
+                        <div key={acc.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/5 hover:bg-muted/10 transition-colors">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <p className="text-xs text-foreground truncate">{acc.title || acc.lzt_item_id}</p>
+                            <p className="text-[10px] text-muted-foreground">R$ {acc.price_brl.toFixed(2)} · ID: {acc.lzt_item_id}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Remover conta "${acc.title || acc.lzt_item_id}"?`)) deleteAccount(acc.id);
+                            }}
+                            disabled={deletingId === acc.id}
+                            className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ))}
       </div>
