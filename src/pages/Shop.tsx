@@ -817,7 +817,6 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     }
   };
 
-  const copyPix = () => {
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     setApplyingCoupon(true);
