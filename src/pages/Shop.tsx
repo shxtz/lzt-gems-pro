@@ -22,6 +22,7 @@ import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, prewarmSki
 import { prewarmChampionsCatalog, getLoLQuickPreviewItems, type LoLPreviewItem } from "@/lib/lol-api";
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
+import ValorantInventory from "@/components/ValorantInventory";
 import ScarcityBadge from "@/components/marketing/ScarcityBadge";
 import SocialProofBar from "@/components/marketing/SocialProofBar";
 import CrossSellBanner from "@/components/marketing/CrossSellBanner";
