@@ -16,7 +16,7 @@ const FeatureCard = ({ icon: Icon, title, description, index }: FeatureProps) =>
     viewport={{ once: true }}
     transition={{ delay: index * 0.12, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     whileHover={{ y: -4 }}
-    className="group relative text-center p-8 rounded-2xl border border-border/20 bg-gradient-card transition-all duration-500 hover:border-primary/20 hover:shadow-card-hover"
+    className="group relative text-center p-5 sm:p-7 md:p-8 rounded-2xl border border-border/20 bg-gradient-card transition-all duration-500 hover:border-primary/20 hover:shadow-card-hover"
   >
     {/* Subtle glow on hover */}
     <div className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
@@ -24,13 +24,13 @@ const FeatureCard = ({ icon: Icon, title, description, index }: FeatureProps) =>
     />
 
     <div className="relative z-10">
-      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl glass-gold transition-all duration-300 group-hover:shadow-gold">
-        <Icon className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+      <div className="mx-auto mb-4 sm:mb-5 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl glass-gold transition-all duration-300 group-hover:shadow-gold">
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
       </div>
-      <h3 className="font-display text-[13px] font-bold text-foreground mb-2 uppercase tracking-[0.1em]">
+      <h3 className="font-display text-[12px] sm:text-[13px] font-bold text-foreground mb-1.5 sm:mb-2 uppercase tracking-[0.08em] sm:tracking-[0.1em]">
         {title}
       </h3>
-      <p className="font-body text-[12px] text-muted-foreground leading-relaxed">
+      <p className="font-body text-[11px] sm:text-[12px] text-muted-foreground leading-relaxed">
         {description}
       </p>
     </div>
@@ -62,30 +62,30 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-28 relative overflow-hidden">
+    <section className="py-16 sm:py-24 md:py-28 relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
 
       {/* Background accent */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full pointer-events-none"
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] sm:w-[600px] h-[200px] sm:h-[300px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.03), transparent 60%)" }}
       />
 
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
-          <span className="inline-block font-body text-[10px] text-primary uppercase tracking-[0.3em] mb-4">
+          <span className="inline-block font-body text-[10px] text-primary uppercase tracking-[0.3em] mb-3 sm:mb-4">
             ⬡ Por que nos escolher
           </span>
-          <h2 className="font-display text-4xl md:text-5xl font-black mb-4 text-foreground tracking-tight">
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 text-foreground tracking-tight">
             VANTAGENS
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 max-w-5xl mx-auto">
           {features.map((feat, i) => (
             <FeatureCard key={feat.title} {...feat} index={i} />
           ))}

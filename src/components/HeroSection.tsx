@@ -54,8 +54,8 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-transparent h-[30%]" />
       </motion.div>
 
-      {/* Animated grid */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
+      {/* Animated grid — hidden on mobile for performance */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03] hidden sm:block">
         <motion.div
           animate={{ y: [0, 40] }}
           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -67,26 +67,26 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
         />
       </div>
 
-      {/* Gold particles */}
+      {/* Gold particles — fewer on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <GoldParticle
             key={i}
-            delay={i * 0.8}
-            x={5 + i * 8}
+            delay={i * 1.1}
+            x={8 + i * 12}
             size={2 + (i % 3) * 2}
           />
         ))}
       </div>
 
       {/* Radial gold glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full pointer-events-none"
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] h-[400px] sm:h-[600px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.06), transparent 60%)" }}
       />
 
       {/* Content */}
       <motion.div
-        className="relative z-10 container mx-auto px-6 text-center"
+        className="relative z-10 container mx-auto px-4 sm:px-6 text-center"
         style={{ y: contentY, opacity }}
       >
         <motion.div
@@ -100,10 +100,10 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="inline-flex items-center gap-2 sm:gap-3 rounded-full border border-primary/60 bg-background/85 px-4 sm:px-7 py-2.5 sm:py-3 mb-6 sm:mb-8 backdrop-blur-xl shadow-gold"
+            className="inline-flex items-center gap-2 sm:gap-3 rounded-full border border-primary/60 bg-background/85 px-4 sm:px-7 py-2 sm:py-3 mb-5 sm:mb-8 backdrop-blur-xl shadow-gold"
           >
             <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary animate-pulse" />
-            <span className="font-body text-[10px] sm:text-[14px] font-black text-foreground tracking-[0.15em] sm:tracking-[0.22em] uppercase drop-shadow-sm">
+            <span className="font-body text-[10px] sm:text-[14px] font-black text-foreground tracking-[0.12em] sm:tracking-[0.22em] uppercase drop-shadow-sm">
               Melhor preço do Brasil
             </span>
           </motion.div>
@@ -113,10 +113,10 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] mb-4 tracking-tight"
+            className="font-display text-[3.2rem] sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.92] mb-3 sm:mb-4 tracking-tight"
           >
             <span className="text-foreground block leading-none">VBUCKS</span>
-            <span className="text-gradient-gold-shine block leading-none -mt-2 sm:-mt-3 md:-mt-5 lg:-mt-7">BARATO</span>
+            <span className="text-gradient-gold-shine block leading-none -mt-1 sm:-mt-3 md:-mt-5 lg:-mt-7">BARATO</span>
           </motion.h1>
 
           {/* Description */}
@@ -124,10 +124,11 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
-            className="font-body text-sm md:text-base text-foreground max-w-lg mx-auto mb-10 leading-relaxed tracking-wide"
+            className="font-body text-xs sm:text-sm md:text-base text-foreground max-w-md sm:max-w-lg mx-auto mb-7 sm:mb-10 leading-relaxed tracking-wide"
           >
             V-Bucks e contas de jogos com os melhores&nbsp;preços.
-            <br />
+            <br className="hidden sm:block" />
+            <span className="sm:hidden"> </span>
             Entrega instantânea e <span className="text-primary font-medium">segurança garantida</span>.
           </motion.p>
 
@@ -136,15 +137,15 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.6 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
           >
             <motion.button
               onClick={() => navigate("/vbucks")}
               whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(43 84% 55% / 0.3)" }}
               whileTap={{ scale: 0.97 }}
-              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-5 sm:px-7 py-3 font-display text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-primary-foreground shadow-gold transition-all w-full sm:w-auto justify-center"
+              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-5 sm:px-7 py-3 sm:py-3.5 font-display text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-primary-foreground shadow-gold transition-all w-full sm:w-auto justify-center"
             >
-              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-8 w-8 sm:h-10 sm:w-10 -ml-1" />
+              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-7 w-7 sm:h-10 sm:w-10 -ml-1" />
               <span className="relative z-10">Comprar V-Bucks</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               <motion.div
@@ -162,7 +163,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
               onClick={() => navigate("/loja")}
               whileHover={{ scale: 1.04, borderColor: "hsl(43 84% 55% / 0.5)" }}
               whileTap={{ scale: 0.97 }}
-              className="flex items-center justify-center gap-3 rounded-2xl border border-border/60 glass px-9 py-3.5 sm:py-4 font-display text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-foreground transition-all duration-300 w-full sm:w-auto"
+              className="flex items-center justify-center gap-3 rounded-2xl border border-border/60 glass px-9 py-3 sm:py-3.5 font-display text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-foreground transition-all duration-300 w-full sm:w-auto"
             >
               Ver Contas
             </motion.button>
@@ -174,7 +175,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.8 }}
-          className="mt-12 sm:mt-20 flex items-center justify-center gap-0 max-w-xl mx-auto"
+          className="mt-10 sm:mt-20 flex items-center justify-center gap-0 max-w-md sm:max-w-xl mx-auto"
         >
           {[
             { value: "1.000+", label: "Clientes" },
@@ -183,14 +184,14 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
           ].map((stat, i) => (
             <div
               key={stat.label}
-              className={`flex-1 text-center py-4 ${
+              className={`flex-1 text-center py-3 sm:py-4 ${
                 i < 2 ? "border-r border-border/30" : ""
               }`}
             >
-              <div className="font-display text-xl md:text-2xl font-bold text-gradient-gold mb-0.5">
+              <div className="font-display text-lg sm:text-xl md:text-2xl font-bold text-gradient-gold mb-0.5">
                 {stat.value}
               </div>
-              <div className="font-body text-[10px] text-muted-foreground uppercase tracking-[0.2em]">
+              <div className="font-body text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-[0.15em] sm:tracking-[0.2em]">
                 {stat.label}
               </div>
             </div>
@@ -198,10 +199,10 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
         </motion.div>
       </motion.div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator — hidden on mobile */}
       <motion.button
         onClick={onScrollNext}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 cursor-pointer p-2 rounded-full hover:bg-primary/10 transition-colors"
+        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10 cursor-pointer p-2 rounded-full hover:bg-primary/10 transition-colors hidden sm:block"
         animate={{ y: [0, 8, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
       >
