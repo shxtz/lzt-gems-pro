@@ -648,6 +648,7 @@ const AccountPreview = () => {
                             className="absolute inset-0 w-full h-full object-contain p-3"
                             loading="lazy"
                             style={{ filter: "brightness(1.1) contrast(1.2) saturate(1.8)" }}
+                            onError={(e) => { const tile = (e.target as HTMLImageElement).closest('[data-tile]'); if (tile) (tile as HTMLElement).style.display = "none"; }}
                           />
                         )}
                         {item.tierIcon && (
