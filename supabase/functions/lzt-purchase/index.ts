@@ -142,6 +142,20 @@ Deno.serve(async (req) => {
         if (login.password) parts.push(`Senha: ${login.password}`);
         if (login.email) parts.push(`Email: ${login.email}`);
         if (login.emailPassword) parts.push(`Senha Email: ${login.emailPassword}`);
+        // Detect email provider
+        if (login.email) {
+          const domain = login.email.split("@")[1]?.toLowerCase() || "";
+          const providers: Record<string, string> = {
+            "gmail.com": "Google (Gmail)", "googlemail.com": "Google (Gmail)",
+            "outlook.com": "Microsoft (Outlook)", "hotmail.com": "Microsoft (Hotmail)",
+            "live.com": "Microsoft (Live)", "mail.ru": "Mail.ru",
+            "yahoo.com": "Yahoo Mail", "icloud.com": "Apple (iCloud)",
+            "protonmail.com": "ProtonMail", "proton.me": "ProtonMail",
+            "rambler.ru": "Rambler", "yandex.ru": "Yandex", "yandex.com": "Yandex",
+          };
+          const provider = providers[domain] || domain;
+          parts.push(`Provedor Email: ${provider}`);
+        }
         if (login.raw) parts.push(login.raw);
         if (parts.length > 0) credential = parts.join("\n");
       } else if (buyData.item?.account) {
