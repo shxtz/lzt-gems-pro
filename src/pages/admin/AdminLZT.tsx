@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Plus, Trash2, Download, Search, Save, RefreshCw, Settings2, Link2, Percent, AlertTriangle,
-  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, ArrowUpCircle, Zap,
+  Plus, Trash2, Download, Search, RefreshCw, Settings2, Link2, Percent, AlertTriangle,
+  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -437,7 +437,7 @@ const CategoryCard = ({
       if (error) {
         addLog("error", `Erro na importação: ${error.message}`);
       } else if (data) {
-        const { imported = 0, updated = 0, removed = 0, categories: catCount = 0 } = data;
+        const { imported = 0, updated = 0, removed = 0 } = data;
         
         if (imported > 0) {
           addLog("success", `✅ ${imported} conta(s) importada(s) com sucesso`);
