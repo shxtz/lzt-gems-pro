@@ -1105,13 +1105,15 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
 
+                            const isFortnite = catLower.includes("fortnite");
+                            const gridLimit = isFortnite ? 4 : 9;
                             let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
                             if (isLoL && account.data?.lolInventory) {
                               individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
                             } else if (isValorant && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
                               individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
                             } else {
-                              individualItems = getGamePreviewItems(account.data, adminCategoryName, 9);
+                              individualItems = getGamePreviewItems(account.data, adminCategoryName, gridLimit);
                             }
 
                             const hasIndividualItems = individualItems.length > 0;
@@ -1146,11 +1148,15 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             );
 
                             if (hasIndividualItems) {
-                              const gridItems = individualItems.slice(0, 9);
+                              const useCompactGrid = isFortnite;
+                              const gridItems = individualItems.slice(0, useCompactGrid ? 4 : 9);
+                              const cols = useCompactGrid ? 2 : 3;
+                              const rows = useCompactGrid ? 2 : 3;
+                              const totalCells = cols * rows;
                               return (
                                 <div className="relative">
                                   <div className="relative aspect-square overflow-hidden border-b border-border/20">
-                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
+                                    <div className={`absolute inset-0 grid gap-[2px] bg-border/10`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }}>
                                       {gridItems.map((item) => {
                                         const { tile, outline } = item.tier;
                                         const itemKey = "uuid" in item ? item.uuid : String(item.id);
@@ -1161,26 +1167,31 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                             key={itemKey}
                                             className="group/tile relative flex items-center justify-center overflow-hidden"
                                             style={{
-                                              background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.85), rgba(${tile.join(",")}, 0.35))`,
-                                              borderRight: `1px solid rgba(${outline.join(",")}, 0.25)`,
-                                              borderBottom: `1px solid rgba(${outline.join(",")}, 0.25)`,
+                                              background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.95), rgba(${tile.join(",")}, 0.45))`,
+                                              borderRight: `1px solid rgba(${outline.join(",")}, 0.3)`,
+                                              borderBottom: `1px solid rgba(${outline.join(",")}, 0.3)`,
                                             }}
                                           >
                                             <img
                                               src={item.imageUrl}
                                               alt=""
                                               loading="lazy"
-                                              className={`h-full w-full ${isLoLItem ? "object-cover" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
+                                              className={`h-full w-full ${isLoLItem ? "object-cover" : useCompactGrid ? "object-contain p-2" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
                                             />
                                             {tierIcon && (
                                               <div className="absolute right-1 top-1">
                                                 <img src={tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
                                               </div>
                                             )}
+                                            {useCompactGrid && (
+                                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4">
+                                                <p className="text-[9px] font-semibold text-white text-center leading-tight line-clamp-1 drop-shadow-md">{"name" in item ? item.name : "championName" in item ? (item as any).championName : ""}</p>
+                                              </div>
+                                            )}
                                           </div>
                                         );
                                       })}
-                                      {gridItems.length < 9 && Array.from({ length: 9 - gridItems.length }).map((_, emptyIndex) => (
+                                      {gridItems.length < totalCells && Array.from({ length: totalCells - gridItems.length }).map((_, emptyIndex) => (
                                         <div
                                           key={`empty-${emptyIndex}`}
                                           className="relative flex items-center justify-center overflow-hidden bg-muted/5"
