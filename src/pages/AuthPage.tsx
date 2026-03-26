@@ -54,7 +54,6 @@ const AuthPage = () => {
   // Listen for postMessage from popup callback
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
       if (event.data?.type === "RESTORECORD_VERIFIED") {
         setDiscordVerification({
           discord_id: event.data.discord_id,
@@ -63,10 +62,36 @@ const AuthPage = () => {
         });
         setIsLogin(false);
         toast.success(`Discord verificado: ${event.data.username || event.data.discord_id}`);
+        // Clean up localStorage
+        try { localStorage.removeItem("restorecord_verified"); } catch {}
       }
     };
     window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
+
+    // Also poll localStorage as fallback (in case postMessage was missed)
+    const poll = setInterval(() => {
+      try {
+        const stored = localStorage.getItem("restorecord_verified");
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (data?.type === "RESTORECORD_VERIFIED" && data.discord_id) {
+            setDiscordVerification({
+              discord_id: data.discord_id,
+              username: data.username || "Discord User",
+              avatar: data.avatar || null,
+            });
+            setIsLogin(false);
+            toast.success(`Discord verificado: ${data.username || data.discord_id}`);
+            localStorage.removeItem("restorecord_verified");
+          }
+        }
+      } catch {}
+    }, 500);
+
+    return () => {
+      window.removeEventListener("message", handler);
+      clearInterval(poll);
+    };
   }, []);
 
   const openRestoreCord = () => {
