@@ -841,10 +841,36 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                   <Button size="sm" variant="outline" onClick={copyPix} className="shrink-0">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
                 </div>
               </div>
+              {/* Balance Payment Option */}
+              {user && (userBalance || 0) >= pixData.amount && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-display text-foreground">Pagar com Saldo</span>
+                    </div>
+                    <span className="text-xs text-primary font-medium">R$ {(userBalance || 0).toFixed(2)} disponível</span>
+                  </div>
+                  <Button
+                    onClick={handlePayWithBalance}
+                    disabled={payingWithBalance}
+                    className="w-full bg-primary text-primary-foreground font-display"
+                  >
+                    {payingWithBalance ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processando...</> : <>
+                      <Wallet className="h-4 w-4 mr-2" />Pagar R$ {pixData.amount.toFixed(2)} com Saldo
+                    </>}
+                  </Button>
+                </div>
+              )}
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/30" />
+                <span className="text-[10px] text-muted-foreground uppercase">ou pague via PIX</span>
+                <div className="flex-1 h-px bg-border/30" />
+              </div>
               <Button onClick={confirmPaymentAndDeliver} disabled={checkingPayment} className="w-full bg-gradient-gold text-primary-foreground font-display">
                 {checkingPayment ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirmando...</> : "Já paguei - Confirmar"}
               </Button>
-              <p className="text-[10px] text-muted-foreground text-center">Após pagar, clique em "Já paguei" para receber sua credencial.</p>
+              <p className="text-[10px] text-muted-foreground text-center">Após pagar via PIX, clique em "Já paguei" para receber sua credencial.</p>
             </motion.div>
           </motion.div>
         )}
