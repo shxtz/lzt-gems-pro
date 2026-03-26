@@ -262,20 +262,28 @@ export function getMinecraftPreviewItems(data: any): GamePreviewItem[] {
   const items: GamePreviewItem[] = [];
   const mcId = data?.minecraft_id;
   const mcNick = data?.minecraft_nickname || data?.minecraft_username || data?.username;
+
+  // Body render first (most visually impactful for card preview)
+  if (mcId) {
+    items.push({ id: "mc-skin-body", imageUrl: `https://crafatar.com/renders/body/${mcId}?overlay&scale=8`, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
+  } else if (mcNick) {
+    items.push({ id: "mc-skin-body", imageUrl: `https://minotar.net/armor/body/${mcNick}/300.png`, name: mcNick, tier: { ...MC_TIER, key: "skin" } });
+  }
+
+  // Then base64 skin / skin URL as fallbacks
   const baseSkin = toDataUrl(data?.minecraft_skin);
   const skinUrl = data?.minecraft_skin_url || data?.skin_url || data?.skinUrl || null;
-
   if (baseSkin) {
     items.push({ id: "mc-skin-image", imageUrl: baseSkin, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
   }
   if (skinUrl) {
     items.push({ id: "mc-skin-url", imageUrl: skinUrl, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
   }
+
+  // Head avatar
   if (mcId) {
-    items.push({ id: "mc-skin-body", imageUrl: `https://crafatar.com/renders/body/${mcId}?overlay&scale=8`, name: mcNick || "Skin", tier: { ...MC_TIER, key: "skin" } });
     items.push({ id: "mc-skin-head", imageUrl: `https://crafatar.com/avatars/${mcId}?overlay&size=128`, name: "Avatar", tier: MC_TIER });
   } else if (mcNick) {
-    items.push({ id: "mc-skin-body", imageUrl: `https://minotar.net/armor/body/${mcNick}/300.png`, name: mcNick, tier: { ...MC_TIER, key: "skin" } });
     items.push({ id: "mc-skin-head", imageUrl: `https://minotar.net/avatar/${mcNick}/128.png`, name: "Avatar", tier: MC_TIER });
   }
 
@@ -283,12 +291,7 @@ export function getMinecraftPreviewItems(data: any): GamePreviewItem[] {
     const capeName = typeof cape === "string" ? cape : cape?.name || cape?.title || "Capa";
     const icon = typeof cape === "object" ? cape?.rendered || cape?.icon || cape?.url || toDataUrl(cape?.data) : null;
     if (icon) {
-      items.push({
-        id: `mc-cape-${i}`,
-        imageUrl: icon,
-        name: capeName,
-        tier: { ...MC_TIER, key: "cape" },
-      });
+      items.push({ id: `mc-cape-${i}`, imageUrl: icon, name: capeName, tier: { ...MC_TIER, key: "cape" } });
     }
   });
 
