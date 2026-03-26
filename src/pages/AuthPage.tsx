@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const RESTORECORD_VERIFY_URL = "https://restorecord.com/verify/vbucksbarato";
+const DISCORD_CALLBACK_PATH = "/auth/discord-callback";
 
 interface DiscordVerification {
   discord_id: string;
