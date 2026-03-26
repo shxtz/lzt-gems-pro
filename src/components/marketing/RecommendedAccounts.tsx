@@ -68,7 +68,12 @@ const RecommendedAccounts = ({ currentAccountId, categoryId, categoryName, maxIt
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {recommendations.map((acc) => {
           const d = acc.data as any;
-          const prefix = categoryName.substring(0, 3).toUpperCase();
+          const prefix = (() => {
+            const n = categoryName.toLowerCase();
+            const map: Record<string, string> = { valorant: "VAL", fortnite: "FN", lol: "LOL", genshin: "GI", honkai: "HSR", minecraft: "MINE", steam: "STM", zzz: "ZZZ" };
+            for (const [k, p] of Object.entries(map)) { if (n.includes(k)) return p; }
+            return "ACC";
+          })();
           const hash = Math.abs([...acc.lzt_item_id].reduce((a: number, c: string) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0));
           const name = `${prefix}-VB#${String(hash).slice(-5).padStart(5, "0")}`;
 

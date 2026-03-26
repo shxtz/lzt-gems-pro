@@ -65,7 +65,7 @@ const getTheme = (cat: string) => {
 
 const GAME_PREFIX_MAP: Record<string, string> = {
   valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",
-  genshin: "GI", honkai: "HSR", minecraft: "MC", steam: "STM",
+  genshin: "GI", honkai: "HSR", minecraft: "MINE", steam: "STM",
   telegram: "TG", discord: "DC", zzz: "ZZZ", brawl: "BS",
 };
 

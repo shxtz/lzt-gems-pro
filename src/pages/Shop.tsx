@@ -129,7 +129,7 @@ const SHOP_CACHE_KEYS = {
 
 const GAME_PREFIX_MAP: Record<string, string> = {
   valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",
-  genshin: "GI", honkai: "HSR", minecraft: "MC", steam: "STM",
+  genshin: "GI", honkai: "HSR", minecraft: "MINE", steam: "STM",
   telegram: "TG", discord: "DC", zzz: "ZZZ", brawl: "BS",
 };
 
@@ -444,8 +444,18 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchInterval: 60000,
   });
 
-  const getCategoryName = (catId: string) =>
-    lztCategories?.find((c) => c.id === catId)?.name || "Sem categoria";
+  const getCategoryName = (catId: string) => {
+    const lztName = lztCategories?.find((c) => c.id === catId)?.name;
+    if (lztName) return lztName;
+    // Fallback: try to find a matching shop category via the selected context
+    if (selectedShopCategory) return selectedShopCategory.name;
+    // Last resort: derive from any shop category that maps to this lzt category
+    const matchingShop = shopCategories?.find((sc) => {
+      const aliases = [sc.name, sc.slug.replace(/-/g, " "), ...(CATEGORY_ALIASES[sc.slug] ?? [])];
+      return aliases.some((a) => normalizeCategoryText(a));
+    });
+    return matchingShop?.name || "Conta";
+  };
 
   const getShopCategoryAliases = (shopCategory: ShopCategory) => {
     const aliases = [
