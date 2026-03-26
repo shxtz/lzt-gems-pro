@@ -28,6 +28,13 @@ const clearStoredAuthState = () => {
   });
 };
 
+/** Race a promise against a timeout – returns null on timeout */
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> =>
+  Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -82,10 +89,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     supabase.auth
       .getSession()
-      .then(async ({ data: { session: initialSession }, error }) => {
+      .then((result) => withTimeout(Promise.resolve(result), 6000))
+      .then(async (result) => {
+        if (!result) {
+          // Timed out – session is stuck, clear and continue
+          clearStoredAuthState();
+          try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+          syncAuthState(null);
+          return;
+        }
+
+        const { data: { session: initialSession }, error } = result;
         if (error) {
           clearStoredAuthState();
-          await supabase.auth.signOut({ scope: "local" });
+          try { await supabase.auth.signOut({ scope: "local" }); } catch {}
           syncAuthState(null);
           return;
         }
@@ -110,19 +127,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const result = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        10000,
+      );
+      if (!result) return { error: new Error("Timeout ao conectar. Tente novamente.") };
+      return { error: result.error as Error | null };
+    } catch (e) {
+      return { error: e instanceof Error ? e : new Error("Erro desconhecido") };
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error: error as Error | null };
+    try {
+      const result = await withTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        }),
+        10000,
+      );
+      if (!result) return { error: new Error("Timeout ao conectar. Tente novamente.") };
+      return { error: result.error as Error | null };
+    } catch (e) {
+      return { error: e instanceof Error ? e : new Error("Erro desconhecido") };
+    }
   };
 
   const signOut = async () => {
