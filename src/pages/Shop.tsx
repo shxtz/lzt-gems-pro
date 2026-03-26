@@ -1203,6 +1203,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                               alt=""
                                               loading="lazy"
                                               className={`h-full w-full ${isLoLItem ? "object-cover" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
+                                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                                             />
                                             {tierIcon && (
                                               <div className="absolute right-1 top-1">
