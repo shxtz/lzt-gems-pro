@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import UpsellModal from "@/components/vbucks/UpsellModal";
@@ -124,9 +125,11 @@ const VBucksCard = ({ id, amount, price, original_price: originalPrice, popular,
 const VBucksPage = () => {
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<VBucksProduct | null>(null);
+  const { authReady } = useAuth();
 
   const { data: products, isLoading, isError } = useQuery({
     queryKey: ["vbucks-products"],
+    enabled: authReady,
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,

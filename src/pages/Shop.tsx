@@ -231,7 +231,7 @@ const getUniqueCountries = (accounts: LztAccount[], getCategoryName: (catId: str
 };
 
 const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, authReady } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -256,6 +256,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase.from("lzt_categories").select("*").order("sort_order");
       if (error) throw error;
@@ -265,6 +266,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const { data: lztAccounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["shop-lzt-accounts"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase.from("lzt_accounts").select("*").eq("status", "available").order("imported_at", { ascending: false });
       if (error) throw error;
@@ -275,6 +277,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const { data: shopCategories } = useQuery({
     queryKey: ["shop-categories-list"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase.from("shop_categories").select("*").eq("visible", true).order("sort_order");
       if (error) throw error;
@@ -284,6 +287,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const { data: products } = useQuery({
     queryKey: ["shop-products"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("*").eq("active", true).order("sort_order");
       if (error) throw error;
@@ -293,6 +297,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const { data: variations } = useQuery({
     queryKey: ["shop-variations"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase.from("product_variations").select("*").eq("active", true).order("sort_order");
       if (error) throw error;
@@ -302,6 +307,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
   const { data: stockCounts } = useQuery({
     queryKey: ["shop-stock-counts"],
+    enabled: authReady,
     queryFn: async () => {
       const { data, error } = await supabase.from("product_stock").select("variation_id").eq("status", "available");
       if (error) throw error;

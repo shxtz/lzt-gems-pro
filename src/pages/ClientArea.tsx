@@ -14,7 +14,7 @@ import Footer from "@/components/Footer";
 type Tab = "profile" | "orders" | "security";
 
 const ClientArea = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, authReady } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab") as Tab | null;
@@ -34,7 +34,7 @@ const ClientArea = () => {
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["client-profile", user?.id],
-    enabled: !!user,
+    enabled: authReady && !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -49,7 +49,7 @@ const ClientArea = () => {
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["client-orders", user?.id],
-    enabled: !!user,
+    enabled: authReady && !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")

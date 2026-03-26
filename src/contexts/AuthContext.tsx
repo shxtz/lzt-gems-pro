@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
+  authReady: boolean;
   roleLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -15,11 +16,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_STORAGE_PREFIX = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}`;
+
+const clearStoredAuthState = () => {
+  if (typeof window === "undefined") return;
+
+  [window.localStorage, window.sessionStorage].forEach((storage) => {
+    Object.keys(storage)
+      .filter((key) => key.startsWith(AUTH_STORAGE_PREFIX))
+      .forEach((key) => storage.removeItem(key));
+  });
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
 
   const checkAdmin = async (userId: string) => {
@@ -50,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
+      setAuthReady(true);
 
       if (nextSession?.user) {
         void checkAdmin(nextSession.user.id);
@@ -67,16 +82,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     supabase.auth
       .getSession()
-      .then(({ data: { session: initialSession } }) => {
+      .then(async ({ data: { session: initialSession }, error }) => {
+        if (error) {
+          clearStoredAuthState();
+          await supabase.auth.signOut({ scope: "local" });
+          syncAuthState(null);
+          return;
+        }
+
         syncAuthState(initialSession);
       })
       .catch(() => {
+        clearStoredAuthState();
         if (!mounted) return;
         setSession(null);
         setUser(null);
         setIsAdmin(false);
         setRoleLoading(false);
         setLoading(false);
+        setAuthReady(true);
       });
 
     return () => {
@@ -91,18 +115,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    clearStoredAuthState();
+    await supabase.auth.signOut({ scope: "local" });
+    setSession(null);
+    setUser(null);
     setIsAdmin(false);
     setRoleLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, roleLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, loading, authReady, roleLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
