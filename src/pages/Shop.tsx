@@ -915,10 +915,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        {cat.icon_url ? (
+                        {SHOP_SLUG_IMAGES[cat.slug] ? (
+                          <img src={SHOP_SLUG_IMAGES[cat.slug]} alt="" className="h-5 w-5 rounded object-contain shrink-0" />
+                        ) : cat.icon_url ? (
                           <img src={cat.icon_url} alt="" className="h-5 w-5 rounded object-contain shrink-0" />
-                        ) : cat.emoji ? (
-                          <span className="text-sm shrink-0">{cat.emoji}</span>
                         ) : (
                           <Gamepad2 className="h-4 w-4 shrink-0" />
                         )}
