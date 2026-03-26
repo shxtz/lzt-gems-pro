@@ -109,6 +109,47 @@ async function getDeliveredCredential(supabaseAdmin: ReturnType<typeof createCli
   return log?.credential_delivered ?? null;
 }
 
+async function autoRefundToBalance(supabaseAdmin: ReturnType<typeof createClient>, orderId: string, userId: string, amount: number) {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("balance")
+      .eq("user_id", userId)
+      .single();
+
+    const newBalance = Number(profile?.balance || 0) + amount;
+    await supabaseAdmin
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("user_id", userId);
+
+    await supabaseAdmin.from("balance_transactions").insert({
+      user_id: userId,
+      amount: amount,
+      type: "refund",
+      description: `Reembolso automático - pedido #${orderId.slice(0, 8)}`,
+    });
+
+    await supabaseAdmin
+      .from("orders")
+      .update({ status: "refunded", updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .neq("status", "delivered");
+
+    console.log(`Auto-refunded R$${amount.toFixed(2)} to balance for order ${orderId}`);
+    return newBalance;
+  } catch (e) {
+    console.error("Auto-refund failed:", e);
+    // Fallback: just mark as refund_needed
+    await supabaseAdmin
+      .from("orders")
+      .update({ status: "refund_needed", updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .neq("status", "delivered");
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
