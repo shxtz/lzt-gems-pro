@@ -59,9 +59,25 @@ const getTheme = (cat: string) => {
   return CATEGORY_THEMES.default;
 };
 
-const getShortId = (id: string) => {
-  const num = parseInt(id.slice(-6), 10);
-  return isNaN(num) ? id.slice(-6) : String(num);
+const GAME_PREFIX_MAP: Record<string, string> = {
+  valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",
+  genshin: "GI", honkai: "HSR", minecraft: "MC", steam: "STM",
+  telegram: "TG", discord: "DC", zzz: "ZZZ", brawl: "BS",
+};
+
+const getGamePrefix = (cat: string): string => {
+  const n = cat.toLowerCase();
+  for (const [k, prefix] of Object.entries(GAME_PREFIX_MAP)) {
+    if (n.includes(k)) return prefix;
+  }
+  return "ACC";
+};
+
+const getMaskedName = (cat: string, lztItemId: string): string => {
+  const prefix = getGamePrefix(cat);
+  const hash = Math.abs([...lztItemId].reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0));
+  const num = String(hash).slice(-5).padStart(5, "0");
+  return `${prefix}-VB#${num}`;
 };
 
 /* ── Stat card ──────────────────────────────────────────── */
@@ -77,9 +93,9 @@ const Stat = ({ icon: Icon, label, value, image, highlight }: {
     }`}>
       {image ? <img src={image} alt="" className="h-6 w-6 object-contain" /> : <Icon className={`h-5 w-5 ${highlight ? "text-primary" : "text-muted-foreground"}`} />}
     </div>
-    <div className="min-w-0">
+    <div className="min-w-0 flex-1">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display">{label}</p>
-      <p className={`text-sm font-semibold truncate ${highlight ? "text-primary" : "text-foreground"}`}>{String(value)}</p>
+      <p className={`text-sm font-semibold break-words whitespace-normal ${highlight ? "text-primary" : "text-foreground"}`}>{String(value)}</p>
     </div>
   </div>
 );
@@ -508,7 +524,7 @@ const AccountPreview = () => {
   const hasIndividualItems = previewTiles.length > 0;
   const hasInventory = hasIndividualItems || Object.values(lztInv).some(v => v !== null);
   const allImages = getAllPreviewImages(d, realCategory);
-  const shortId = getShortId(account.lzt_item_id);
+  const maskedName = getMaskedName(realCategory, account.lzt_item_id);
   const price = Number(account.price_brl);
   const isAvailable = account.status === "available";
 
@@ -615,7 +631,7 @@ const AccountPreview = () => {
             <div className="space-y-3">
               <Badge className="bg-primary/90 text-primary-foreground text-[10px] uppercase font-display tracking-wider">{realCategory}</Badge>
               <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                CONTA BARATA #{shortId}
+                {maskedName}
               </h1>
               {isAvailable && (
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
