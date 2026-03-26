@@ -372,6 +372,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
     initialData: () => readCache<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES),
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
@@ -394,6 +395,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
     initialData: () => readCache<Product[]>(SHOP_CACHE_KEYS.products, []),
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
@@ -416,6 +418,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
     initialData: () => readCache<Variation[]>(SHOP_CACHE_KEYS.variations, []),
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
@@ -438,6 +441,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchOnWindowFocus: false,
     staleTime: 60 * 1000,
     initialData: () => readCache<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {}),
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
