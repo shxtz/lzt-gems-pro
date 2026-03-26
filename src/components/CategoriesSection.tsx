@@ -93,8 +93,10 @@ const CategoriesSection = () => {
   });
 
   const displayCategories = categories || FALLBACK_HOME_CATEGORIES;
-  const topRow = displayCategories.slice(0, 5);
-  const bottomRow = displayCategories.slice(5);
+
+  // Separate Fortnite from the rest
+  const fortnite = displayCategories.find((c) => c.slug === "fortnite");
+  const others = displayCategories.filter((c) => c.slug !== "fortnite");
 
   return (
     <section id="categories" className="py-20 sm:py-28 md:py-36 relative overflow-hidden">
@@ -105,12 +107,8 @@ const CategoriesSection = () => {
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_right,hsl(30_90%_42%/0.04),transparent_50%)]" />
       </div>
 
-      {/* Top separator line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-      {/* Bottom separator line */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
-
-      {/* Floating ember particles */}
       <div className="absolute inset-0 pointer-events-none ember-bg opacity-50" />
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -119,7 +117,7 @@ const CategoriesSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="text-center mb-12 sm:mb-20"
+          className="text-center mb-12 sm:mb-16"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.8 }}
@@ -138,21 +136,15 @@ const CategoriesSection = () => {
           </p>
         </motion.div>
 
-        {/* Top row */}
-        <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 mb-4 sm:mb-6 md:mb-8 flex-wrap">
-          {topRow.map((cat, i) => (
+        {/* ── FORTNITE FEATURED HERO CARD ── */}
+        {fortnite && <FortniteFeaturedCard category={fortnite} onClick={() => navigate(`/contas/${fortnite.slug}`)} />}
+
+        {/* ── OTHER CATEGORIES GRID ── */}
+        <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 flex-wrap mt-10 sm:mt-14">
+          {others.map((cat, i) => (
             <CategoryIcon key={cat.id} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
           ))}
         </div>
-
-        {/* Bottom row */}
-        {bottomRow.length > 0 && (
-          <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 flex-wrap">
-            {bottomRow.map((cat, i) => (
-              <CategoryIcon key={cat.id} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
-            ))}
-          </div>
-        )}
       </div>
     </section>
   );
