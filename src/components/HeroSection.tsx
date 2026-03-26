@@ -126,7 +126,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             transition={{ delay: 0.7, duration: 0.6 }}
             className="font-body text-sm md:text-base text-foreground max-w-lg mx-auto mb-10 leading-relaxed tracking-wide"
           >
-            V-Bucks e contas de jogos com os melhores preços.
+            V-Bucks e contas de jogos com os melhores&nbsp;preços.
             <br />
             Entrega instantânea e <span className="text-primary font-medium">segurança garantida</span>.
           </motion.p>
