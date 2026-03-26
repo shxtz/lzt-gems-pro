@@ -3,13 +3,28 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Plus, Trash2, Download, Search, RefreshCw, Settings2, Link2, Percent, AlertTriangle,
-  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap,
+  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap, GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import valorantImg from "@/assets/categories/valorant.png";
 import fortniteImg from "@/assets/categories/fortnite.png";
@@ -69,6 +84,10 @@ const AdminLZT = () => {
   const [manualId, setManualId] = useState("");
   const [manualCategory, setManualCategory] = useState("");
   const [manualMargin, setManualMargin] = useState("30");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   // Fetch categories with account counts
   const { data: categories, isLoading } = useQuery({
@@ -268,6 +287,24 @@ const AdminLZT = () => {
   // Count active auto-imports
   const activeImports = categories?.filter((c) => c.auto_import).length || 0;
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !categories) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex);
+
+    queryClient.setQueryData(["lzt-categories"], reordered);
+
+    const updates = reordered.map((cat, i) =>
+      supabase.from("lzt_categories").update({ sort_order: i }).eq("id", cat.id)
+    );
+    await Promise.all(updates);
+    queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+    toast.success("Ordem atualizada!");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -387,35 +424,39 @@ const AdminLZT = () => {
       {isLoading ? (
         <div className="text-center text-muted-foreground py-8">Carregando...</div>
       ) : (
-        <div className="space-y-4">
-          {categories?.map((cat) => (
-            <CategoryCard
-              key={cat.id}
-              category={cat}
-              count={accountCounts?.[cat.id] || 0}
-              onUpdateField={(field, value) =>
-                updateCategory.mutate({ id: cat.id, field, value })
-              }
-              onImport={() =>
-                importAccounts.mutate({
-                  categoryId: cat.id,
-                  apiUrl: cat.api_url,
-                  margin: cat.margin_percent,
-                })
-              }
-              onSearch={() => searchAccounts.mutate(cat.api_url)}
-              onClear={() => clearAccounts.mutate(cat.id)}
-              isImporting={importAccounts.isPending}
-              isSearching={searchAccounts.isPending}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={categories?.map((c) => c.id) || []} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+              {categories?.map((cat) => (
+                <SortableCategoryCard
+                  key={cat.id}
+                  category={cat}
+                  count={accountCounts?.[cat.id] || 0}
+                  onUpdateField={(field, value) =>
+                    updateCategory.mutate({ id: cat.id, field, value })
+                  }
+                  onImport={() =>
+                    importAccounts.mutate({
+                      categoryId: cat.id,
+                      apiUrl: cat.api_url,
+                      margin: cat.margin_percent,
+                    })
+                  }
+                  onSearch={() => searchAccounts.mutate(cat.api_url)}
+                  onClear={() => clearAccounts.mutate(cat.id)}
+                  isImporting={importAccounts.isPending}
+                  isSearching={searchAccounts.isPending}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
 };
 
-/* ── CategoryCard with live activity log ───────────────── */
+/* ── SortableCategoryCard wrapper ───────────────────────── */
 
 interface CategoryCardProps {
   category: any;
@@ -426,7 +467,27 @@ interface CategoryCardProps {
   onClear: () => void;
   isImporting: boolean;
   isSearching: boolean;
+  dragHandleProps?: Record<string, any>;
 }
+
+const SortableCategoryCard = (props: CategoryCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <CategoryCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+};
+
+/* ── CategoryCard with live activity log ───────────────── */
 
 const CategoryCard = ({
   category,
@@ -437,6 +498,7 @@ const CategoryCard = ({
   onClear,
   isImporting,
   isSearching,
+  dragHandleProps,
 }: CategoryCardProps) => {
   const queryClient = useQueryClient();
   const [localUrl, setLocalUrl] = useState(category.api_url || "");
@@ -550,6 +612,9 @@ const CategoryCard = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button {...dragHandleProps} className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1">
+              <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+            </button>
             {category.icon_url?.startsWith("http") ? (
               <img src={category.icon_url} alt="" className="h-6 w-6 rounded object-contain" />
             ) : getCategoryImage(category.name) ? (
