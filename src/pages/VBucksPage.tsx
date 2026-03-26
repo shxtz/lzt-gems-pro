@@ -17,6 +17,13 @@ interface VBucksProduct {
   popular?: boolean;
 }
 
+const FALLBACK_PRODUCTS: VBucksProduct[] = [
+  { id: "fallback-1000", amount: 1000, price: 12.9, original_price: 24.99, popular: false },
+  { id: "fallback-2800", amount: 2800, price: 29.9, original_price: 64.99, popular: false },
+  { id: "fallback-5000", amount: 5000, price: 49.9, original_price: 109.99, popular: true },
+  { id: "fallback-13500", amount: 13500, price: 119.9, original_price: 274.99, popular: false },
+];
+
 interface VBucksCardProps extends VBucksProduct {
   index: number;
   onBuy: (product: VBucksProduct) => void;
@@ -118,14 +125,23 @@ const VBucksPage = () => {
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<VBucksProduct | null>(null);
 
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading, isError } = useQuery({
     queryKey: ["vbucks-products"],
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const request = supabase
         .from("vbucks_products")
         .select("*")
         .eq("active", true)
         .order("sort_order");
+
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 8000),
+      );
+
+      const { data, error } = await Promise.race([request, timeout]);
       if (error) throw error;
       return data;
     },
@@ -137,13 +153,15 @@ const VBucksPage = () => {
     { icon: Headphones, title: "Suporte 24h", desc: "Atendimento via WhatsApp" },
   ];
 
-  const allProducts: VBucksProduct[] = (products || []).map((p) => ({
-    id: p.id,
-    amount: p.amount,
-    price: Number(p.price),
-    original_price: p.original_price,
-    popular: p.popular ?? false,
-  }));
+  const allProducts: VBucksProduct[] = (products && products.length > 0)
+    ? products.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        price: Number(p.price),
+        original_price: p.original_price,
+        popular: p.popular ?? false,
+      }))
+    : FALLBACK_PRODUCTS;
 
   return (
     <div className="min-h-screen bg-background">
@@ -201,23 +219,30 @@ const VBucksPage = () => {
           </motion.div>
 
           {/* Products Grid */}
-          {isLoading ? (
+          {isLoading && allProducts.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">Carregando produtos...</div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 md:gap-6">
-              {products?.map((opt, i) => (
-                <VBucksCard
-                  key={opt.id}
-                  id={opt.id}
-                  amount={opt.amount}
-                  price={Number(opt.price)}
-                  original_price={opt.original_price}
-                  popular={opt.popular ?? false}
-                  index={i}
-                  onBuy={setSelectedProduct}
-                />
-              ))}
-            </div>
+            <>
+              {isError && (
+                <div className="mb-6 rounded-2xl border border-border/30 bg-card/50 px-4 py-3 text-center text-xs text-muted-foreground">
+                  Exibindo pacotes padrão enquanto a conexão estabiliza.
+                </div>
+              )}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 md:gap-6">
+                {allProducts.map((opt, i) => (
+                  <VBucksCard
+                    key={opt.id}
+                    id={opt.id}
+                    amount={opt.amount}
+                    price={Number(opt.price)}
+                    original_price={opt.original_price}
+                    popular={opt.popular ?? false}
+                    index={i}
+                    onBuy={setSelectedProduct}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {/* FAQ */}
