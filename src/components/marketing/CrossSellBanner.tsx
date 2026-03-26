@@ -22,9 +22,13 @@ const CrossSellBanner = ({ context }: CrossSellBannerProps) => {
       >
         <div className="relative shrink-0">
           <img src={vbucksIcon} alt="V-Bucks" className="h-12 w-12 sm:h-14 sm:w-14 drop-shadow-lg group-hover:scale-110 transition-transform" />
-          <div className="absolute -top-1 -right-1 bg-gradient-gold rounded-full px-1.5 py-0.5">
-            <span className="font-display text-[8px] font-bold text-primary-foreground">-23%</span>
-          </div>
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-2 -right-2 flex items-center justify-center h-7 w-7 rounded-full bg-gradient-gold shadow-[0_0_10px_hsl(var(--primary)/0.6)]"
+          >
+            <span className="font-display text-[9px] font-black text-primary-foreground leading-none">-23%</span>
+          </motion.div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
