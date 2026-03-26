@@ -1079,10 +1079,40 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                  <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
-                  <Button onClick={() => { setViewAccount(null); handleBuyAccount(viewAccount); }} disabled={purchasing === viewAccount.id} className="bg-gradient-gold text-primary-foreground font-display gap-2">
+                  <div>
+                    {couponDiscount > 0 ? (
+                      <>
+                        <span className="text-sm line-through text-muted-foreground">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
+                        <span className="text-2xl font-bold text-primary ml-2">R$ {(Number(viewAccount.price_brl) * (1 - couponDiscount / 100)).toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-primary">R$ {Number(viewAccount.price_brl).toFixed(2)}</span>
+                    )}
+                  </div>
+                  <Button onClick={() => { setViewAccount(null); handleBuyAccount(viewAccount); }} disabled={purchasing === viewAccount.id} className="bg-gradient-gold text-primary-foreground font-display gap-2 shrink-0">
                     <ShoppingCart className="h-4 w-4" /> Comprar Agora
                   </Button>
+                </div>
+                {/* Coupon */}
+                <div className="flex gap-2 items-center">
+                  {couponDiscount > 0 ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="text-xs text-emerald-400 font-medium">✓ {couponCode.toUpperCase()} ({couponDiscount}% off)</span>
+                      <button onClick={removeCoupon} className="text-xs text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Cupom de desconto"
+                        className="flex-1 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                      <Button size="sm" variant="outline" onClick={applyCoupon} disabled={applyingCoupon || !couponCode.trim()} className="text-xs shrink-0">
+                        {applyingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : <Tag className="h-3 w-3 mr-1" />} Aplicar
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
