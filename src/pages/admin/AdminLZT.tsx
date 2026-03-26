@@ -187,40 +187,51 @@ const AdminLZT = () => {
   // Clear accounts for category
   const clearAccounts = useMutation({
     mutationFn: async (categoryId: string) => {
-      const { data, error } = await supabase.functions.invoke("lzt-import", {
-        body: { action: "clear", category_id: categoryId },
-      });
+      // First disable auto_import for this category
+      await supabase
+        .from("lzt_categories")
+        .update({ auto_import: false, auto_delete_reimport: false })
+        .eq("id", categoryId);
+      // Then delete all available accounts
+      const { error } = await supabase
+        .from("lzt_accounts")
+        .delete()
+        .eq("category_id", categoryId)
+        .eq("status", "available");
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
       toast.success("Contas removidas!");
     },
   });
 
-  // Clear all accounts + disable all auto imports
+  // Clear all accounts + disable ALL auto imports globally
   const clearAll = useMutation({
     mutationFn: async () => {
-      // First disable auto_import on all categories
-      const { error: updateError } = await supabase
+      // 1) Disable auto_import AND auto_delete_reimport on ALL categories
+      const { error: e1 } = await supabase
         .from("lzt_categories")
         .update({ auto_import: false, auto_delete_reimport: false })
-        .eq("auto_import", true);
-      if (updateError) throw updateError;
-
-      // Then clear all accounts
-      const { data, error } = await supabase.functions.invoke("lzt-import", {
-        body: { action: "clear_all" },
-      });
-      if (error) throw error;
-      return data;
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e1) throw e1;
+      // 2) Delete ALL lzt_accounts regardless of status
+      const { error: e2 } = await supabase
+        .from("lzt_accounts")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e2) throw e2;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
       queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
       toast.success("Todas as importações pausadas e contas removidas!");
     },
+    onError: (e) => toast.error(`Erro: ${e.message}`),
   });
 
   // Import single by ID
@@ -326,10 +337,16 @@ const AdminLZT = () => {
           <h1 className="font-display text-2xl text-foreground">Integração LZT Market</h1>
         </div>
         <button
-          onClick={() => clearAll.mutate()}
-          className="flex items-center gap-2 rounded-xl border border-destructive/50 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition"
+          onClick={() => {
+            if (confirm("Tem certeza? Isso vai PARAR todas as importações e APAGAR todas as contas LZT.")) {
+              clearAll.mutate();
+            }
+          }}
+          disabled={clearAll.isPending}
+          className="flex items-center gap-2 rounded-xl border border-destructive/50 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition disabled:opacity-50"
         >
-          <Trash2 className="h-3 w-3" /> Apagar todas contas LZT
+          {clearAll.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+          Apagar todas contas LZT
         </button>
       </div>
 
@@ -520,6 +537,7 @@ const CategoryCard = ({
   const [pollCycle, setPollCycle] = useState(0);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef(false);
 
   const addLog = useCallback((type: ActivityEntry["type"], message: string) => {
     setActivityLog((prev) => {
@@ -535,7 +553,19 @@ const CategoryCard = ({
 
   // Auto-poll when auto_import is enabled
   const runPollCycle = useCallback(async () => {
-    if (!category.auto_import || !category.api_url) return;
+    if (abortRef.current || !category.api_url) return;
+
+    // Re-check DB to confirm auto_import is still on
+    const { data: freshCat } = await supabase
+      .from("lzt_categories")
+      .select("auto_import")
+      .eq("id", category.id)
+      .maybeSingle();
+    if (!freshCat?.auto_import || abortRef.current) {
+      addLog("info", "Auto Import desativado — polling parado");
+      setIsPolling(false);
+      return;
+    }
 
     setIsPolling(true);
     addLog("importing", "Buscando novas contas no LZT Market...");
@@ -569,15 +599,18 @@ const CategoryCard = ({
       addLog("error", `Erro: ${err.message || "Falha na conexão"}`);
     } finally {
       setIsPolling(false);
-      setPollCycle((c) => c + 1);
+      if (!abortRef.current) setPollCycle((c) => c + 1);
     }
-  }, [category.auto_import, category.api_url, addLog, queryClient]);
+  }, [category.id, category.api_url, addLog, queryClient]);
 
   useEffect(() => {
     if (!category.auto_import) {
+      abortRef.current = true;
       if (pollRef.current) clearTimeout(pollRef.current);
       return;
     }
+
+    abortRef.current = false;
 
     // Add initial log when enabled
     if (activityLog.length === 0) {
@@ -597,24 +630,16 @@ const CategoryCard = ({
 
   // Schedule next poll after each cycle completes
   useEffect(() => {
-    if (!category.auto_import || pollCycle === 0) return;
+    if (!category.auto_import || pollCycle === 0 || abortRef.current) return;
 
     const nextPoll = setTimeout(() => {
-      runPollCycle();
+      if (!abortRef.current) runPollCycle();
     }, 60000); // Every 60 seconds
 
     pollRef.current = nextPoll;
     return () => clearTimeout(nextPoll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pollCycle, category.auto_import]);
-
-  // Clear log when auto_import is disabled
-  useEffect(() => {
-    if (!category.auto_import && activityLog.length > 0) {
-      addLog("info", "Auto Import desativado");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category.auto_import]);
 
   const fillPercent = Math.min(100, Math.round((count / category.account_limit) * 100));
 
@@ -689,9 +714,9 @@ const CategoryCard = ({
           />
         </div>
 
-        {/* Activity Log — shown when auto_import is enabled */}
-        {category.auto_import && (
-          <div className="rounded-xl border border-border/30 bg-background/50 overflow-hidden">
+        {/* Activity Log */}
+        {category.auto_import && activityLog.length > 0 && (
+          <div className="rounded-xl border border-border/30 bg-background/50 overflow-hidden" style={{ contain: "paint" }}>
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/20">
               <div className="flex items-center gap-2">
                 <Activity className="h-3.5 w-3.5 text-primary" />
@@ -714,18 +739,12 @@ const CategoryCard = ({
             </div>
             <div
               ref={logContainerRef}
-              className="max-h-48 overflow-y-auto p-3 space-y-1.5 scrollbar-thin"
+              className="max-h-36 overflow-y-auto p-3 space-y-1 scrollbar-thin"
             >
-              {activityLog.length === 0 ? (
-                <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Iniciando monitoramento...
-                </div>
-              ) : (
-                activityLog.map((entry) => (
+              {activityLog.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-start gap-2 text-[11px] leading-relaxed animate-in fade-in slide-in-from-top-1 duration-300"
+                    className="flex items-start gap-2 text-[11px] leading-relaxed"
                   >
                     <span className="mt-0.5">{logIcon(entry.type)}</span>
                     <span className="text-muted-foreground shrink-0 font-mono">
@@ -740,8 +759,7 @@ const CategoryCard = ({
                       {entry.message}
                     </span>
                   </div>
-                ))
-              )}
+              ))}
             </div>
           </div>
         )}
