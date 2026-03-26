@@ -456,7 +456,7 @@ const AdminLZT = () => {
   );
 };
 
-/* ── CategoryCard with live activity log ───────────────── */
+/* ── SortableCategoryCard wrapper ───────────────────────── */
 
 interface CategoryCardProps {
   category: any;
@@ -468,6 +468,25 @@ interface CategoryCardProps {
   isImporting: boolean;
   isSearching: boolean;
 }
+
+const SortableCategoryCard = (props: CategoryCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <CategoryCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+};
+
+/* ── CategoryCard with live activity log ───────────────── */
 
 const CategoryCard = ({
   category,
