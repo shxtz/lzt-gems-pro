@@ -991,6 +991,12 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                     {valRankName}
                                   </Badge>
                                 )}
+                                {lolRank && lolRank !== "Unranked" && (
+                                  <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
+                                    {lolRankIcon && <img src={lolRankIcon} alt={lolRank} className="h-4 w-4" />}
+                                    {lolRank}
+                                  </Badge>
+                                )}
                               </div>
                             );
 
