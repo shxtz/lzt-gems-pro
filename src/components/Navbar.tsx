@@ -168,7 +168,7 @@ const Navbar = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-52 rounded-xl glass border border-border/30 shadow-card-hover overflow-hidden"
+                    className="absolute right-0 mt-2 w-52 rounded-xl bg-card/95 backdrop-blur-xl border border-border/40 shadow-card-hover overflow-hidden"
                   >
                     <div className="px-4 py-3 border-b border-border/20">
                       <p className="text-xs font-medium text-foreground truncate">{displayName}</p>
