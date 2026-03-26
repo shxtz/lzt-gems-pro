@@ -81,6 +81,41 @@ Deno.serve(async (req) => {
         return json({ error: "Missing required fields" }, 400);
       }
 
+      // ── If pre-reserved credentials are provided, skip LZT API call ──
+      if (use_reserved && reserved_credentials) {
+        console.log(`Using pre-reserved credentials for order ${order_id}`);
+
+        const credential = typeof reserved_credentials === "string"
+          ? reserved_credentials
+          : buildCredentialFromReserved(reserved_credentials);
+
+        // Update our DB: mark account as sold
+        await supabase
+          .from("lzt_accounts")
+          .update({
+            status: "sold",
+            buyer_id: buyer_id,
+            sold_at: new Date().toISOString(),
+            sold_price: price_brl,
+          })
+          .eq("id", account_id);
+
+        // Update order as delivered
+        await supabase
+          .from("orders")
+          .update({ status: "delivered" })
+          .eq("id", order_id);
+
+        // Log delivery
+        await supabase.from("delivery_logs").insert({
+          order_id: order_id,
+          buyer_id: buyer_id,
+          credential_delivered: credential,
+        });
+
+        return json({ success: true, credential });
+      }
+
       // Double-check availability before buying
       const checkRes = await fetch(`${LZT_API}/${lzt_item_id}`, {
         headers: { Authorization: `Bearer ${lztApiKey}` },
