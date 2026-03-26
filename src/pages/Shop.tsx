@@ -358,7 +358,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
       const matchCategory = !selectedShopCategory || selectedLztCategoryIds.has(a.category_id);
       const matchSearch = !searchTerm ||
-        `CONTA BARATA #${getShortId(a.lzt_item_id)}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getMaskedName(adminCategoryName, a.lzt_item_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
         adminCategoryName.toLowerCase().includes(searchTerm.toLowerCase());
       const d = a.data as any;
       const country = d?.telegram_country || d?.discord_country;
@@ -424,7 +424,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       // Step 2: Create order + generate PIX
       const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending" }).select().single();
       if (orderError) throw orderError;
-      const accountName = `CONTA BARATA #${getShortId(account.lzt_item_id)}`;
+      const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: account.price_brl, description: `${accountName} - Loja` } });
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
@@ -701,7 +701,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
               <div className="p-6 space-y-4">
                 <h3 className="font-display text-lg text-foreground">
-                  CONTA BARATA #{getShortId(viewAccount.lzt_item_id)}
+                  {getMaskedName(modalRealCategory, viewAccount.lzt_item_id)}
                 </h3>
 
                 {/* Account Details - per category */}
@@ -1102,7 +1102,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                           <div className="p-4 space-y-3">
                             <h3 className="font-display text-sm text-foreground font-semibold">
-                              CONTA BARATA #{getShortId(account.lzt_item_id)}
+                              {getMaskedName(getCategoryName(account.category_id), account.lzt_item_id)}
                             </h3>
                             {isAdmin && (
                               <a
