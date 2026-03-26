@@ -85,6 +85,10 @@ const AdminLZT = () => {
   const [manualCategory, setManualCategory] = useState("");
   const [manualMargin, setManualMargin] = useState("30");
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   // Fetch categories with account counts
   const { data: categories, isLoading } = useQuery({
     queryKey: ["lzt-categories"],
