@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Plus, Trash2, Download, Search, RefreshCw, Settings2, Link2, Percent, AlertTriangle,
-  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap, GripVertical, ArrowUp, ArrowDown,
+  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, Zap, GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
