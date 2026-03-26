@@ -159,6 +159,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             </motion.button>
 
             <motion.button
+              onClick={() => navigate("/loja")}
               whileHover={{ scale: 1.04, borderColor: "hsl(43 84% 55% / 0.5)" }}
               whileTap={{ scale: 0.97 }}
               className="flex items-center gap-3 rounded-2xl border border-border/60 glass px-9 py-4 font-display text-[12px] font-semibold uppercase tracking-[0.2em] text-foreground transition-all duration-300"
