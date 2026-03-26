@@ -271,41 +271,32 @@ export function getMinecraftPreviewItems(data: any): GamePreviewItem[] {
   const mcNick = data?.minecraft_nickname || data?.minecraft_username || data?.username;
   const identifier = mcNick || mcId;
 
-  // Body render first (most visually impactful) — use Minotar (more reliable)
+  // Single body render only (no duplicates)
   if (mcNick) {
     items.push({ id: "mc-skin-body", imageUrl: `https://minotar.net/armor/body/${mcNick}/300.png`, name: mcNick, tier: { ...MC_TIER, key: "skin" } });
   } else if (mcId) {
-    items.push({ id: "mc-skin-body", imageUrl: `https://minotar.net/armor/body/${mcId}/300.png`, name: "Skin", tier: { ...MC_TIER, key: "skin" } });
+    items.push({ id: "mc-skin-body", imageUrl: `https://minotar.net/armor/body/${mcId}/300.png`, name: identifier || "Skin", tier: { ...MC_TIER, key: "skin" } });
+  } else {
+    // Base64 skin only if no nick/id available
+    const baseSkin = toDataUrl(data?.minecraft_skin);
+    if (baseSkin) {
+      items.push({ id: "mc-skin-image", imageUrl: baseSkin, name: identifier || "Skin", tier: { ...MC_TIER, key: "skin" } });
+    }
   }
 
-  // Base64 skin as fallback
-  const baseSkin = toDataUrl(data?.minecraft_skin);
-  if (baseSkin) {
-    items.push({ id: "mc-skin-image", imageUrl: baseSkin, name: identifier || "Skin", tier: { ...MC_TIER, key: "skin" } });
-  }
-
-  // Skin URL fallback
-  const skinUrl = data?.minecraft_skin_url || data?.skin_url || data?.skinUrl || null;
-  if (skinUrl) {
-    items.push({ id: "mc-skin-url", imageUrl: skinUrl, name: identifier || "Skin", tier: { ...MC_TIER, key: "skin" } });
-  }
-
-  // Head avatar
-  if (mcNick) {
-    items.push({ id: "mc-skin-head", imageUrl: `https://minotar.net/avatar/${mcNick}/128.png`, name: "Avatar", tier: MC_TIER });
-  } else if (mcId) {
-    items.push({ id: "mc-skin-head", imageUrl: `https://minotar.net/avatar/${mcId}/128.png`, name: "Avatar", tier: MC_TIER });
-  }
-
+  // Capes with proper base64 conversion
   getMinecraftCapes(data).slice(0, 6).forEach((cape: any, i) => {
     const capeName = typeof cape === "string" ? cape : cape?.name || cape?.title || "Capa";
-    const icon = typeof cape === "object" ? cape?.rendered || cape?.icon || cape?.url || toDataUrl(cape?.data) : null;
+    let icon: string | null = null;
+    if (typeof cape === "object") {
+      icon = toDataUrl(cape?.rendered) || toDataUrl(cape?.icon) || cape?.url || toDataUrl(cape?.data);
+    }
     if (icon) {
       items.push({ id: `mc-cape-${i}`, imageUrl: icon, name: capeName, tier: { ...MC_TIER, key: "cape" } });
     }
   });
 
-  return items.filter((item, index, arr) => arr.findIndex((entry) => entry.imageUrl === item.imageUrl) === index).slice(0, 9);
+  return items.slice(0, 9);
 }
 
 /* ── LoL Rank Icons ────────────────────────────────────── */

@@ -451,13 +451,13 @@ function handleMinecraft(data: any) {
   const mcId = data?.minecraft_id;
   const mcNick = data?.minecraft_nickname;
   const skinItems: any[] = [];
-  if (typeof data?.minecraft_skin === "string" && data.minecraft_skin.length > 100) {
-    skinItems.push({ id: "skin-base64", name: mcNick || "Skin", icon: toDataUrl(data.minecraft_skin), type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
-  }
-  if (mcId) {
-    skinItems.push({ id: "skin-render", name: mcNick || "Skin", icon: `https://crafatar.com/renders/body/${mcId}?overlay&scale=8`, type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
-  } else if (mcNick) {
+  // Only one skin entry — prefer render, fallback to base64
+  if (mcNick) {
     skinItems.push({ id: "skin-render", name: mcNick, icon: `https://minotar.net/armor/body/${mcNick}/300.png`, type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
+  } else if (mcId) {
+    skinItems.push({ id: "skin-render", name: mcNick || "Skin", icon: `https://minotar.net/armor/body/${mcId}/300.png`, type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
+  } else if (typeof data?.minecraft_skin === "string" && data.minecraft_skin.length > 100) {
+    skinItems.push({ id: "skin-base64", name: mcNick || "Skin", icon: toDataUrl(data.minecraft_skin), type: "skin", rarity: 0, tier: { ...MINECRAFT_TIER, key: "skin", name: "Skin" } });
   }
   const collections = { skins: uniqueBy(skinItems, (item) => item.id), capes: capeItems };
   const items = [...collections.skins, ...collections.capes];
