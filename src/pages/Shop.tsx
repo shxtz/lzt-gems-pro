@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, prewarmSkinsCatalog, type ValorantSkin, type QuickPreviewItem } from "@/lib/valorant-api";
 import { prewarmChampionsCatalog, getLoLQuickPreviewItems, type LoLPreviewItem } from "@/lib/lol-api";
+import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventory from "@/components/ValorantInventory";
 
@@ -933,13 +934,17 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                       // Determine game type from admin category
                       const catLower = adminCategoryName.toLowerCase();
-                      const isValorant = catLower.includes("valorant") || catLower.includes("riot");
+                      const isValorant = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
                       const isLoL = catLower.includes("league") || catLower.includes("lol");
 
                       // Valorant rank badge - only for Valorant accounts
                       const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
                       const valRankIcon = getValorantRankIcon(valRank);
                       const valRankName = getValorantRankName(valRank);
+
+                      // LoL rank badge
+                      const lolRank = isLoL ? (account.data?.riot_lol_rank) : null;
+                      const lolRankIcon = getLoLRankIcon(lolRank);
 
                       return (
                         <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative cursor-pointer" onClick={() => navigate(`/preview/${account.id}`)}>
@@ -953,15 +958,19 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
 
-                            // Choose inventory based on game type
-                            let individualItems: (QuickPreviewItem | LoLPreviewItem)[] = [];
+                            // Choose inventory based on game type - unified for ALL games
+                            let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
                             if (isLoL && account.data?.lolInventory) {
                               individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
-                            } else if (!isLoL && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
+                            } else if (isValorant && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
                               individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
+                            } else {
+                              // Use unified preview for Genshin, Honkai, ZZZ, Fortnite, Minecraft
+                              individualItems = getGamePreviewItems(account.data, adminCategoryName, 9);
                             }
                             const hasIndividualItems = individualItems.length > 0;
-                            const inv = getLztInventoryImages(account.data);
+                            // Only fall back to LZT images if no individual items
+                            const inv = !hasIndividualItems ? getLztInventoryImages(account.data) : { weapons: null, agents: null, buddies: null };
                             const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
 
                             const badgeRow = (
@@ -980,6 +989,12 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                   <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
                                     {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
                                     {valRankName}
+                                  </Badge>
+                                )}
+                                {lolRank && lolRank !== "Unranked" && (
+                                  <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
+                                    {lolRankIcon && <img src={lolRankIcon} alt={lolRank} className="h-4 w-4" />}
+                                    {lolRank}
                                   </Badge>
                                 )}
                               </div>

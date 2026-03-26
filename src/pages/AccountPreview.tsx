@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
+import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -195,12 +196,23 @@ function LoLInventory({ data }: { data: any }) {
   const region = data?.riot_lol_region || data?.region;
   const level = data?.riot_lol_level;
   const rank = data?.riot_lol_rank;
+  const rankIcon = getLoLRankIcon(rank);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {rank && rank !== "Unranked" && <Stat icon={Trophy} label="Elo" value={rank} highlight />}
-      {level && <Stat icon={BarChart3} label="Nível" value={level} />}
-      {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
+    <div className="space-y-4">
+      {rank && rank !== "Unranked" && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 flex items-center gap-4">
+          {rankIcon && <img src={rankIcon} alt={rank} className="h-16 w-16 object-contain drop-shadow-lg" />}
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display">Elo Atual</p>
+            <p className="text-2xl font-bold text-primary font-display">{rank}</p>
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {level && <Stat icon={BarChart3} label="Nível" value={level} />}
+        {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
+      </div>
     </div>
   );
 }
@@ -504,6 +516,9 @@ const AccountPreview = () => {
   const enrichedSkins = enrichedInventory?.skins || [];
   const lolPreviewItems = isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : [];
 
+  // Unified preview tiles for ALL games
+  const gamePreviewItems = (!isValorantAccount && !isLoLAccount) ? getGamePreviewItems(d, realCategory, 9) : [];
+
   const previewTiles = isLoLAccount
     ? lolPreviewItems.map((item) => ({
         id: String(item.id),
@@ -519,11 +534,23 @@ const AccountPreview = () => {
           tier: skin.tier,
           tierIcon: skin.tierIcon,
         }))
-      : [];
+      : gamePreviewItems.map((item) => ({
+          id: item.id,
+          image: item.imageUrl,
+          alt: item.name,
+          tier: item.tier,
+          tierIcon: item.tierIcon,
+        }));
 
   const hasIndividualItems = previewTiles.length > 0;
-  const hasInventory = hasIndividualItems || Object.values(lztInv).some(v => v !== null);
+  // Only use LZT images as fallback when no individual items exist
+  const lztInvForDisplay = !hasIndividualItems ? lztInv : { weapons: null, agents: null, buddies: null };
+  const hasInventory = hasIndividualItems || Object.values(lztInvForDisplay).some(v => v !== null);
   const allImages = getAllPreviewImages(d, realCategory);
+
+  // LoL rank icon
+  const lolRank = isLoLAccount ? d?.riot_lol_rank : null;
+  const lolRankIconUrl = getLoLRankIcon(lolRank);
   const maskedName = getMaskedName(realCategory, account.lzt_item_id);
   const price = Number(account.price_brl);
   const isAvailable = account.status === "available";
