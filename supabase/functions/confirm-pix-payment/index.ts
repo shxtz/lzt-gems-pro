@@ -213,24 +213,51 @@ Deno.serve(async (req) => {
     }
 
     if (order.lzt_item_id && order.lzt_account_id) {
-      try {
+      // Check for pre-reserved credentials
+      const reservedCreds = (order as any).lzt_reserved_credentials;
+      const hasReserved = reservedCreds && (reservedCreds.login || reservedCreds.email || reservedCreds.password);
+
+      const lztPayload: Record<string, any> = {
+        action: "fast_buy",
+        lzt_item_id: order.lzt_item_id,
+        account_id: order.lzt_account_id,
+        order_id: order.id,
+        buyer_id: userData.user.id,
+        price_brl: order.total_price,
+      };
+
+      if (hasReserved) {
+        lztPayload.use_reserved = true;
+        lztPayload.reserved_credentials = reservedCreds;
+        console.log(`Using pre-reserved LZT credentials for order ${order.id}`);
+      }
+
+      // Retry up to 2 times on 5xx errors
+      let lastResult = { ok: false, status: 0, bodyText: "" };
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        if (attempt > 0) {
+          console.log(`LZT retry attempt ${attempt}/2...`);
+          await new Promise((r) => setTimeout(r, 1500 * attempt));
+        }
+
         const lztResponse = await fetch(`${supabaseUrl}/functions/v1/lzt-purchase`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${serviceRoleKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            action: "fast_buy",
-            lzt_item_id: order.lzt_item_id,
-            account_id: order.lzt_account_id,
-            order_id: order.id,
-            buyer_id: userData.user.id,
-            price_brl: order.total_price,
-          }),
+          body: JSON.stringify(lztPayload),
         });
 
-        const lztData = await lztResponse.json();
+        const lztBodyText = await lztResponse.text();
+        lastResult = { ok: lztResponse.ok, status: lztResponse.status, bodyText: lztBodyText };
+
+        if (lztResponse.ok) break;
+        if (lztResponse.status < 500 || lztResponse.status >= 600) break; // non-retryable
+      }
+
+      try {
+        const lztData = JSON.parse(lastResult.bodyText);
         if (lztData?.success) {
           return jsonResponse({
             paid: true,
@@ -240,10 +267,27 @@ Deno.serve(async (req) => {
           });
         }
 
+        // Before marking refund, check if actually delivered (race condition safety)
+        const { data: postOrder } = await supabaseAdmin
+          .from("orders")
+          .select("status")
+          .eq("id", order.id)
+          .single();
+
+        if (postOrder?.status === "delivered") {
+          return jsonResponse({
+            paid: true,
+            delivered: true,
+            status: "delivered",
+            credential: await getDeliveredCredential(supabaseAdmin, order.id),
+          });
+        }
+
         await supabaseAdmin
           .from("orders")
           .update({ status: "refund_needed", updated_at: new Date().toISOString() })
-          .eq("id", order.id);
+          .eq("id", order.id)
+          .neq("status", "delivered");
 
         return jsonResponse({
           paid: true,
@@ -251,12 +295,13 @@ Deno.serve(async (req) => {
           status: "refund_needed",
           error: lztData?.error ?? "Erro ao comprar conta no LZT Market.",
         });
-      } catch (error) {
-        console.error("Manual LZT confirmation error:", error);
+      } catch (parseError) {
+        console.error("LZT response parse error:", parseError, lastResult.bodyText);
         await supabaseAdmin
           .from("orders")
           .update({ status: "refund_needed", updated_at: new Date().toISOString() })
-          .eq("id", order.id);
+          .eq("id", order.id)
+          .neq("status", "delivered");
 
         return jsonResponse({
           paid: true,
