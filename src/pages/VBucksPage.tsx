@@ -198,7 +198,7 @@ const VBucksPage = () => {
               >
                 ⬡ Todos os Pacotes
               </motion.span>
-              <h1 className="font-display text-5xl md:text-6xl font-black mb-4 tracking-tight">
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black mb-4 tracking-tight">
                 <span className="text-gradient-gold-shine">V-BUCKS</span>
               </h1>
               <p className="font-body text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -213,7 +213,7 @@ const VBucksPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="grid grid-cols-3 gap-4 mb-14 max-w-3xl mx-auto"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-10 sm:mb-14 max-w-3xl mx-auto"
           >
             {features.map((f, i) => (
               <div key={i} className="text-center p-4 rounded-2xl border border-border/30 bg-card/50">
@@ -228,7 +228,7 @@ const VBucksPage = () => {
           {isLoading ? (
             <div className="text-center py-20 text-muted-foreground">Carregando produtos...</div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 md:gap-6">
               {products?.map((opt, i) => (
                 <VBucksCard
                   key={opt.id}
