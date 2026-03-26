@@ -26,6 +26,7 @@ import ValorantInventory from "@/components/ValorantInventory";
 import ScarcityBadge from "@/components/marketing/ScarcityBadge";
 import SocialProofBar from "@/components/marketing/SocialProofBar";
 import CrossSellBanner from "@/components/marketing/CrossSellBanner";
+import CredentialDisplay from "@/components/CredentialDisplay";
 
 import valorantImg from "@/assets/categories/valorant.png";
 import fortniteImg from "@/assets/categories/fortnite.png";
