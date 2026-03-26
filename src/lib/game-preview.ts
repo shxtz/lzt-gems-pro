@@ -239,7 +239,7 @@ export function getFortnitePreviewItems(data: any, limit = 9): GamePreviewItem[]
 
   if (cosmetics.length === 0) return [];
 
-  const rarityOrder: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+  const rarityOrder: Record<string, number> = { legendary: 5, epic: 4, superrare: 3, rare: 3, uncommon: 2, common: 1 };
   const typeOrder: Record<string, number> = { outfit: 5, glider: 4, emote: 3, pickaxe: 2, backbling: 1, wrap: 1 };
 
   return cosmetics
