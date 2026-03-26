@@ -36,6 +36,9 @@ function getCategoryImage(name: string): string | null {
   for (const [key, img] of Object.entries(CATEGORY_IMAGES)) {
     if (lower.includes(key)) return img;
   }
+  // Extra aliases
+  if (lower.includes("league")) return CATEGORY_IMAGES.lol;
+  if (lower.includes("zenless")) return CATEGORY_IMAGES.zzz;
   return null;
 }
 
