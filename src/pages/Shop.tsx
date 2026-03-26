@@ -23,6 +23,8 @@ import { prewarmChampionsCatalog, getLoLQuickPreviewItems, type LoLPreviewItem }
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventory from "@/components/ValorantInventory";
+import SocialProofBar from "@/components/marketing/SocialProofBar";
+import CrossSellBanner from "@/components/marketing/CrossSellBanner";
 
 interface LztAccount {
   id: string;
@@ -892,6 +894,16 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
             </div>
 
             <div className="p-4 sm:p-6">
+              {/* V-Bucks Cross-sell Banner */}
+              {selectedTab === "contas" && (
+                <div className="mb-5">
+                  <CrossSellBanner context="shop" />
+                </div>
+              )}
+
+              {/* Social Proof */}
+              <SocialProofBar />
+
               {/* Section Title */}
               <div className="flex items-center gap-2 mb-5">
                 {selectedTab === "contas" ? (
