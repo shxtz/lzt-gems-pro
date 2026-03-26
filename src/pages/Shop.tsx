@@ -1105,8 +1105,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
 
-                            const isFortnite = catLower.includes("fortnite");
-                            const gridLimit = isFortnite ? 4 : 9;
+                            const gridLimit = 9;
                             let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
                             if (isLoL && account.data?.lolInventory) {
                               individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
@@ -1148,10 +1147,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             );
 
                             if (hasIndividualItems) {
-                              const useCompactGrid = isFortnite;
-                              const gridItems = individualItems.slice(0, useCompactGrid ? 4 : 9);
-                              const cols = useCompactGrid ? 2 : 3;
-                              const rows = useCompactGrid ? 2 : 3;
+                              const gridItems = individualItems.slice(0, 9);
+                              const cols = 3;
+                              const rows = 3;
                               const totalCells = cols * rows;
                               return (
                                 <div className="relative">
@@ -1176,16 +1174,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                               src={item.imageUrl}
                                               alt=""
                                               loading="lazy"
-                                              className={`h-full w-full ${isLoLItem ? "object-cover" : useCompactGrid ? "object-contain p-2" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
+                                              className={`h-full w-full ${isLoLItem ? "object-cover" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
                                             />
                                             {tierIcon && (
                                               <div className="absolute right-1 top-1">
                                                 <img src={tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
-                                              </div>
-                                            )}
-                                            {useCompactGrid && (
-                                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4">
-                                                <p className="text-[9px] font-semibold text-white text-center leading-tight line-clamp-1 drop-shadow-md">{"name" in item ? item.name : "championName" in item ? (item as any).championName : ""}</p>
                                               </div>
                                             )}
                                           </div>
