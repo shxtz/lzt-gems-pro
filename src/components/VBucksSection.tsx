@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Zap, ShoppingBag } from "lucide-react";
+import { ShoppingBag, Crown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { withTimeout } from "@/lib/supabase-resilience";
@@ -24,7 +24,7 @@ interface VBucksCardProps extends VBucksProduct {
 const VBucksCard = ({ id, amount, price, original_price: originalPrice, popular, index, onBuy }: VBucksCardProps) => {
   return (
     <motion.div
-      whileHover={{ y: -8 }}
+      whileHover={{ y: -10, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className="group relative"
     >
@@ -37,18 +37,19 @@ const VBucksCard = ({ id, amount, price, original_price: originalPrice, popular,
           transition={{ delay: index * 0.1 + 0.3, type: "spring" }}
         >
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-gold px-3 sm:px-4 py-1 sm:py-1.5 font-display text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-primary-foreground shadow-gold whitespace-nowrap">
-            <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             Mais Popular
           </span>
         </motion.div>
       )}
 
       <div
-        className={`relative overflow-hidden rounded-2xl transition-all duration-500 ${
+        className={`holo-card relative overflow-hidden rounded-2xl transition-all duration-500 ${
           popular
             ? "border border-primary/30 shadow-gold-intense"
             : "border border-border/40 hover:border-primary/20"
         }`}
+        style={popular ? { animation: "gold-breathe 3s ease-in-out infinite" } : undefined}
       >
         <div className="absolute inset-0 bg-gradient-card" />
         {popular && (
@@ -57,8 +58,14 @@ const VBucksCard = ({ id, amount, price, original_price: originalPrice, popular,
         <div className="absolute inset-0 scanlines" />
 
         <div className="relative z-10 p-4 sm:p-6 md:p-7 text-center">
+          {/* V-Bucks icon with float animation */}
           <div className="mb-1 flex items-center justify-center gap-1.5 sm:gap-2">
-            <img src={vbucksIcon} alt="V-Bucks" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10" />
+            <motion.img
+              src={vbucksIcon}
+              alt="V-Bucks"
+              className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 drop-shadow-lg"
+              style={popular ? { animation: "vbucks-float 4s ease-in-out infinite" } : undefined}
+            />
             <span className="font-display text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-gradient-gold">
               {amount.toLocaleString("pt-BR")}
             </span>
@@ -99,8 +106,15 @@ const VBucksCard = ({ id, amount, price, original_price: originalPrice, popular,
               <ShoppingBag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               Comprar
             </span>
-            <div className="absolute inset-0 -translate-x-full transition-transform duration-700 group-hover/btn:translate-x-full"
-              style={{ background: "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.1), transparent)" }}
+            {/* Streak shine on button */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.12), transparent)",
+                width: "40%",
+                animation: "streak 4s ease-in-out infinite",
+                animationDelay: `${index * 0.5}s`,
+              }}
             />
           </motion.button>
         </div>
@@ -148,12 +162,14 @@ const VBucksSection = () => {
     : fallbackOptions;
 
   return (
-    <section className="py-16 sm:py-24 md:py-28 relative overflow-hidden">
+    <section className="py-16 sm:py-24 md:py-28 relative overflow-hidden ember-bg">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[700px] h-[500px] sm:h-[700px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.04), transparent 60%)" }}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[500px] sm:h-[800px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.05), transparent 60%)" }}
         />
+        {/* Bottom gradient line */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -173,7 +189,7 @@ const VBucksSection = () => {
             ⬡ Pacotes Disponíveis
           </motion.span>
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 tracking-tight">
-            <span className="text-gradient-gold-shine">V-BUCKS</span>
+            <span className="text-gradient-gold-shine text-glow-gold">V-BUCKS</span>
           </h2>
           <p className="font-body text-xs sm:text-sm text-muted-foreground max-w-sm sm:max-w-md mx-auto leading-relaxed">
             Escolha a quantidade e receba instantaneamente na sua conta Fortnite.

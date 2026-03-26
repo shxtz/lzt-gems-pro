@@ -29,6 +29,32 @@ const GoldParticle = ({ delay, x, size }: { delay: number; x: number; size: numb
   />
 );
 
+const FloatingOrb = ({ x, y, size, delay }: { x: string; y: string; size: number; delay: number }) => (
+  <motion.div
+    className="absolute rounded-full pointer-events-none"
+    style={{
+      left: x,
+      top: y,
+      width: size,
+      height: size,
+      background: `radial-gradient(circle, hsl(43 84% 55% / 0.12), hsl(43 84% 55% / 0.03), transparent 70%)`,
+      filter: "blur(1px)",
+    }}
+    animate={{
+      y: [0, -30, 0],
+      x: [0, 15, 0],
+      scale: [1, 1.2, 1],
+      opacity: [0.4, 0.8, 0.4],
+    }}
+    transition={{
+      duration: 5 + delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay,
+    }}
+  />
+);
+
 const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
@@ -54,7 +80,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-transparent h-[30%]" />
       </motion.div>
 
-      {/* Animated grid — hidden on mobile for performance */}
+      {/* Animated grid */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03] hidden sm:block">
         <motion.div
           animate={{ y: [0, 40] }}
@@ -67,21 +93,29 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
         />
       </div>
 
-      {/* Gold particles — fewer on mobile */}
+      {/* Gold particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => (
+        {[...Array(10)].map((_, i) => (
           <GoldParticle
             key={i}
-            delay={i * 1.1}
-            x={8 + i * 12}
+            delay={i * 0.9}
+            x={5 + i * 10}
             size={2 + (i % 3) * 2}
           />
         ))}
       </div>
 
-      {/* Radial gold glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] h-[400px] sm:h-[600px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.06), transparent 60%)" }}
+      {/* Floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+        <FloatingOrb x="10%" y="20%" size={120} delay={0} />
+        <FloatingOrb x="75%" y="15%" size={80} delay={1.5} />
+        <FloatingOrb x="85%" y="60%" size={100} delay={3} />
+        <FloatingOrb x="5%" y="70%" size={60} delay={2} />
+      </div>
+
+      {/* Radial gold glow - more intense */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] sm:w-[1000px] h-[500px] sm:h-[700px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(43 84% 55% / 0.08), transparent 60%)" }}
       />
 
       {/* Content */}
@@ -101,6 +135,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ delay: 0.3, duration: 0.6 }}
             className="inline-flex items-center gap-2 sm:gap-3 rounded-full border border-primary/60 bg-background/85 px-4 sm:px-7 py-2 sm:py-3 mb-5 sm:mb-8 backdrop-blur-xl shadow-gold"
+            style={{ animation: "gold-breathe 3s ease-in-out infinite" }}
           >
             <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary animate-pulse" />
             <span className="font-body text-[10px] sm:text-[14px] font-black text-foreground tracking-[0.12em] sm:tracking-[0.22em] uppercase drop-shadow-sm">
@@ -115,7 +150,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="font-display text-[3.2rem] sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.92] mb-3 sm:mb-4 tracking-tight"
           >
-            <span className="text-foreground block leading-none">VBUCKS</span>
+            <span className="text-foreground block leading-none text-glow-gold">VBUCKS</span>
             <span className="text-gradient-gold-shine block leading-none -mt-1 sm:-mt-3 md:-mt-5 lg:-mt-7">BARATO</span>
           </motion.h1>
 
@@ -141,20 +176,25 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
           >
             <motion.button
               onClick={() => navigate("/vbucks")}
-              whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(43 84% 55% / 0.3)" }}
+              whileHover={{ scale: 1.04, boxShadow: "0 8px 50px hsl(43 84% 55% / 0.4)" }}
               whileTap={{ scale: 0.97 }}
-              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-5 sm:px-7 py-3 sm:py-3.5 font-display text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-primary-foreground shadow-gold transition-all w-full sm:w-auto justify-center"
+              className="pulse-ring group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-5 sm:px-7 py-3 sm:py-3.5 font-display text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-primary-foreground shadow-gold transition-all w-full sm:w-auto justify-center"
             >
-              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-7 w-7 sm:h-10 sm:w-10 -ml-1" />
+              <motion.img
+                src={vbucksIcon}
+                alt="V-Bucks"
+                className="relative z-10 h-7 w-7 sm:h-10 sm:w-10 -ml-1"
+                style={{ animation: "vbucks-float 4s ease-in-out infinite" }}
+              />
               <span className="relative z-10">Comprar V-Bucks</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              <motion.div
-                className="absolute inset-0 -translate-x-full"
-                animate={{ translateX: ["-100%", "200%"] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
+              {/* Streak shine */}
+              <div
+                className="absolute inset-0 pointer-events-none"
                 style={{
-                  background: "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.2), transparent)",
-                  width: "50%",
+                  background: "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.25), transparent)",
+                  width: "30%",
+                  animation: "streak 3s ease-in-out infinite",
                 }}
               />
             </motion.button>
@@ -182,8 +222,9 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             { value: "2.000+", label: "Vendas" },
             { value: "4.9★", label: "Avaliação" },
           ].map((stat, i) => (
-            <div
+            <motion.div
               key={stat.label}
+              whileHover={{ scale: 1.05 }}
               className={`flex-1 text-center py-3 sm:py-4 ${
                 i < 2 ? "border-r border-border/30" : ""
               }`}
@@ -194,12 +235,12 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
               <div className="font-body text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-[0.15em] sm:tracking-[0.2em]">
                 {stat.label}
               </div>
-            </div>
+            </motion.div>
           ))}
         </motion.div>
       </motion.div>
 
-      {/* Scroll indicator — hidden on mobile */}
+      {/* Scroll indicator */}
       <motion.button
         onClick={onScrollNext}
         className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10 cursor-pointer p-2 rounded-full hover:bg-primary/10 transition-colors hidden sm:block"
