@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ShoppingBag, ArrowLeft, Shield, Clock, Headphones, MessageCircle } from "lucide-react";
+import { Zap, ShoppingBag, ArrowLeft, Shield, Clock, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -136,7 +136,7 @@ const VBucksCard = ({ id, amount, price, originalPrice, popular, index }: VBucks
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366]/20 border border-[#25D366]/30 py-3 px-3 font-display text-[10px] font-bold uppercase tracking-[0.15em] text-[#25D366] hover:bg-[#25D366]/30 transition-colors"
                 >
-                  <MessageCircle className="h-6 w-6" />
+                  <img src={whatsappIcon} alt="WhatsApp" className="h-6 w-6" />
                 </a>
               </motion.div>
             )}
