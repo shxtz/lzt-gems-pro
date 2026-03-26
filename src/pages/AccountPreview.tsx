@@ -546,7 +546,7 @@ const AccountPreview = () => {
   const lolPreviewItems = isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : [];
 
   // Unified preview tiles for ALL games
-  const gamePreviewItems = (!isValorantAccount && !isLoLAccount) ? getGamePreviewItems(d, realCategory, 4) : [];
+  const gamePreviewItems = (!isValorantAccount && !isLoLAccount) ? getGamePreviewItems(d, realCategory, 9) : [];
 
   const previewTiles = isLoLAccount
     ? lolPreviewItems.map((item) => ({
@@ -625,8 +625,8 @@ const AccountPreview = () => {
             {/* 3x3 Preview Grid */}
             {hasIndividualItems ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
-                <div className="grid grid-cols-2 gap-[2px] bg-border/10">
-                  {previewTiles.slice(0, 4).map((item: any, i: number) => {
+                <div className="grid grid-cols-3 gap-[2px] bg-border/10">
+                  {previewTiles.slice(0, 9).map((item: any, i: number) => {
                     const tier = item.tier;
                     const tileColor = tier ? `rgb(${tier.tile[0]}, ${tier.tile[1]}, ${tier.tile[2]})` : undefined;
                     const outlineColor = tier ? `rgb(${tier.outline[0]}, ${tier.outline[1]}, ${tier.outline[2]})` : undefined;
