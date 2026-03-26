@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Search, Shield, ShieldOff, RefreshCw, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Shield, ShieldOff, RefreshCw, User, ChevronDown, ChevronUp, Ban, Trash2, UserX } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -99,6 +99,37 @@ const AdminUsers = () => {
   });
 
   const isAdmin = (userId: string) => roles?.some((r) => r.user_id === userId && r.role === "admin");
+
+  const banUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("admin-user-actions", {
+        body: { action: "ban-user", userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Usuário banido!");
+    },
+    onError: (e: any) => toast.error(`Erro: ${e.message}`),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-user-actions", {
+        body: { action: "delete-user", userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Usuário removido permanentemente!");
+    },
+    onError: (e: any) => toast.error(`Erro: ${e.message}`),
+  });
 
   const filtered = profiles?.filter((p) => {
     if (!search) return true;
@@ -243,6 +274,32 @@ const AdminUsers = () => {
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         Sync Discord
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!confirm("Tem certeza que deseja banir este usuário?")) return;
+                          banUserMutation.mutate(p.user_id);
+                        }}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                        Banir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!confirm("ATENÇÃO: Isso vai REMOVER permanentemente este usuário. Continuar?")) return;
+                          deleteUserMutation.mutate(p.user_id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Remover
                       </Button>
                     </div>
                   </div>

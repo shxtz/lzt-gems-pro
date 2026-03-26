@@ -19,6 +19,7 @@ import GameInventoryFull from "@/components/inventory/GameInventoryFull";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
+import { useState } from "react";
 import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import RecommendedAccounts from "@/components/marketing/RecommendedAccounts";
@@ -433,6 +434,11 @@ const AccountPreview = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, authReady, isAdmin } = useAuth();
+  const [purchasing, setPurchasing] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponId, setCouponId] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
@@ -583,6 +589,58 @@ const AccountPreview = () => {
   const maskedName = getMaskedName(realCategory, account.lzt_item_id);
   const price = Number(account.price_brl);
   const isAvailable = account.status === "available";
+  const finalPrice = couponDiscount > 0 ? Math.round(price * (1 - couponDiscount / 100) * 100) / 100 : price;
+
+  const handleBuyDirect = async () => {
+    if (!user) { toast.error("Faça login para comprar"); navigate("/auth"); return; }
+    if (!account) return;
+    setPurchasing(true);
+    try {
+      const { data: checkResult, error: checkError } = await supabase.functions.invoke("lzt-purchase", {
+        body: { action: "check_availability", lzt_item_id: account.lzt_item_id },
+      });
+      if (checkError) throw checkError;
+      if (!checkResult?.available) {
+        toast.error(checkResult?.reason || "Conta indisponível");
+        return;
+      }
+      const { data: order, error: orderError } = await supabase.from("orders").insert({
+        user_id: user.id, quantity: 1, total_price: finalPrice,
+        payment_method: "pix", status: "pending",
+        lzt_item_id: account.lzt_item_id, lzt_account_id: account.id,
+        coupon_id: couponId,
+      } as any).select().single();
+      if (orderError) throw orderError;
+      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", {
+        body: { orderId: order.id, amount: finalPrice, description: `${maskedName} - Loja` },
+      });
+      if (pixError) throw pixError;
+      if (pixResponse?.error) throw new Error(pixResponse.error);
+      await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
+      // Navigate to shop with the pix data encoded
+      navigate(`/loja?order=${order.id}`);
+      toast.success("Cobrança PIX gerada! Finalize o pagamento na loja.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao gerar pagamento.");
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setApplyingCoupon(true);
+    try {
+      const { data } = await supabase.from("coupons").select("*").eq("code", couponCode.toUpperCase().trim()).eq("active", true).maybeSingle();
+      if (!data) { toast.error("Cupom inválido"); return; }
+      if (data.max_uses && (data.current_uses || 0) >= data.max_uses) { toast.error("Cupom esgotado"); return; }
+      setCouponDiscount(data.discount_percent);
+      setCouponId(data.id);
+      toast.success(`Cupom aplicado! ${data.discount_percent}% off`);
+    } catch { toast.error("Erro ao validar cupom"); }
+    finally { setApplyingCoupon(false); }
+  };
 
   // Seller info
   const seller = d?.seller;
@@ -713,23 +771,54 @@ const AccountPreview = () => {
             {/* Price Card */}
             <div className="rounded-2xl border border-border/40 bg-card p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-3xl font-bold text-primary font-display">R$ {price.toFixed(2)}</p>
+                <div>
+                  {couponDiscount > 0 ? (
+                    <>
+                      <p className="text-sm line-through text-muted-foreground">R$ {price.toFixed(2)}</p>
+                      <p className="text-3xl font-bold text-primary font-display">R$ {finalPrice.toFixed(2)}</p>
+                    </>
+                  ) : (
+                    <p className="text-3xl font-bold text-primary font-display">R$ {price.toFixed(2)}</p>
+                  )}
+                </div>
                 <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-1 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
                   <Shield className="h-3 w-3" /> Verificada
                 </span>
+              </div>
+              {/* Coupon input */}
+              <div className="flex gap-2 items-center">
+                {couponDiscount > 0 ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-xs text-emerald-400 font-medium">✓ {couponCode.toUpperCase()} ({couponDiscount}% off)</span>
+                    <button onClick={() => { setCouponCode(""); setCouponDiscount(0); setCouponId(null); }} className="text-xs text-muted-foreground hover:text-destructive">✕</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="Cupom de desconto"
+                      className="flex-1 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                    <Button size="sm" variant="outline" onClick={handleApplyCoupon} disabled={applyingCoupon || !couponCode.trim()} className="text-xs shrink-0">
+                      {applyingCoupon ? <Loader2 className="h-3 w-3 animate-spin" /> : <Tag className="h-3 w-3 mr-1" />} Aplicar
+                    </Button>
+                  </>
+                )}
               </div>
               {isAvailable && (
                 <div className="flex gap-3">
                   <Button
                     size="lg"
                     className="flex-1 bg-gradient-gold text-primary-foreground font-display gap-2 shadow-gold"
+                    disabled={purchasing}
                     onClick={() => {
                       if (!user) { toast.error("Faça login para comprar"); navigate("/auth"); return; }
-                      navigate("/loja");
-                      toast.info("Use a loja para finalizar a compra.");
+                      handleBuyDirect();
                     }}
                   >
-                    <ShoppingCart className="h-5 w-5" /> Comprar agora
+                    {purchasing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
+                    {purchasing ? "Processando..." : "Comprar agora"}
                   </Button>
                 </div>
               )}
