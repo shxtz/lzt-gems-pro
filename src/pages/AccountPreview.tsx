@@ -634,14 +634,154 @@ const AccountPreview = () => {
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
       await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      // Navigate to shop with the pix data encoded
-      navigate(`/loja?order=${order.id}`);
-      toast.success("Cobrança PIX gerada! Finalize o pagamento na loja.");
+      setPixData({
+        qrcode: pixResponse.qrcode,
+        copiaecola: pixResponse.copiaecola,
+        txid: pixResponse.txid,
+        orderId: order.id,
+        variationName: maskedName,
+        amount: finalPrice,
+        lztAccountId: account.id,
+      });
+      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+      toast.success("Cobrança PIX gerada!");
     } catch (err: any) {
       console.error(err);
       toast.error("Erro ao gerar pagamento.");
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  const confirmPaymentAndDeliver = async () => {
+    if (!pixData || !user) return;
+    setCheckingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("confirm-pix-payment", {
+        body: { orderId: pixData.orderId, txid: pixData.txid },
+      });
+      if (error) throw error;
+      if (data?.error && !data?.delivered && !data?.credential) {
+        if (data?.status === "refunded") {
+          toast.info(data?.error || "Problema na entrega. Valor reembolsado no saldo.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+        if (data?.status === "refund_needed" || data?.status === "cancelled") {
+          toast.error(data?.error || "Problema na entrega. Pedido marcado para reembolso.");
+          setPixData(null);
+          return;
+        }
+      }
+      if (data?.delivered || data?.credential) {
+        setDeliveredCredential({
+          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+        setPixData(null);
+        toast.success("Pagamento confirmado! Produto entregue.");
+        return;
+      }
+      // Poll order status
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const { data: orderCheck } = await supabase.from("orders").select("status").eq("id", pixData.orderId).single();
+        if (orderCheck?.status === "delivered") {
+          const { data: log } = await supabase.from("delivery_logs").select("credential_delivered").eq("order_id", pixData.orderId).maybeSingle();
+          setDeliveredCredential({
+            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
+            name: pixData.variationName,
+          });
+          queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+          setPixData(null);
+          toast.success("Pagamento confirmado! Produto entregue.");
+          return;
+        }
+        if (orderCheck?.status === "refunded") {
+          toast.info("Problema na entrega. Valor reembolsado no saldo.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+      }
+      toast.warning("Pagamento confirmado, mas entrega em processamento. Confira sua área do cliente.");
+      setPixData(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao confirmar pagamento.");
+    } finally {
+      setCheckingPayment(false);
+    }
+  };
+
+  const handlePayWithBalance = async () => {
+    if (!pixData || !user) return;
+    setPayingWithBalance(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
+        body: { orderId: pixData.orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.refunded) {
+        toast.error(data.error || "Conta não disponível. Saldo reembolsado.");
+        refetchBalance();
+        setPixData(null);
+        return;
+      }
+      if (data?.delivered) {
+        setDeliveredCredential({
+          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+        refetchBalance();
+        setPixData(null);
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        return;
+      }
+      toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+      refetchBalance();
+      for (let i = 0; i < 24; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const { data: orderCheck } = await supabase.from("orders").select("status").eq("id", pixData.orderId).single();
+        if (orderCheck?.status === "delivered") {
+          const { data: log } = await supabase.from("delivery_logs").select("credential_delivered").eq("order_id", pixData.orderId).maybeSingle();
+          setDeliveredCredential({
+            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
+            name: pixData.variationName,
+          });
+          queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+          refetchBalance();
+          setPixData(null);
+          toast.success("Produto entregue!");
+          return;
+        }
+        if (orderCheck?.status === "refunded") {
+          toast.info("Conta não disponível. Saldo reembolsado.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+      }
+      toast.warning("Entrega em processamento. Confira sua área do cliente.");
+      setPixData(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao pagar com saldo.");
+    } finally {
+      setPayingWithBalance(false);
+    }
+  };
+
+  const copyPix = () => {
+    if (pixData?.copiaecola) {
+      navigator.clipboard.writeText(pixData.copiaecola);
+      setCopied(true);
+      toast.success("Código PIX copiado!");
+      setTimeout(() => setCopied(false), 3000);
     }
   };
 
