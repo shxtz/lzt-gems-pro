@@ -13,13 +13,11 @@ const navItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
   { title: "Produtos", url: "/admin/produtos", icon: Store },
   { title: "Categorias", url: "/admin/categories", icon: Grid3X3 },
+  { title: "LZT Market", url: "/admin/lzt", icon: Store },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Sorteios", url: "/admin/products", icon: Package },
-  
-  { title: "LZT Market", url: "/admin/lzt", icon: Store },
   { title: "Chat", url: "/admin/tickets", icon: MessageCircle, badge: true },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
-  
   { title: "Usuários", url: "/admin/users", icon: Users },
   { title: "Discord API", url: "/admin/discord", icon: MessageSquare },
   { title: "Marketing", url: "/admin/campaigns", icon: Megaphone },
