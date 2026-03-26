@@ -97,30 +97,49 @@ const CategoriesSection = () => {
   const bottomRow = displayCategories.slice(5);
 
   return (
-    <section id="categories" className="py-16 sm:py-24 md:py-28 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+    <section id="categories" className="py-20 sm:py-28 md:py-36 relative overflow-hidden">
+      {/* Radial gold glow background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] rounded-full bg-[radial-gradient(ellipse_at_center,hsl(43_84%_55%/0.06),transparent_70%)]" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,hsl(43_84%_55%/0.03),transparent_50%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_right,hsl(30_90%_42%/0.04),transparent_50%)]" />
+      </div>
 
-      <div className="container mx-auto px-4 sm:px-6">
+      {/* Top separator line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      {/* Bottom separator line */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
+
+      {/* Floating ember particles */}
+      <div className="absolute inset-0 pointer-events-none ember-bg opacity-50" />
+
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-10 sm:mb-16"
+          transition={{ duration: 0.7 }}
+          className="text-center mb-12 sm:mb-20"
         >
-          <span className="inline-block font-body text-[10px] text-primary uppercase tracking-[0.3em] mb-3 sm:mb-4">
+          <motion.span
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="inline-block font-body text-[10px] sm:text-[11px] text-primary uppercase tracking-[0.35em] mb-4 sm:mb-5 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5"
+          >
             ⬡ Explore
-          </span>
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 text-foreground tracking-tight">
+          </motion.span>
+          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl font-black mb-4 sm:mb-5 text-gradient-gold tracking-tight">
             CATEGORIAS
           </h2>
-          <p className="font-body text-xs sm:text-sm text-muted-foreground max-w-sm sm:max-w-md mx-auto leading-relaxed">
+          <p className="font-body text-xs sm:text-sm text-muted-foreground max-w-sm sm:max-w-lg mx-auto leading-relaxed font-medium">
             Contas verificadas dos melhores jogos com entrega automática.
           </p>
         </motion.div>
 
         {/* Top row */}
-        <div className="flex justify-center gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6 flex-wrap">
+        <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 mb-4 sm:mb-6 md:mb-8 flex-wrap">
           {topRow.map((cat, i) => (
             <CategoryIcon key={cat.id} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
           ))}
@@ -128,7 +147,7 @@ const CategoriesSection = () => {
 
         {/* Bottom row */}
         {bottomRow.length > 0 && (
-          <div className="flex justify-center gap-3 sm:gap-4 md:gap-6 flex-wrap">
+          <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 flex-wrap">
             {bottomRow.map((cat, i) => (
               <CategoryIcon key={cat.id} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
             ))}
@@ -150,31 +169,36 @@ const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      whileInView={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, y: 20, scale: 0.85 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true }}
-      transition={{ delay: index * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay: index * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="group relative cursor-pointer flex flex-col items-center"
       onClick={onClick}
     >
       <motion.div
-        whileHover={{ y: -8, scale: 1.05 }}
-        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        className="relative w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] md:w-[88px] md:h-[88px] rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)]"
+        whileHover={{ y: -10, scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 400, damping: 18 }}
+        className="relative w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] md:w-[100px] md:h-[100px] rounded-2xl overflow-hidden border border-border/20 bg-gradient-to-br from-card to-background backdrop-blur-md flex items-center justify-center transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_40px_-5px_hsl(var(--primary)/0.3),0_0_80px_-10px_hsl(var(--primary)/0.1)] group-hover:bg-gradient-to-br group-hover:from-primary/10 group-hover:to-card"
       >
+        {/* Inner glow on hover */}
+        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_center,hsl(43_84%_55%/0.08),transparent_70%)]" />
+        
         {image ? (
           <img
             src={image}
             alt={category.name}
             loading="lazy"
-            className="w-[42px] h-[42px] sm:w-[52px] sm:h-[52px] md:w-[60px] md:h-[60px] object-contain transition-transform duration-300 group-hover:scale-110"
+            className="relative z-10 w-[46px] h-[46px] sm:w-[56px] sm:h-[56px] md:w-[66px] md:h-[66px] object-contain transition-all duration-500 group-hover:scale-115 group-hover:drop-shadow-[0_0_12px_hsl(43_84%_55%/0.3)]"
           />
         ) : (
-          <span className="text-2xl sm:text-3xl md:text-4xl">{category.emoji || "📦"}</span>
+          <span className="relative z-10 text-2xl sm:text-3xl md:text-4xl transition-transform duration-300 group-hover:scale-110">{category.emoji || "📦"}</span>
         )}
       </motion.div>
-      {/* Always show name on mobile, hover-reveal on desktop */}
-      <span className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] md:text-xs font-display text-muted-foreground group-hover:text-foreground transition-all duration-300 text-center max-w-[72px] sm:max-w-[88px] leading-tight sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-1 sm:group-hover:translate-y-0">
+
+      {/* Name label */}
+      <span className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] md:text-xs font-display font-bold text-muted-foreground group-hover:text-primary transition-all duration-400 text-center max-w-[80px] sm:max-w-[100px] leading-tight sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-2 sm:group-hover:translate-y-0">
         {category.name}
       </span>
     </motion.div>
