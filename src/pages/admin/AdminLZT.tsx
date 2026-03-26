@@ -424,28 +424,33 @@ const AdminLZT = () => {
       {isLoading ? (
         <div className="text-center text-muted-foreground py-8">Carregando...</div>
       ) : (
-        <div className="space-y-4">
-          {categories?.map((cat) => (
-            <CategoryCard
-              key={cat.id}
-              category={cat}
-              count={accountCounts?.[cat.id] || 0}
-              onUpdateField={(field, value) =>
-                updateCategory.mutate({ id: cat.id, field, value })
-              }
-              onImport={() =>
-                importAccounts.mutate({
-                  categoryId: cat.id,
-                  apiUrl: cat.api_url,
-                  margin: cat.margin_percent,
-                })
-              }
-              onSearch={() => searchAccounts.mutate(cat.api_url)}
-              onClear={() => clearAccounts.mutate(cat.id)}
-              isImporting={importAccounts.isPending}
-              isSearching={searchAccounts.isPending}
-            />
-          ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={categories?.map((c) => c.id) || []} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+              {categories?.map((cat) => (
+                <SortableCategoryCard
+                  key={cat.id}
+                  category={cat}
+                  count={accountCounts?.[cat.id] || 0}
+                  onUpdateField={(field, value) =>
+                    updateCategory.mutate({ id: cat.id, field, value })
+                  }
+                  onImport={() =>
+                    importAccounts.mutate({
+                      categoryId: cat.id,
+                      apiUrl: cat.api_url,
+                      margin: cat.margin_percent,
+                    })
+                  }
+                  onSearch={() => searchAccounts.mutate(cat.api_url)}
+                  onClear={() => clearAccounts.mutate(cat.id)}
+                  isImporting={importAccounts.isPending}
+                  isSearching={searchAccounts.isPending}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
         </div>
       )}
     </div>
