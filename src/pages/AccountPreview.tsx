@@ -432,7 +432,7 @@ function GameInventory({ data, cat }: { data: any; cat: string }) {
 const AccountPreview = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, authReady } = useAuth();
+  const { user, authReady, isAdmin } = useAuth();
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
