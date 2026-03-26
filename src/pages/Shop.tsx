@@ -5,7 +5,7 @@ import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
   Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3,
-  Send, MessageCircle, Sword, Crosshair
+  Send, MessageCircle, Sword, Crosshair, Wallet
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
