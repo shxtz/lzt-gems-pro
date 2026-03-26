@@ -324,31 +324,23 @@ Deno.serve(async (req) => {
           });
         }
 
-        await supabaseAdmin
-          .from("orders")
-          .update({ status: "refund_needed", updated_at: new Date().toISOString() })
-          .eq("id", order.id)
-          .neq("status", "delivered");
+        await autoRefundToBalance(supabaseAdmin, order.id, order.user_id, Number(order.total_price));
 
         return jsonResponse({
           paid: true,
           delivered: false,
-          status: "refund_needed",
-          error: lztData?.error ?? "Erro ao comprar conta no LZT Market.",
+          status: "refunded",
+          error: lztData?.error ?? "Erro ao comprar conta. Valor reembolsado em saldo.",
         });
       } catch (parseError) {
         console.error("LZT response parse error:", parseError, lastResult.bodyText);
-        await supabaseAdmin
-          .from("orders")
-          .update({ status: "refund_needed", updated_at: new Date().toISOString() })
-          .eq("id", order.id)
-          .neq("status", "delivered");
+        await autoRefundToBalance(supabaseAdmin, order.id, order.user_id, Number(order.total_price));
 
         return jsonResponse({
           paid: true,
           delivered: false,
-          status: "refund_needed",
-          error: "Erro ao finalizar a compra da conta.",
+          status: "refunded",
+          error: "Erro ao finalizar a compra. Valor reembolsado em saldo.",
         });
       }
     }
