@@ -734,6 +734,15 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      // Handle refund case
+      if (data?.refunded) {
+        toast.error(data.error || "Conta não disponível. Saldo reembolsado.");
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        refetchBalance();
+        setPixData(null);
+        return;
+      }
+
       if (data?.delivered) {
         setDeliveredCredential({
           credential: data.credential || "Produto entregue — verifique sua área do cliente",
