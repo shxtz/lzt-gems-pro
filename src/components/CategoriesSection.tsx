@@ -35,6 +35,29 @@ interface ShopCategory {
   sort_order: number;
 }
 
+const FALLBACK_HOME_CATEGORIES: ShopCategory[] = [
+  { id: "fallback-valorant", name: "Valorant", slug: "valorant", emoji: "🎯", icon_url: null, sort_order: 1 },
+  { id: "fallback-fortnite", name: "Fortnite", slug: "fortnite", emoji: "🪂", icon_url: null, sort_order: 2 },
+  { id: "fallback-genshin", name: "Genshin Impact", slug: "genshin", emoji: "⭐", icon_url: null, sort_order: 3 },
+  { id: "fallback-lol", name: "League of Legends", slug: "lol", emoji: "🏆", icon_url: null, sort_order: 4 },
+  { id: "fallback-honkai", name: "Honkai Star Rail", slug: "honkai", emoji: "🚄", icon_url: null, sort_order: 5 },
+  { id: "fallback-minecraft", name: "Minecraft", slug: "minecraft", emoji: "⛏️", icon_url: null, sort_order: 6 },
+  { id: "fallback-steam", name: "Steam", slug: "steam", emoji: "🎮", icon_url: null, sort_order: 7 },
+  { id: "fallback-zzz", name: "Zenless Zone Zero", slug: "zzz", emoji: "⚡", icon_url: null, sort_order: 8 },
+];
+
+const HOME_CATEGORY_CACHE_KEY = "shop-cache:home-categories";
+
+const readCachedCategories = (): ShopCategory[] => {
+  if (typeof window === "undefined") return FALLBACK_HOME_CATEGORIES;
+  try {
+    const raw = window.localStorage.getItem(HOME_CATEGORY_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as ShopCategory[]) : FALLBACK_HOME_CATEGORIES;
+  } catch {
+    return FALLBACK_HOME_CATEGORIES;
+  }
+};
+
 const CategoriesSection = () => {
   const navigate = useNavigate();
   const { authReady } = useAuth();
@@ -42,21 +65,34 @@ const CategoriesSection = () => {
   const { data: categories } = useQuery({
     queryKey: ["home-shop-categories"],
     enabled: authReady,
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    retry: 1,
+    refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
+    initialData: () => readCachedCategories(),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("shop_categories")
-        .select("*")
-        .eq("visible", true)
-        .order("sort_order");
-      if (error) throw error;
-      return data as ShopCategory[];
+      try {
+        const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000));
+        const { data, error } = await Promise.race([
+          supabase
+            .from("shop_categories")
+            .select("id, name, slug, emoji, icon_url, sort_order")
+            .eq("visible", true)
+            .order("sort_order"),
+          timeout,
+        ]);
+        if (error) throw error;
+        const nextData = (data && data.length > 0 ? data : FALLBACK_HOME_CATEGORIES) as ShopCategory[];
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(HOME_CATEGORY_CACHE_KEY, JSON.stringify(nextData));
+        }
+        return nextData;
+      } catch {
+        return readCachedCategories();
+      }
     },
   });
 
-  const displayCategories = categories || [];
+  const displayCategories = categories || FALLBACK_HOME_CATEGORIES;
   const topRow = displayCategories.slice(0, 5);
   const bottomRow = displayCategories.slice(5);
 
