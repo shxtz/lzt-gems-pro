@@ -467,6 +467,7 @@ interface CategoryCardProps {
   onClear: () => void;
   isImporting: boolean;
   isSearching: boolean;
+  dragHandleProps?: Record<string, any>;
 }
 
 const SortableCategoryCard = (props: CategoryCardProps) => {
@@ -497,6 +498,7 @@ const CategoryCard = ({
   onClear,
   isImporting,
   isSearching,
+  dragHandleProps,
 }: CategoryCardProps) => {
   const queryClient = useQueryClient();
   const [localUrl, setLocalUrl] = useState(category.api_url || "");
@@ -610,6 +612,9 @@ const CategoryCard = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button {...dragHandleProps} className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1">
+              <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+            </button>
             {category.icon_url?.startsWith("http") ? (
               <img src={category.icon_url} alt="" className="h-6 w-6 rounded object-contain" />
             ) : getCategoryImage(category.name) ? (
