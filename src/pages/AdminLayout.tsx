@@ -15,7 +15,7 @@ const navItems = [
   { title: "Categorias", url: "/admin/categories", icon: Grid3X3 },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart },
   { title: "Sorteios", url: "/admin/products", icon: Package },
-  { title: "Tutoriais", url: "/admin/settings", icon: Settings },
+  
   { title: "LZT Market", url: "/admin/lzt", icon: Store },
   { title: "Chat", url: "/admin/tickets", icon: MessageCircle, badge: true },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
