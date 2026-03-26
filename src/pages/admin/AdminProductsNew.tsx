@@ -60,11 +60,16 @@ const LztAccountsSection = () => {
   const queryClient = useQueryClient();
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingAccount, setEditingAccount] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"available" | "sold" | "all">("available");
+  const [accountSearch, setAccountSearch] = useState("");
 
   const { data: lztCategories } = useQuery({
     queryKey: ["admin-lzt-cats-products"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lzt_categories").select("id, name, icon_url").order("sort_order");
+      const { data, error } = await supabase.from("lzt_categories").select("id, name, icon_url, margin_percent").order("sort_order");
       if (error) throw error;
       return data;
     },
@@ -75,9 +80,9 @@ const LztAccountsSection = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lzt_accounts")
-        .select("id, title, price_brl, status, category_id, lzt_item_id")
+        .select("id, title, price_brl, price_usd, status, category_id, lzt_item_id, data, imported_at, sold_at, sold_price, buyer_id")
         .order("imported_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
       if (error) throw error;
       return data;
     },
@@ -88,7 +93,7 @@ const LztAccountsSection = () => {
     try {
       const { error } = await supabase.from("lzt_accounts").delete().eq("id", id);
       if (error) throw error;
-      toast.success("Conta removida com sucesso");
+      toast.success("Conta removida");
       refetchAccounts();
       queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
     } catch {
@@ -97,101 +102,281 @@ const LztAccountsSection = () => {
     setDeletingId(null);
   };
 
+  const updateAccount = async (id: string) => {
+    try {
+      const updates: Record<string, any> = {};
+      if (editTitle) updates.title = editTitle;
+      if (editPrice) updates.price_brl = parseFloat(editPrice);
+      const { error } = await supabase.from("lzt_accounts").update(updates).eq("id", id);
+      if (error) throw error;
+      toast.success("Conta atualizada");
+      setEditingAccount(null);
+      refetchAccounts();
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+    } catch {
+      toast.error("Erro ao atualizar");
+    }
+  };
+
+  const deleteAllInCategory = async (catId: string) => {
+    if (!confirm("Tem certeza que deseja remover TODAS as contas disponíveis desta categoria?")) return;
+    try {
+      const { error } = await supabase.from("lzt_accounts").delete().eq("category_id", catId).eq("status", "available");
+      if (error) throw error;
+      toast.success("Todas as contas disponíveis foram removidas");
+      refetchAccounts();
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+    } catch {
+      toast.error("Erro ao remover contas");
+    }
+  };
+
   const summary = useMemo(() => {
     if (!lztAccounts || !lztCategories) return [];
-    const map: Record<string, { name: string; icon_url: string | null; available: number; sold: number }> = {};
-    lztCategories.forEach((c) => { map[c.id] = { name: c.name, icon_url: c.icon_url, available: 0, sold: 0 }; });
+    const map: Record<string, { name: string; icon_url: string | null; available: number; sold: number; margin: number }> = {};
+    lztCategories.forEach((c) => { map[c.id] = { name: c.name, icon_url: c.icon_url, available: 0, sold: 0, margin: c.margin_percent }; });
     lztAccounts.forEach((a) => {
       if (map[a.category_id]) {
         if (a.status === "available") map[a.category_id].available++;
         else if (a.status === "sold") map[a.category_id].sold++;
       }
     });
-    return Object.entries(map).map(([id, v]) => ({ id, ...v }));
+    return Object.entries(map).map(([id, v]) => ({ id, ...v })).filter(s => s.available > 0 || s.sold > 0);
   }, [lztAccounts, lztCategories]);
 
   const totalAvailable = summary.reduce((a, s) => a + s.available, 0);
   const totalSold = summary.reduce((a, s) => a + s.sold, 0);
 
-  const accountsForCategory = (catId: string) =>
-    lztAccounts?.filter((a) => a.category_id === catId && a.status === "available") || [];
+  const accountsForCategory = (catId: string) => {
+    let accs = lztAccounts?.filter((a) => a.category_id === catId) || [];
+    if (statusFilter !== "all") accs = accs.filter((a) => a.status === statusFilter);
+    if (accountSearch.trim()) {
+      const q = accountSearch.toLowerCase();
+      accs = accs.filter((a) => (a.title || "").toLowerCase().includes(q) || a.lzt_item_id.includes(q));
+    }
+    return accs;
+  };
+
+  const formatDate = (d: string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  };
 
   if (!lztAccounts || lztAccounts.length === 0) return null;
 
   return (
     <div className="mt-8 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-display text-lg text-foreground">Contas LZT Anunciadas</h2>
-          <p className="text-xs text-muted-foreground">Clique em uma categoria para ver e gerenciar as contas</p>
+          <p className="text-xs text-muted-foreground">Gerencie contas importadas do LZT Market</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Badge variant="default" className="text-xs">{totalAvailable} disponíveis</Badge>
           <Badge variant="secondary" className="text-xs">{totalSold} vendidas</Badge>
         </div>
       </div>
 
       <div className="space-y-3">
-        {summary.filter(s => s.available > 0 || s.sold > 0).map((cat) => (
-          <div key={cat.id} className="rounded-xl border border-border/40 bg-card overflow-hidden">
-            <div
-              className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/10 transition-colors"
-              onClick={() => setExpandedCat(expandedCat === cat.id ? null : cat.id)}
-            >
-              <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {cat.icon_url ? (
-                  <img src={cat.icon_url} alt={cat.name} className="h-full w-full object-cover" />
-                ) : (
-                  <Package className="h-5 w-5 text-muted-foreground" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-display text-sm text-foreground truncate">{cat.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-green-500">{cat.available} disp.</span>
-                  <span className="text-xs text-muted-foreground">·</span>
-                  <span className="text-xs text-muted-foreground">{cat.sold} vendidas</span>
+        {summary.map((cat) => {
+          const isOpen = expandedCat === cat.id;
+          const catAccounts = accountsForCategory(cat.id);
+
+          return (
+            <div key={cat.id} className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+              {/* Category Header */}
+              <div
+                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/5 transition-colors"
+                onClick={() => { setExpandedCat(isOpen ? null : cat.id); setAccountSearch(""); }}
+              >
+                <div className="h-11 w-11 rounded-xl bg-muted/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {cat.icon_url ? (
+                    <img src={cat.icon_url} alt={cat.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-display text-sm text-foreground">{cat.name}</p>
+                    <span className="text-[10px] text-muted-foreground">margem {cat.margin}%</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-xs text-green-500 font-medium">{cat.available} disponíveis</span>
+                    <span className="text-xs text-muted-foreground">{cat.sold} vendidas</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isOpen && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="text-[10px] h-7 px-2"
+                      onClick={(e) => { e.stopPropagation(); deleteAllInCategory(cat.id); }}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" /> Limpar
+                    </Button>
+                  )}
+                  {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                 </div>
               </div>
-              {expandedCat === cat.id ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-            </div>
 
-            <AnimatePresence>
-              {expandedCat === cat.id && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="border-t border-border/20"
-                >
-                  <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
-                    {accountsForCategory(cat.id).length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-4">Nenhuma conta disponível</p>
-                    ) : (
-                      accountsForCategory(cat.id).map((acc) => (
-                        <div key={acc.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/5 hover:bg-muted/10 transition-colors">
-                          <div className="flex-1 min-w-0 mr-3">
-                            <p className="text-xs text-foreground truncate">{acc.title || acc.lzt_item_id}</p>
-                            <p className="text-[10px] text-muted-foreground">R$ {acc.price_brl.toFixed(2)} · ID: {acc.lzt_item_id}</p>
-                          </div>
+              {/* Expanded Content */}
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="border-t border-border/20"
+                  >
+                    {/* Filters */}
+                    <div className="p-3 border-b border-border/10 flex items-center gap-2 flex-wrap">
+                      <div className="relative flex-1 min-w-[180px]">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          value={accountSearch}
+                          onChange={(e) => setAccountSearch(e.target.value)}
+                          placeholder="Buscar por título ou ID..."
+                          className="pl-8 h-8 text-xs bg-background"
+                        />
+                      </div>
+                      <div className="flex items-center rounded-lg border border-border/40 overflow-hidden">
+                        {(["available", "sold", "all"] as const).map((f) => (
                           <button
-                            onClick={() => {
-                              if (confirm(`Remover conta "${acc.title || acc.lzt_item_id}"?`)) deleteAccount(acc.id);
-                            }}
-                            disabled={deletingId === acc.id}
-                            className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                            key={f}
+                            onClick={() => setStatusFilter(f)}
+                            className={`px-3 py-1.5 text-[10px] font-medium transition-colors ${statusFilter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/10"}`}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            {f === "available" ? "Disponíveis" : f === "sold" ? "Vendidas" : "Todas"}
                           </button>
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{catAccounts.length} resultados</span>
+                    </div>
+
+                    {/* Account List */}
+                    <div className="max-h-[500px] overflow-y-auto">
+                      {catAccounts.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-8">Nenhuma conta encontrada</p>
+                      ) : (
+                        <div className="divide-y divide-border/10">
+                          {catAccounts.map((acc) => {
+                            const isEditing = editingAccount === acc.id;
+                            const accData = acc.data as Record<string, any> | null;
+                            const seller = accData?.seller?.username || "—";
+                            const region = accData?.region || accData?.title_info?.region || "—";
+
+                            return (
+                              <div key={acc.id} className="group">
+                                <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/5 transition-colors">
+                                  {/* Status dot */}
+                                  <div className={`h-2 w-2 rounded-full flex-shrink-0 ${acc.status === "available" ? "bg-green-500" : acc.status === "sold" ? "bg-red-500" : "bg-muted-foreground"}`} />
+
+                                  {/* Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-foreground truncate font-medium">{acc.title || "Sem título"}</p>
+                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                      <span className="text-[10px] text-primary font-semibold">R$ {acc.price_brl.toFixed(2)}</span>
+                                      <span className="text-[10px] text-muted-foreground">$ {acc.price_usd.toFixed(2)}</span>
+                                      <span className="text-[10px] text-muted-foreground">ID: {acc.lzt_item_id}</span>
+                                      <span className="text-[10px] text-muted-foreground">Seller: {seller}</span>
+                                      {region !== "—" && <span className="text-[10px] text-muted-foreground">Região: {region}</span>}
+                                      <span className="text-[10px] text-muted-foreground">{formatDate(acc.imported_at)}</span>
+                                      {acc.status === "sold" && acc.sold_price && (
+                                        <span className="text-[10px] text-green-500">Vendida: R$ {Number(acc.sold_price).toFixed(2)}</span>
+                                      )}
+                                      {acc.status === "sold" && acc.sold_at && (
+                                        <span className="text-[10px] text-muted-foreground">em {formatDate(acc.sold_at)}</span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Actions */}
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {acc.status === "available" && (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditingAccount(isEditing ? null : acc.id);
+                                            setEditTitle(acc.title || "");
+                                            setEditPrice(acc.price_brl.toString());
+                                          }}
+                                          className="p-1.5 rounded-lg hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors"
+                                          title="Editar"
+                                        >
+                                          <Edit2 className="h-3.5 w-3.5" />
+                                        </button>
+                                        <a
+                                          href={`https://lzt.market/${acc.lzt_item_id}/`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="p-1.5 rounded-lg hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors"
+                                          title="Ver no LZT"
+                                        >
+                                          <Eye className="h-3.5 w-3.5" />
+                                        </a>
+                                      </>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`Remover "${acc.title || acc.lzt_item_id}"?`)) deleteAccount(acc.id);
+                                      }}
+                                      disabled={deletingId === acc.id}
+                                      className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                                      title="Excluir"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Edit Form */}
+                                <AnimatePresence>
+                                  {isEditing && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="px-4 pb-3 bg-muted/5"
+                                    >
+                                      <div className="flex items-end gap-3 pt-2">
+                                        <div className="flex-1">
+                                          <label className="text-[10px] text-muted-foreground">Título</label>
+                                          <Input
+                                            value={editTitle}
+                                            onChange={(e) => setEditTitle(e.target.value)}
+                                            className="h-8 text-xs bg-background"
+                                          />
+                                        </div>
+                                        <div className="w-32">
+                                          <label className="text-[10px] text-muted-foreground">Preço (R$)</label>
+                                          <Input
+                                            type="number"
+                                            step="0.01"
+                                            value={editPrice}
+                                            onChange={(e) => setEditPrice(e.target.value)}
+                                            className="h-8 text-xs bg-background"
+                                          />
+                                        </div>
+                                        <Button size="sm" className="h-8 text-xs" onClick={() => updateAccount(acc.id)}>Salvar</Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setEditingAccount(null)}>Cancelar</Button>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ))}
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
