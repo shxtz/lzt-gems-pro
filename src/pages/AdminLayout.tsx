@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Package, Grid3X3, ShoppingCart, Store, MessageCircle,
-  Ticket, Wallet, Users, MessageSquare, Eye, LogOut, Settings
+  Ticket, Wallet, Users, MessageSquare, Eye, LogOut, Settings, Megaphone
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useQuery } from "@tanstack/react-query";
