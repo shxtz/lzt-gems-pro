@@ -27,7 +27,7 @@ const CrossSellBanner = ({ context }: CrossSellBannerProps) => {
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="absolute -top-2 -right-2 flex items-center justify-center h-7 w-7 rounded-full bg-gradient-gold shadow-[0_0_10px_hsl(var(--primary)/0.6)]"
           >
-            <span className="font-display text-[9px] font-black text-primary-foreground leading-none">-60%</span>
+            <span className="font-display text-[9px] font-black text-primary-foreground leading-none">-62%</span>
           </motion.div>
         </div>
         <div className="flex-1 min-w-0">
