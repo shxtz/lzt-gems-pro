@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AnimatedCursor from "react-animated-cursor";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
@@ -35,30 +36,38 @@ import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
+const DesktopCursor = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return null;
+  return (
+    <AnimatedCursor
+      innerSize={8}
+      outerSize={35}
+      innerScale={1}
+      outerScale={1.7}
+      outerAlpha={0}
+      innerStyle={{
+        backgroundColor: 'hsl(43, 84%, 55%)',
+        zIndex: '9999',
+      }}
+      outerStyle={{
+        border: '3px solid hsl(43, 84%, 55%)',
+        zIndex: '9999',
+      }}
+      clickables={[
+        'a', 'input[type="text"]', 'input[type="email"]',
+        'input[type="number"]', 'input[type="submit"]',
+        'input[type="image"]', 'label[for]', 'select',
+        'textarea', 'button', '.link', '[role="button"]',
+      ]}
+    />
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AnimatedCursor
-        innerSize={8}
-        outerSize={35}
-        innerScale={1}
-        outerScale={1.7}
-        outerAlpha={0}
-        innerStyle={{
-          backgroundColor: 'hsl(43, 84%, 55%)',
-          zIndex: '9999',
-        }}
-        outerStyle={{
-          border: '3px solid hsl(43, 84%, 55%)',
-          zIndex: '9999',
-        }}
-        clickables={[
-          'a', 'input[type="text"]', 'input[type="email"]',
-          'input[type="number"]', 'input[type="submit"]',
-          'input[type="image"]', 'label[for]', 'select',
-          'textarea', 'button', '.link', '[role="button"]',
-        ]}
-      />
+      <DesktopCursor />
       <Toaster />
       <Sonner />
       <BrowserRouter>

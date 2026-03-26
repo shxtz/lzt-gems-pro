@@ -255,7 +255,7 @@ const ClientArea = () => {
               </h1>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
-            <div className="ml-auto hidden sm:block">
+            <div className="sm:ml-auto">
               <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Saldo</p>
                 <p className="font-display text-lg text-primary">R$ {(profile?.balance || 0).toFixed(2)}</p>

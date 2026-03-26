@@ -75,7 +75,15 @@
 @layer base {
   * {
     @apply border-border;
-    cursor: none !important;
+  }
+
+  @media (pointer: fine) {
+    * {
+      cursor: none !important;
+    }
+    body {
+      cursor: none !important;
+    }
   }
 
   body {
@@ -83,7 +91,6 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    cursor: none !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -98,6 +105,14 @@
 }
 
 @layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .snap-container {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;

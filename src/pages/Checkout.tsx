@@ -9,6 +9,8 @@ import { Trash2, ShoppingBag, QrCode, Copy, Check, ArrowLeft } from "lucide-reac
 import logo from "@/assets/logo.png";
 import vbucksIcon from "@/assets/vbucks-icon.png";
 import CrossSellBanner from "@/components/marketing/CrossSellBanner";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const Checkout = () => {
   const { items, removeItem, clearCart, totalPrice } = useCart();
@@ -117,31 +119,36 @@ const Checkout = () => {
 
   if (items.length === 0 && !pixData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center">
-          <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <h1 className="font-display text-2xl text-foreground mb-2">Carrinho vazio</h1>
-          <p className="font-body text-sm text-muted-foreground mb-6">Adicione V-Bucks ao carrinho para continuar</p>
-          <button onClick={() => navigate("/")} className="rounded-xl bg-gradient-gold px-6 py-3 font-display text-sm font-bold uppercase tracking-wider text-primary-foreground">
-            Ver Produtos
-          </button>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center px-4 pt-28 pb-16">
+          <div className="text-center">
+            <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h1 className="font-display text-2xl text-foreground mb-2">Carrinho vazio</h1>
+            <p className="font-body text-sm text-muted-foreground mb-6">Adicione V-Bucks ao carrinho para continuar</p>
+            <button onClick={() => navigate("/")} className="rounded-xl bg-gradient-gold px-6 py-3 font-display text-sm font-bold uppercase tracking-wider text-primary-foreground">
+              Ver Produtos
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          <span className="font-body text-sm">Voltar</span>
-        </button>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="px-4 pt-24 pb-16">
+        <div className="max-w-2xl mx-auto">
+          <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="font-body text-sm">Voltar</span>
+          </button>
 
-        <div className="text-center mb-8">
-          <img src={logo} alt="VBucks Barato" className="h-12 w-12 mx-auto mb-3" />
-          <h1 className="font-display text-2xl text-gradient-gold">CHECKOUT</h1>
-        </div>
+          <div className="text-center mb-8">
+            <img src={logo} alt="VBucks Barato" className="h-12 w-12 mx-auto mb-3" />
+            <h1 className="font-display text-2xl text-gradient-gold">CHECKOUT</h1>
+          </div>
 
         {!pixData ? (
           <div className="space-y-6">
@@ -287,7 +294,9 @@ const Checkout = () => {
             </button>
           </motion.div>
         )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
