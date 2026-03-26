@@ -776,6 +776,19 @@ const AccountPreview = () => {
             <GameInventoryFull lztData={d} accountId={account.id} categoryName={realCategory} />
           </motion.div>
         )}
+        {/* Cross-sell V-Bucks */}
+        <div className="mt-8">
+          <CrossSellBanner context="preview" />
+        </div>
+
+        {/* Recommended Accounts */}
+        {account && lztCategory && (
+          <RecommendedAccounts
+            currentAccountId={account.id}
+            categoryId={account.category_id}
+            categoryName={adminCategoryName}
+          />
+        )}
       </div>
 
       <Footer />
