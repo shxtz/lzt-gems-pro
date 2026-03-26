@@ -201,13 +201,6 @@ const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
 /* ─── FORTNITE FEATURED HERO CARD ─── */
 const FortniteFeaturedCard = ({ category, onClick }: { category: ShopCategory; onClick: () => void }) => {
   const image = category.icon_url || SLUG_IMAGES[category.slug];
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => `${Math.floor(v).toLocaleString("pt-BR")}+`);
-
-  useEffect(() => {
-    const ctrl = animate(count, 4800, { duration: 2.5, ease: "easeOut" });
-    return () => ctrl.stop();
-  }, [count]);
 
   return (
     <motion.div
