@@ -287,6 +287,24 @@ const AdminLZT = () => {
   // Count active auto-imports
   const activeImports = categories?.filter((c) => c.auto_import).length || 0;
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !categories) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex);
+
+    queryClient.setQueryData(["lzt-categories"], reordered);
+
+    const updates = reordered.map((cat, i) =>
+      supabase.from("lzt_categories").update({ sort_order: i }).eq("id", cat.id)
+    );
+    await Promise.all(updates);
+    queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+    toast.success("Ordem atualizada!");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
