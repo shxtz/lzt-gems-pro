@@ -303,6 +303,40 @@ const ClientArea = () => {
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          Provedor de e-mail
+                        </label>
+                        <Input
+                          value={(() => {
+                            const domain = user?.email?.split("@")[1]?.toLowerCase() || "";
+                            const providers: Record<string, string> = {
+                              "gmail.com": "Google (Gmail)",
+                              "googlemail.com": "Google (Gmail)",
+                              "outlook.com": "Microsoft (Outlook)",
+                              "hotmail.com": "Microsoft (Hotmail)",
+                              "live.com": "Microsoft (Live)",
+                              "msn.com": "Microsoft (MSN)",
+                              "yahoo.com": "Yahoo Mail",
+                              "yahoo.com.br": "Yahoo Mail",
+                              "icloud.com": "Apple (iCloud)",
+                              "me.com": "Apple (iCloud)",
+                              "mac.com": "Apple (iCloud)",
+                              "protonmail.com": "ProtonMail",
+                              "proton.me": "ProtonMail",
+                              "uol.com.br": "UOL",
+                              "bol.com.br": "BOL",
+                              "terra.com.br": "Terra",
+                              "ig.com.br": "iG",
+                              "globo.com": "Globo",
+                              "zoho.com": "Zoho Mail",
+                            };
+                            return providers[domain] || domain || "Desconhecido";
+                          })()}
+                          disabled
+                          className="bg-muted/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
                           Nome de exibição
                         </label>
                         <Input
