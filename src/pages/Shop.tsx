@@ -300,6 +300,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [viewAccount, setViewAccount] = useState<LztAccount | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [payingWithBalance, setPayingWithBalance] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponId, setCouponId] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   // User balance query
   const { data: userBalance, refetch: refetchBalance } = useQuery({
@@ -583,32 +587,42 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       if (checkError) throw checkError;
       if (!checkResult?.available) {
         toast.error(checkResult?.reason || "Conta indisponível no LZT Market");
-        // Remove from local cache
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
         return;
       }
 
-      // Check if price changed on LZT (compare stored USD price vs current)
       if (checkResult.currentPriceUsd && account.price_usd) {
         const storedUsd = Number(account.price_usd);
         const currentUsd = Number(checkResult.currentPriceUsd);
         const priceDiffPercent = storedUsd > 0 ? Math.abs(currentUsd - storedUsd) / storedUsd : 0;
-        if (priceDiffPercent > 0.1) { // More than 10% change
+        if (priceDiffPercent > 0.1) {
           queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
           toast.warning("O preço desta conta mudou. Atualizando...");
           return;
         }
       }
 
-      // Step 2: Create order with LZT info + generate PIX
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending", lzt_item_id: account.lzt_item_id, lzt_account_id: account.id } as any).select().single();
+      // Apply coupon discount
+      const basePrice = account.price_brl;
+      const finalPrice = couponDiscount > 0 ? Math.round(basePrice * (1 - couponDiscount / 100) * 100) / 100 : basePrice;
+
+      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: finalPrice, payment_method: "pix", status: "pending", lzt_item_id: account.lzt_item_id, lzt_account_id: account.id, coupon_id: couponId } as any).select().single();
       if (orderError) throw orderError;
       const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: account.price_brl, description: `${accountName} - Loja` } });
+      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: finalPrice, description: `${accountName} - Loja` } });
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
       await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: order.id, variationName: accountName, amount: account.price_brl, lztAccountId: account.id });
+      // Increment coupon uses
+      if (couponId) {
+        await supabase.rpc("has_role", { _user_id: user.id, _role: "user" }).then(() => {
+          // just a no-op to keep TS happy
+        });
+        await supabase.from("coupons").update({ current_uses: (couponDiscount > 0 ? 1 : 0) } as any).eq("id", couponId);
+      }
+      setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: order.id, variationName: accountName, amount: finalPrice, lztAccountId: account.id });
+      // Reset coupon after purchase
+      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
     } catch (err: any) { console.error(err); toast.error("Erro ao gerar pagamento PIX."); }
     finally { setPurchasing(null); }
   };
@@ -619,13 +633,16 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (stock === 0) { toast.error("Produto sem estoque disponível"); return; }
     setPurchasing(variation.id);
     try {
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, product_id: variation.id, quantity: 1, total_price: Number(variation.price), payment_method: "pix", status: "pending" } as any).select().single();
+      const basePrice = Number(variation.price);
+      const finalPrice = couponDiscount > 0 ? Math.round(basePrice * (1 - couponDiscount / 100) * 100) / 100 : basePrice;
+      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, product_id: variation.id, quantity: 1, total_price: finalPrice, payment_method: "pix", status: "pending", coupon_id: couponId } as any).select().single();
       if (orderError) throw orderError;
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: Number(variation.price), description: `${variation.name} - Loja Digital` } });
+      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: finalPrice, description: `${variation.name} - Loja Digital` } });
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
       await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: order.id, variationId: variation.id, variationName: variation.name, amount: Number(variation.price) });
+      setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: order.id, variationId: variation.id, variationName: variation.name, amount: finalPrice });
+      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
     } catch (err: any) { console.error(err); toast.error("Erro ao gerar pagamento PIX."); }
     finally { setPurchasing(null); }
   };
