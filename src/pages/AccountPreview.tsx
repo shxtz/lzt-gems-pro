@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
+import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
