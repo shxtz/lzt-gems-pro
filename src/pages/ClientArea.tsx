@@ -212,6 +212,7 @@ const ClientArea = () => {
     paid: { label: "Pago", color: "text-green-500 bg-green-500/10" },
     cancelled: { label: "Cancelado", color: "text-destructive bg-destructive/10" },
     delivered: { label: "Entregue", color: "text-primary bg-primary/10" },
+    refund_needed: { label: "Reembolso", color: "text-orange-500 bg-orange-500/10" },
   };
 
   return (
