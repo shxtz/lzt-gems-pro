@@ -15,6 +15,41 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // ═══ AUTHENTICATION: Only service_role or admin can call this ═══
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const isServiceRole = token === serviceRoleKey;
+
+    if (!isServiceRole) {
+      // Verify admin role
+      const { data: userData } = await supabase.auth.getUser(token);
+      if (!userData?.user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .eq("role", "admin")
+        .single();
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const { variationId, buyerId, orderId } = await req.json();
 
     if (!variationId || !buyerId) {
@@ -50,12 +85,11 @@ Deno.serve(async (req) => {
         order_id: orderId || null,
       })
       .eq("id", stockItem.id)
-      .eq("status", "available") // Ensure it's still available (prevents double-selling)
+      .eq("status", "available")
       .select()
       .single();
 
     if (updateError || !updated) {
-      // Race condition: item was sold between select and update
       return new Response(
         JSON.stringify({ error: "Item já foi vendido. Tente novamente.", code: "RACE_CONDITION" }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -73,7 +107,6 @@ Deno.serve(async (req) => {
 
     // Send delivery email to buyer
     try {
-      // Get buyer email and product info
       const { data: profile } = await supabase
         .from("profiles")
         .select("email")
@@ -114,7 +147,6 @@ Deno.serve(async (req) => {
             },
           },
         });
-        console.log(`[DELIVERY EMAIL] Sent to ${profile.email} for order ${orderId}`);
       }
     } catch (emailErr) {
       // Non-fatal: log but don't fail the delivery
@@ -129,8 +161,8 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
-    console.error("Deliver product error:", err);
+  } catch (err: any) {
+    console.error("Deliver product error:", err.message);
     return new Response(
       JSON.stringify({ error: "Erro interno ao entregar produto" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
