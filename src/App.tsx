@@ -76,7 +76,7 @@ const App = () => (
                 <Route path="tickets" element={<AdminTickets />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="users" element={<AdminUsers />} />
-                <Route path="balance" element={<AdminBalance />} />
+                
                 <Route path="discord" element={<AdminDiscord />} />
                 <Route path="campaigns" element={<AdminCampaigns />} />
               </Route>
