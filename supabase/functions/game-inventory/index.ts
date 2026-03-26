@@ -329,24 +329,51 @@ function handleFortnite(data: any) {
       : [];
   const items = cosmetics.map((c: any) => {
     const rarity = (c.rarity || "common").toLowerCase();
-    const type = String(c.type || c.backendType || c.gameplayType || "outfit").toLowerCase();
+    const rawType = String(c.type || c.backendType || c.gameplayType || "outfit").toLowerCase();
+    // Normalize type for consistent categorization
+    let type = rawType;
+    if (rawType.includes("outfit") || rawType.includes("character") || rawType.includes("athena")) type = "outfit";
+    else if (rawType.includes("pickaxe") || rawType.includes("harvesting")) type = "pickaxe";
+    else if (rawType.includes("emote") || rawType.includes("dance") || rawType.includes("emoji")) type = "emote";
+    else if (rawType.includes("glider") || rawType.includes("umbrella")) type = "glider";
+    else if (rawType.includes("wrap") || rawType.includes("skin")) type = "wrap";
+    else if (rawType.includes("backpack") || rawType.includes("back bling")) type = "backbling";
+    else if (rawType.includes("loading") || rawType.includes("screen")) type = "loadingscreen";
+    else if (rawType.includes("contrail") || rawType.includes("trail")) type = "contrail";
+    else if (rawType.includes("music") || rawType.includes("jam")) type = "music";
+    else if (rawType.includes("spray") || rawType.includes("toy")) type = "spray";
+
+    // Detect if it's a shop item (items with shopHistory or introduced via item shop)
+    const isShopItem = !!(c.shopHistory?.length > 0 || c.isItemShop || c.shopOfferPrice || c.shop);
+
     return {
       id: c.id || (c.name || "").toLowerCase().replace(/\s+/g, "-"), name: c.name || "Cosmético",
       icon: c.icon || c.images?.icon || c.displayAssets?.[0]?.url || c.smallIcon || null, type, rarity,
       tier: FORTNITE_RARITIES[rarity] || FORTNITE_RARITIES.common,
+      isShopItem,
     };
   });
-  const collections = {
-    outfits: items.filter((item) => item.type.includes("outfit") || item.type.includes("skin")),
-    pickaxes: items.filter((item) => item.type.includes("pickaxe")),
-    emotes: items.filter((item) => item.type.includes("emote")),
-    gliders: items.filter((item) => item.type.includes("glider")),
+  const collections: Record<string, any[]> = {
+    outfits: items.filter((item) => item.type === "outfit"),
+    pickaxes: items.filter((item) => item.type === "pickaxe"),
+    emotes: items.filter((item) => item.type === "emote"),
+    gliders: items.filter((item) => item.type === "glider"),
+    backblings: items.filter((item) => item.type === "backbling"),
+    wraps: items.filter((item) => item.type === "wrap"),
   };
+  // Add remaining items not categorized above
+  const categorized = new Set(Object.values(collections).flat().map(i => i.id));
+  const others = items.filter(i => !categorized.has(i.id));
+  if (others.length > 0) collections.others = others;
+
   const tabs = [];
   if (collections.outfits.length > 0) tabs.push({ key: "outfits", label: "Skins", count: collections.outfits.length });
   if (collections.pickaxes.length > 0) tabs.push({ key: "pickaxes", label: "Picaretas", count: collections.pickaxes.length });
-  if (collections.emotes.length > 0) tabs.push({ key: "emotes", label: "Emotes", count: collections.emotes.length });
+  if (collections.emotes.length > 0) tabs.push({ key: "emotes", label: "Danças/Emotes", count: collections.emotes.length });
   if (collections.gliders.length > 0) tabs.push({ key: "gliders", label: "Planadores", count: collections.gliders.length });
+  if (collections.backblings.length > 0) tabs.push({ key: "backblings", label: "Mochilas", count: collections.backblings.length });
+  if (collections.wraps.length > 0) tabs.push({ key: "wraps", label: "Envelopamentos", count: collections.wraps.length });
+  if (collections.others?.length > 0) tabs.push({ key: "others", label: "Outros", count: collections.others.length });
   if (tabs.length === 0 && items.length > 0) tabs.push({ key: "all", label: "Itens", count: items.length });
   return { game: "fortnite", items, collections, tabs, theme: { primary: [157, 77, 187], accent: [47, 123, 199], bg: [20, 15, 35] } };
 }
