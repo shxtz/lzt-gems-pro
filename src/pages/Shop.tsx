@@ -1119,8 +1119,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
                               <span className="text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
-                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-[10px] h-8 px-3" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
-                                {purchasing === account.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><ShoppingCart className="h-3 w-3 mr-1" /> Comprar</>}
+                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-xs font-bold h-9 px-4" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
+                                {purchasing === account.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Comprar</>}
                               </Button>
                             </div>
                           </div>
