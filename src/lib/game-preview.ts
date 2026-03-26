@@ -34,6 +34,7 @@ const FORTNITE_RARITY_MAP: Record<string, typeof FN_LEGENDARY> = {
   legendary: FN_LEGENDARY,
   epic: FN_EPIC,
   rare: FN_RARE,
+  superrare: FN_RARE,
   uncommon: FN_UNCOMMON,
   common: FN_COMMON,
 };
@@ -115,7 +116,8 @@ function getFortniteType(entry: any): string {
 }
 
 function getFortniteIcon(entry: any): string {
-  return (
+  // Try explicit icon fields first
+  const explicit =
     entry?.icon ||
     entry?.images?.icon ||
     entry?.images?.smallIcon ||
@@ -124,9 +126,15 @@ function getFortniteIcon(entry: any): string {
     entry?.smallIcon ||
     entry?.image ||
     entry?.thumbnail ||
-    entry?.offerImage ||
-    ""
-  );
+    entry?.offerImage;
+  if (explicit) return explicit;
+
+  // Build URL from LZT cosmetic ID (e.g. "cid_515_athena_commando_m_barbequelarry")
+  const cosmeticId = entry?.id;
+  if (typeof cosmeticId === "string" && cosmeticId.length > 3) {
+    return `https://fortnite-api.com/images/cosmetics/br/${encodeURIComponent(cosmeticId)}/icon.png`;
+  }
+  return "";
 }
 
 /* ── Genshin Impact ────────────────────────────────────── */
@@ -231,7 +239,7 @@ export function getFortnitePreviewItems(data: any, limit = 9): GamePreviewItem[]
 
   if (cosmetics.length === 0) return [];
 
-  const rarityOrder: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+  const rarityOrder: Record<string, number> = { legendary: 5, epic: 4, superrare: 3, rare: 3, uncommon: 2, common: 1 };
   const typeOrder: Record<string, number> = { outfit: 5, glider: 4, emote: 3, pickaxe: 2, backbling: 1, wrap: 1 };
 
   return cosmetics
