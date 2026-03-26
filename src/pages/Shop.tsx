@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { getLztAccountImageUrl, getLztInventoryImages } from "@/lib/lzt-image";
 import { enrichValorantInventory, getQuickPreviewItems, getTierStyle, prewarmSkinsCatalog, type ValorantSkin, type QuickPreviewItem } from "@/lib/valorant-api";
 import { prewarmChampionsCatalog, getLoLQuickPreviewItems, type LoLPreviewItem } from "@/lib/lol-api";
+import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventory from "@/components/ValorantInventory";
 
