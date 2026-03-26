@@ -104,7 +104,9 @@ function toDataUrl(base64: string | null | undefined) {
 let genshinCharCache: Map<string, any> | null = null;
 let lolChampionCache: Map<string, any> | null = null;
 let ddragonVersion: string | null = null;
+let fortniteCatalogCache: Map<string, any> | null = null;
 let cacheTimestamp = 0;
+let fortniteCacheTimestamp = 0;
 const CACHE_TTL = 2 * 60 * 60 * 1000;
 
 async function ensureGenshinCache() {
@@ -320,62 +322,119 @@ async function handleLoL(data: any) {
   return { game: "lol", items, skins, champions, stats, tabs, theme: { primary: [200, 155, 60], accent: [30, 60, 100], bg: [10, 20, 40] } };
 }
 
-function handleFortnite(data: any) {
-  const rawCosmetics = data?.fortniteCosmetics || data?.fortnite_locker || data?.fortniteLocker || [];
-  const cosmetics: any[] = Array.isArray(rawCosmetics)
-    ? rawCosmetics
-    : rawCosmetics && typeof rawCosmetics === "object"
-      ? Object.values(rawCosmetics)
-      : [];
-  const items = cosmetics.map((c: any) => {
-    const rarity = (c.rarity || "common").toLowerCase();
-    const rawType = String(c.type || c.backendType || c.gameplayType || "outfit").toLowerCase();
-    // Normalize type for consistent categorization
-    let type = rawType;
-    if (rawType.includes("outfit") || rawType.includes("character") || rawType.includes("athena")) type = "outfit";
-    else if (rawType.includes("pickaxe") || rawType.includes("harvesting")) type = "pickaxe";
-    else if (rawType.includes("emote") || rawType.includes("dance") || rawType.includes("emoji")) type = "emote";
-    else if (rawType.includes("glider") || rawType.includes("umbrella")) type = "glider";
-    else if (rawType.includes("wrap") || rawType.includes("skin")) type = "wrap";
-    else if (rawType.includes("backpack") || rawType.includes("back bling")) type = "backbling";
-    else if (rawType.includes("loading") || rawType.includes("screen")) type = "loadingscreen";
-    else if (rawType.includes("contrail") || rawType.includes("trail")) type = "contrail";
-    else if (rawType.includes("music") || rawType.includes("jam")) type = "music";
-    else if (rawType.includes("spray") || rawType.includes("toy")) type = "spray";
+const FORTNITE_RARITY_ORDER: Record<string, number> = {
+  mythic: 0, transcendent: 0, unattainable: 0,
+  marvel: 0, dc: 0, icon: 0, starwars: 0, gaminglegends: 0,
+  dark: 1, frozen: 1, lava: 1, shadow: 1, slurp: 1,
+  legendary: 1,
+  epic: 2,
+  superrare: 3,
+  rare: 4,
+  uncommon: 5,
+  common: 6,
+};
 
-    // Detect if it's a shop item (items with shopHistory or introduced via item shop)
-    const isShopItem = !!(c.shopHistory?.length > 0 || c.isItemShop || c.shopOfferPrice || c.shop);
+const FORTNITE_RARITY_STYLES: Record<string, { key: string; name: string; color: number[]; bgColor: number[] }> = {
+  mythic: { key: "mythic", name: "Mítico", color: [180, 136, 45], bgColor: [90, 68, 20] },
+  marvel: { key: "marvel", name: "Marvel", color: [226, 54, 54], bgColor: [123, 26, 26] },
+  dc: { key: "dc", name: "DC", color: [74, 144, 217], bgColor: [26, 58, 107] },
+  icon: { key: "icon", name: "Ícone", color: [45, 213, 213], bgColor: [26, 92, 92] },
+  starwars: { key: "starwars", name: "Star Wars", color: [91, 91, 255], bgColor: [26, 26, 59] },
+  gaminglegends: { key: "gaminglegends", name: "Lenda Gamer", color: [155, 89, 182], bgColor: [75, 26, 107] },
+  dark: { key: "dark", name: "Sombrio", color: [142, 68, 173], bgColor: [45, 26, 61] },
+  frozen: { key: "frozen", name: "Congelado", color: [116, 185, 255], bgColor: [26, 74, 107] },
+  lava: { key: "lava", name: "Lava", color: [230, 126, 34], bgColor: [107, 42, 26] },
+  shadow: { key: "shadow", name: "Sombra", color: [108, 92, 231], bgColor: [26, 26, 46] },
+  slurp: { key: "slurp", name: "Slurp", color: [0, 206, 201], bgColor: [26, 74, 58] },
+  legendary: { key: "legendary", name: "Lendário", color: [245, 166, 35], bgColor: [199, 110, 42] },
+  epic: { key: "epic", name: "Épico", color: [180, 77, 255], bgColor: [107, 45, 139] },
+  superrare: { key: "superrare", name: "Super Raro", color: [212, 196, 98], bgColor: [139, 122, 46] },
+  rare: { key: "rare", name: "Raro", color: [77, 166, 255], bgColor: [31, 90, 143] },
+  uncommon: { key: "uncommon", name: "Incomum", color: [86, 209, 86], bgColor: [42, 110, 42] },
+  common: { key: "common", name: "Comum", color: [153, 153, 153], bgColor: [74, 74, 74] },
+};
 
-    return {
-      id: c.id || (c.name || "").toLowerCase().replace(/\s+/g, "-"), name: c.name || "Cosmético",
-      icon: c.icon || c.images?.icon || c.displayAssets?.[0]?.url || c.smallIcon || null, type, rarity,
-      tier: FORTNITE_RARITIES[rarity] || FORTNITE_RARITIES.common,
-      isShopItem,
-    };
-  });
-  const collections: Record<string, any[]> = {
-    outfits: items.filter((item) => item.type === "outfit"),
-    pickaxes: items.filter((item) => item.type === "pickaxe"),
-    emotes: items.filter((item) => item.type === "emote"),
-    gliders: items.filter((item) => item.type === "glider"),
-    backblings: items.filter((item) => item.type === "backbling"),
-    wraps: items.filter((item) => item.type === "wrap"),
+async function ensureFortniteCatalog() {
+  if (fortniteCatalogCache && Date.now() - fortniteCacheTimestamp < CACHE_TTL) return;
+  try {
+    const res = await fetch("https://fortnite-api.com/v2/cosmetics/br?language=pt-BR");
+    const json = await res.json();
+    fortniteCatalogCache = new Map();
+    for (const item of json.data || []) {
+      if (item.id) fortniteCatalogCache.set(item.id.toLowerCase(), item);
+    }
+    fortniteCacheTimestamp = Date.now();
+  } catch (e) {
+    console.error("Failed to load Fortnite catalog:", e);
+    if (!fortniteCatalogCache) fortniteCatalogCache = new Map();
+  }
+}
+
+function enrichFortniteItem(raw: any) {
+  const id = (raw.id || "").toLowerCase();
+  const catalogItem = fortniteCatalogCache?.get(id);
+  const icon = catalogItem?.images?.icon || catalogItem?.images?.smallIcon || catalogItem?.images?.featured || null;
+  const catalogRarity = catalogItem?.rarity?.value || "";
+  const rawRarity = typeof raw.rarity === "string" ? raw.rarity : "";
+  const rarity = (catalogRarity || rawRarity || "common").toLowerCase();
+  const tier = FORTNITE_RARITY_STYLES[rarity] || FORTNITE_RARITY_STYLES.common;
+
+  return {
+    id: raw.id || id,
+    name: catalogItem?.name || raw.title || raw.name || raw.id || "Cosmético",
+    icon,
+    type: raw.type || catalogItem?.type?.value?.toLowerCase() || "outfit",
+    rarity,
+    tier,
+    isShopItem: raw.from_shop === 1,
+    shopPrice: raw.shop_price || 0,
   };
-  // Add remaining items not categorized above
-  const categorized = new Set(Object.values(collections).flat().map(i => i.id));
-  const others = items.filter(i => !categorized.has(i.id));
-  if (others.length > 0) collections.others = others;
+}
+
+async function handleFortnite(data: any) {
+  await ensureFortniteCatalog();
+
+  const outfitsRaw: any[] = data?.fortniteSkins || data?.fortniteOutfit || data?.fortniteCosmetics?.filter?.((c: any) => (c.type || "").toLowerCase().includes("outfit")) || [];
+  const emotesRaw: any[] = data?.fortniteDance || [];
+  const pickaxesRaw: any[] = data?.fortnitePickaxe || [];
+  const glidersRaw: any[] = data?.fortniteGliders || [];
+
+  const sortByRarity = (arr: any[]) =>
+    arr.sort((a: any, b: any) => (FORTNITE_RARITY_ORDER[a.rarity] ?? 9) - (FORTNITE_RARITY_ORDER[b.rarity] ?? 9));
+
+  const outfits = sortByRarity(outfitsRaw.map(enrichFortniteItem));
+  const emotes = sortByRarity(emotesRaw.map(enrichFortniteItem));
+  const pickaxes = sortByRarity(pickaxesRaw.map(enrichFortniteItem));
+  const gliders = sortByRarity(glidersRaw.map(enrichFortniteItem));
+
+  const items = [...outfits, ...pickaxes, ...emotes, ...gliders];
+  const collections: Record<string, any[]> = {};
+  if (outfits.length > 0) collections.outfits = outfits;
+  if (pickaxes.length > 0) collections.pickaxes = pickaxes;
+  if (emotes.length > 0) collections.emotes = emotes;
+  if (gliders.length > 0) collections.gliders = gliders;
 
   const tabs = [];
-  if (collections.outfits.length > 0) tabs.push({ key: "outfits", label: "Skins", count: collections.outfits.length });
-  if (collections.pickaxes.length > 0) tabs.push({ key: "pickaxes", label: "Picaretas", count: collections.pickaxes.length });
-  if (collections.emotes.length > 0) tabs.push({ key: "emotes", label: "Danças/Emotes", count: collections.emotes.length });
-  if (collections.gliders.length > 0) tabs.push({ key: "gliders", label: "Planadores", count: collections.gliders.length });
-  if (collections.backblings.length > 0) tabs.push({ key: "backblings", label: "Mochilas", count: collections.backblings.length });
-  if (collections.wraps.length > 0) tabs.push({ key: "wraps", label: "Envelopamentos", count: collections.wraps.length });
-  if (collections.others?.length > 0) tabs.push({ key: "others", label: "Outros", count: collections.others.length });
+  if (outfits.length > 0) tabs.push({ key: "outfits", label: "Skins", count: outfitsRaw.length });
+  if (pickaxes.length > 0) tabs.push({ key: "pickaxes", label: "Picaretas", count: pickaxesRaw.length });
+  if (gliders.length > 0) tabs.push({ key: "gliders", label: "Planadores", count: glidersRaw.length });
+  if (emotes.length > 0) tabs.push({ key: "emotes", label: "Danças", count: emotesRaw.length });
   if (tabs.length === 0 && items.length > 0) tabs.push({ key: "all", label: "Itens", count: items.length });
-  return { game: "fortnite", items, collections, tabs, theme: { primary: [157, 77, 187], accent: [47, 123, 199], bg: [20, 15, 35] } };
+
+  return {
+    game: "fortnite", items, collections, tabs,
+    stats: {
+      level: data?.fortnite_level || data?.fortnite_book_level,
+      balance: data?.fortnite_balance,
+      country: data?.fortnite_country,
+      platform: data?.fortnite_platform,
+      skinCount: outfitsRaw.length,
+      pickaxeCount: pickaxesRaw.length,
+      gliderCount: glidersRaw.length,
+      emoteCount: emotesRaw.length,
+    },
+    theme: { primary: [157, 77, 187], accent: [47, 123, 199], bg: [20, 15, 35] },
+  };
 }
 
 function handleMinecraft(data: any) {
@@ -489,7 +548,7 @@ Deno.serve(async (req) => {
       case "genshin": result = await handleGenshin(lztData); break;
       case "honkai": result = await handleHonkai(lztData); break;
       case "lol": result = await handleLoL(lztData); break;
-      case "fortnite": result = handleFortnite(lztData); break;
+      case "fortnite": result = await handleFortnite(lztData); break;
       case "minecraft": result = handleMinecraft(lztData); break;
       case "zzz": result = handleZZZ(lztData); break;
       default: result = { game: "unknown", items: [], tabs: [], theme: { primary: [180, 140, 80], accent: [200, 160, 100], bg: [30, 25, 20] } };
