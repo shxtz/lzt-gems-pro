@@ -126,7 +126,7 @@ const CategoriesSection = () => {
             transition={{ delay: 0.1, duration: 0.5 }}
             className="inline-block font-body text-[10px] sm:text-[11px] text-primary uppercase tracking-[0.35em] mb-4 sm:mb-5 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5"
           >
-            ⬡ Explore
+            Explore
           </motion.span>
           <h2 className="font-display text-4xl sm:text-5xl md:text-6xl font-black mb-4 sm:mb-5 text-gradient-gold tracking-tight">
             CATEGORIAS
