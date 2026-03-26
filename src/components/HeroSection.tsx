@@ -73,7 +73,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
         <img
           src={heroBg}
           alt=""
-          className="h-full w-full object-cover sm:object-contain object-[65%_center] sm:object-center scale-125 sm:scale-100"
+          className="h-full w-full object-cover object-[65%_center] sm:object-center"
           style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
