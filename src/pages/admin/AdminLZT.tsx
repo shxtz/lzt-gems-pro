@@ -557,6 +557,8 @@ const CategoryCard = ({
           <div className="flex items-center gap-3">
             {getCategoryImage(category.name) ? (
               <img src={getCategoryImage(category.name)!} alt="" className="h-6 w-6 rounded object-contain" />
+            ) : category.icon_url?.startsWith("http") ? (
+              <img src={category.icon_url} alt="" className="h-6 w-6 rounded object-contain" />
             ) : (
               <span className="text-lg">{category.icon_url || "📦"}</span>
             )}
