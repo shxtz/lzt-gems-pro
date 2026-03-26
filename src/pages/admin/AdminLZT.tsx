@@ -187,14 +187,23 @@ const AdminLZT = () => {
   // Clear accounts for category
   const clearAccounts = useMutation({
     mutationFn: async (categoryId: string) => {
-      const { data, error } = await supabase.functions.invoke("lzt-import", {
-        body: { action: "clear", category_id: categoryId },
-      });
+      // First disable auto_import for this category
+      await supabase
+        .from("lzt_categories")
+        .update({ auto_import: false, auto_delete_reimport: false })
+        .eq("id", categoryId);
+      // Then delete all available accounts
+      const { error } = await supabase
+        .from("lzt_accounts")
+        .delete()
+        .eq("category_id", categoryId)
+        .eq("status", "available");
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
       toast.success("Contas removidas!");
     },
   });
