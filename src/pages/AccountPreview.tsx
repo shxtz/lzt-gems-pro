@@ -824,6 +824,78 @@ const AccountPreview = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
+      {/* PIX Modal */}
+      <AnimatePresence>
+        {pixData && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-primary/30 rounded-2xl p-6 max-w-md w-full space-y-5 shadow-gold relative">
+              <button onClick={() => setPixData(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3"><QrCode className="h-6 w-6 text-primary" /></div>
+                <h3 className="font-display text-lg text-foreground">Pagamento PIX</h3>
+                <p className="text-xs text-muted-foreground mt-1">{pixData.variationName}</p>
+                <p className="text-lg font-bold text-primary mt-2">R$ {pixData.amount.toFixed(2)}</p>
+              </div>
+              {pixData.qrcode && (
+                <div className="bg-white rounded-xl p-4 mx-auto w-fit">
+                  <img src={pixData.qrcode.startsWith("data:") ? pixData.qrcode : `data:image/png;base64,${pixData.qrcode}`} alt="QR Code PIX" className="w-48 h-48" />
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-display">Copia e Cola</p>
+                <div className="flex gap-2">
+                  <input readOnly value={pixData.copiaecola} className="flex-1 rounded-xl border border-border/40 bg-background px-3 py-2.5 text-xs text-foreground font-mono truncate" />
+                  <Button size="sm" variant="outline" onClick={copyPix} className="shrink-0">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
+                </div>
+              </div>
+              {user && (userBalance || 0) >= pixData.amount && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-display text-foreground">Pagar com Saldo</span>
+                    </div>
+                    <span className="text-xs text-primary font-medium">R$ {(userBalance || 0).toFixed(2)} disponível</span>
+                  </div>
+                  <Button onClick={handlePayWithBalance} disabled={payingWithBalance} className="w-full bg-primary text-primary-foreground font-display">
+                    {payingWithBalance ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processando...</> : <><Wallet className="h-4 w-4 mr-2" />Pagar R$ {pixData.amount.toFixed(2)} com Saldo</>}
+                  </Button>
+                </div>
+              )}
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/30" />
+                <span className="text-[10px] text-muted-foreground uppercase">ou pague via PIX</span>
+                <div className="flex-1 h-px bg-border/30" />
+              </div>
+              <Button onClick={confirmPaymentAndDeliver} disabled={checkingPayment} className="w-full bg-gradient-gold text-primary-foreground font-display">
+                {checkingPayment ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirmando...</> : "Já paguei - Confirmar"}
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center">Após pagar via PIX, clique em "Já paguei" para receber sua credencial.</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delivered Modal */}
+      <AnimatePresence>
+        {deliveredCredential && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDeliveredCredential(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-card border border-primary/30 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-gold">
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3"><Zap className="h-6 w-6 text-primary" /></div>
+                <h3 className="font-display text-lg text-foreground">Entrega Realizada!</h3>
+                <p className="text-xs text-muted-foreground mt-1">{deliveredCredential.name}</p>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                <CredentialDisplay credential={deliveredCredential.credential} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setDeliveredCredential(null)} className="flex-1">Fechar</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Back button */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-2">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground gap-1.5">
