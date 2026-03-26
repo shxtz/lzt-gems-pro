@@ -24,9 +24,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
 
   // Discord verification state
-  const [discordIdInput, setDiscordIdInput] = useState("");
   const [discordVerification, setDiscordVerification] = useState<DiscordVerification | null>(null);
-  const [verifying, setVerifying] = useState(false);
   const [verifyOpened, setVerifyOpened] = useState(false);
 
   const { signIn, signUp, user } = useAuth();
