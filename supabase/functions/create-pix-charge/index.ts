@@ -181,7 +181,7 @@ serve(async (req) => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          calendario: { expiracao: 3600 },
+          calendario: { expiracao: 1800 },
           valor: { original: numericAmount.toFixed(2) },
           chave: config.pixKey,
           solicitacaoPagador: description || `Pedido ${orderId}`,
