@@ -337,10 +337,16 @@ const AdminLZT = () => {
           <h1 className="font-display text-2xl text-foreground">Integração LZT Market</h1>
         </div>
         <button
-          onClick={() => clearAll.mutate()}
-          className="flex items-center gap-2 rounded-xl border border-destructive/50 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition"
+          onClick={() => {
+            if (confirm("Tem certeza? Isso vai PARAR todas as importações e APAGAR todas as contas LZT.")) {
+              clearAll.mutate();
+            }
+          }}
+          disabled={clearAll.isPending}
+          className="flex items-center gap-2 rounded-xl border border-destructive/50 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition disabled:opacity-50"
         >
-          <Trash2 className="h-3 w-3" /> Apagar todas contas LZT
+          {clearAll.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+          Apagar todas contas LZT
         </button>
       </div>
 
