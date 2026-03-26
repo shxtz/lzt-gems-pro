@@ -53,7 +53,7 @@ const DetailCard = ({ icon: Icon, label, value, image }: { icon: any; label: str
         <Icon className="h-4 w-4 text-primary" />
       )}
     </div>
-    <div className="min-w-0 flex-1 overflow-hidden">
+    <div className="min-w-0 flex-1">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
       <p className="text-sm text-foreground font-medium break-all whitespace-normal">{String(value)}</p>
     </div>

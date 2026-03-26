@@ -81,9 +81,25 @@ interface PixData {
   lztAccountId?: string;
 }
 
-const getShortId = (lztItemId: string) => {
-  const num = parseInt(lztItemId.slice(-6), 10);
-  return isNaN(num) ? lztItemId.slice(-6) : String(num);
+const GAME_PREFIX_MAP: Record<string, string> = {
+  valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",
+  genshin: "GI", honkai: "HSR", minecraft: "MC", steam: "STM",
+  telegram: "TG", discord: "DC", zzz: "ZZZ", brawl: "BS",
+};
+
+const getGamePrefix = (cat: string): string => {
+  const n = cat.toLowerCase();
+  for (const [k, prefix] of Object.entries(GAME_PREFIX_MAP)) {
+    if (n.includes(k)) return prefix;
+  }
+  return "ACC";
+};
+
+const getMaskedName = (cat: string, lztItemId: string): string => {
+  const prefix = getGamePrefix(cat);
+  const hash = Math.abs([...lztItemId].reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0));
+  const num = String(hash).slice(-5).padStart(5, "0");
+  return `${prefix}-VB#${num}`;
 };
 
 // Category-specific gradient themes and icons
@@ -342,7 +358,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
       const matchCategory = !selectedShopCategory || selectedLztCategoryIds.has(a.category_id);
       const matchSearch = !searchTerm ||
-        `CONTA BARATA #${getShortId(a.lzt_item_id)}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getMaskedName(adminCategoryName, a.lzt_item_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
         adminCategoryName.toLowerCase().includes(searchTerm.toLowerCase());
       const d = a.data as any;
       const country = d?.telegram_country || d?.discord_country;
@@ -408,7 +424,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       // Step 2: Create order + generate PIX
       const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending" }).select().single();
       if (orderError) throw orderError;
-      const accountName = `CONTA BARATA #${getShortId(account.lzt_item_id)}`;
+      const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: account.price_brl, description: `${accountName} - Loja` } });
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
@@ -685,7 +701,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
               <div className="p-6 space-y-4">
                 <h3 className="font-display text-lg text-foreground">
-                  CONTA BARATA #{getShortId(viewAccount.lzt_item_id)}
+                  {getMaskedName(modalRealCategory, viewAccount.lzt_item_id)}
                 </h3>
 
                 {/* Account Details - per category */}
@@ -1086,7 +1102,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                           <div className="p-4 space-y-3">
                             <h3 className="font-display text-sm text-foreground font-semibold">
-                              CONTA BARATA #{getShortId(account.lzt_item_id)}
+                              {getMaskedName(getCategoryName(account.category_id), account.lzt_item_id)}
                             </h3>
                             {isAdmin && (
                               <a
