@@ -451,7 +451,6 @@ const AdminLZT = () => {
             </div>
           </SortableContext>
         </DndContext>
-        </div>
       )}
     </div>
   );
