@@ -387,7 +387,6 @@ Deno.serve(async (req) => {
       // ═══ SEND DISCORD: DELIVERY RESULT ═══
       const discordDeliveryUrl = Deno.env.get("DISCORD_WEBHOOK_DELIVERIES") || discordSalesUrl;
       if (discordDeliveryUrl && deliverySuccess) {
-        // Get credential from delivery_logs if not returned directly
         if (!deliveredCredential) {
           const { data: log } = await supabase
             .from("delivery_logs")
@@ -399,18 +398,30 @@ Deno.serve(async (req) => {
           deliveredCredential = log?.credential_delivered || null;
         }
 
+        const credLines = deliveredCredential ? deliveredCredential.split("\n").filter(Boolean).map((l: string) => `• ${l}`).join("\n") : "N/A";
+        const discordMentionDel = buyer?.discord_id ? `<@${buyer.discord_id}>` : "N/A";
+        const nowDel = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        let deliveryProductName = "Produto";
+        if (order.lzt_item_id) {
+          deliveryProductName = `LZT-${order.lzt_item_id}`;
+        } else if (order.product_id) {
+          const { data: p } = await supabase.from("products").select("name").eq("id", order.product_id).maybeSingle();
+          deliveryProductName = p?.name || "Produto";
+        }
+        const lztLinkDel = order.lzt_item_id ? `\n🔗 [Ver no LZT](https://lzt.market/${order.lzt_item_id}/)` : "";
+
         await sendDiscordEmbed(discordDeliveryUrl, [{
-          title: "📦 Entrega Realizada",
-          color: 0x00BFFF,
+          title: "✅ Entrega automática realizada",
+          color: 0x00FF00,
           fields: [
-            { name: "Pedido", value: `\`${order.id}\``, inline: true },
-            { name: "Valor", value: `R$ ${Number(order.total_price).toFixed(2)}`, inline: true },
-            { name: "Cliente", value: `${pixInfo.clientName || "N/A"}${pixInfo.clientDoc ? ` (${pixInfo.clientDoc})` : ""}`, inline: true },
-            { name: "Origem", value: order.lzt_item_id ? "LZT Market" : "Estoque", inline: true },
-            { name: "Credenciais", value: deliveredCredential ? `\`\`\`${deliveredCredential.substring(0, 500)}\`\`\`` : "N/A", inline: false },
-            { name: "Entrega", value: "✅ Automática", inline: true },
+            { name: "🏷️ Produto", value: `${deliveryProductName}${lztLinkDel}`, inline: true },
+            { name: "💰 Valor Venda", value: `R$ ${Number(order.total_price).toFixed(2).replace(".", ",")}`, inline: true },
+            { name: "👤 Cliente", value: `${buyer?.email || "N/A"}\n🆔 ID: \`${order.user_id || "N/A"}\`\n✨ Discord: ${discordMentionDel}`, inline: false },
+            { name: "🔑 ID Pedido", value: `\`${order.id}\``, inline: false },
+            { name: "📦 Status", value: "Credenciais entregues com sucesso ao cliente", inline: false },
+            { name: "📮 Detalhes entregues", value: deliveredCredential ? `\`\`\`\n${credLines.substring(0, 900)}\n\`\`\`` : "N/A", inline: false },
           ],
-          footer: { text: "VBUCKS BARATO" },
+          footer: { text: `VBUCKS BARATO • Entrega concluída • ${nowDel}` },
           timestamp: new Date().toISOString(),
         }]);
       }
