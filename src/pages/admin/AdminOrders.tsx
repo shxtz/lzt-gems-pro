@@ -293,6 +293,26 @@ const AdminOrders = () => {
                         <option value="refund_needed">Reembolso Necessário</option>
                         <option value="refunded">Reembolsado</option>
                       </select>
+                      {(order.status === "delivered" || order.status === "paid" || order.status === "refund_needed") && order.user_id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (confirm(`Reembolsar R$ ${Number(order.total_price).toFixed(2)} em saldo para o cliente?`)) {
+                              refundToBalance.mutate({
+                                orderId: order.id,
+                                userId: order.user_id!,
+                                amount: Number(order.total_price),
+                              });
+                            }
+                          }}
+                          disabled={refundToBalance.isPending}
+                          className="text-orange-400 border-orange-500/30 hover:bg-orange-500/10 gap-1.5"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Reembolsar em Saldo
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
