@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -8,12 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const RESTORECORD_VERIFY_URL = "https://discord.com/oauth2/authorize?client_id=1158525654359355524&redirect_uri=https://restorecord.com/api/callback&response_type=code&scope=identify+guilds.join&state=1427086108063174698&prompt=none";
-const DISCORD_CALLBACK_PATH = "/auth/discord-callback";
+const VERIFIED_DISCORD_STORAGE_KEY = "restorecord_verified";
+const PENDING_DISCORD_LINK_STORAGE_KEY = "restorecord_pending_link";
 
 interface DiscordVerification {
   discord_id: string;
   username: string;
   avatar: string | null;
+}
+
+interface PendingDiscordLink extends DiscordVerification {
+  display_name: string;
+  email: string;
 }
 
 const AuthPage = () => {
@@ -24,15 +30,79 @@ const AuthPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [discordVerification, setDiscordVerification] = useState<DiscordVerification | null>(null);
+  const appliedDiscordIdRef = useRef<string | null>(null);
 
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // If already logged in, redirect
   useEffect(() => {
-    if (user) navigate("/");
+    if (!user) return;
+
+    const pendingRaw = localStorage.getItem(PENDING_DISCORD_LINK_STORAGE_KEY);
+    if (!pendingRaw) {
+      navigate("/");
+      return;
+    }
+
+    let cancelled = false;
+
+    const finalizePendingDiscordLink = async () => {
+      try {
+        const pending = JSON.parse(pendingRaw) as PendingDiscordLink;
+        const { error: linkError } = await supabase.functions.invoke("restorecord-verify", {
+          body: {
+            action: "link_profile",
+            discord_id: pending.discord_id,
+            display_name: pending.display_name,
+          },
+        });
+
+        if (linkError) throw linkError;
+
+        localStorage.removeItem(PENDING_DISCORD_LINK_STORAGE_KEY);
+        localStorage.removeItem(VERIFIED_DISCORD_STORAGE_KEY);
+
+        if (!cancelled) {
+          setDiscordVerification({
+            discord_id: pending.discord_id,
+            username: pending.username,
+            avatar: pending.avatar,
+          });
+          toast.success("Discord vinculado com sucesso!");
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error("Não foi possível concluir a vinculação do Discord.");
+        }
+      } finally {
+        if (!cancelled) {
+          navigate("/");
+        }
+      }
+    };
+
+    void finalizePendingDiscordLink();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, navigate]);
+
+  const applyDiscordVerification = (payload: DiscordVerification) => {
+    appliedDiscordIdRef.current = payload.discord_id;
+    setDiscordVerification(payload);
+    setDisplayName((current) => current || payload.username || "");
+    setIsLogin(false);
+    setError("");
+
+    try {
+      localStorage.setItem(
+        VERIFIED_DISCORD_STORAGE_KEY,
+        JSON.stringify({ type: "RESTORECORD_VERIFIED", ...payload }),
+      );
+    } catch {}
+  };
 
   // Check for RestoreCord callback params (fallback for same-tab redirect)
   useEffect(() => {
@@ -41,13 +111,15 @@ const AuthPage = () => {
     const avatar = searchParams.get("avatar");
 
     if (discordId) {
-      setDiscordVerification({
+      const alreadyApplied = appliedDiscordIdRef.current === discordId;
+      applyDiscordVerification({
         discord_id: discordId,
         username: username || "Discord User",
         avatar: avatar || null,
       });
-      setIsLogin(false);
-      toast.success(`Discord verificado: ${username || discordId}`);
+      if (!alreadyApplied) {
+        toast.success(`Discord verificado: ${username || discordId}`);
+      }
     }
   }, [searchParams]);
 
@@ -55,15 +127,15 @@ const AuthPage = () => {
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "RESTORECORD_VERIFIED") {
-        setDiscordVerification({
+        const alreadyApplied = appliedDiscordIdRef.current === event.data.discord_id;
+        applyDiscordVerification({
           discord_id: event.data.discord_id,
           username: event.data.username || "Discord User",
           avatar: event.data.avatar || null,
         });
-        setIsLogin(false);
-        toast.success(`Discord verificado: ${event.data.username || event.data.discord_id}`);
-        // Clean up localStorage
-        try { localStorage.removeItem("restorecord_verified"); } catch {}
+        if (!alreadyApplied) {
+          toast.success(`Discord verificado: ${event.data.username || event.data.discord_id}`);
+        }
       }
     };
     window.addEventListener("message", handler);
@@ -71,18 +143,19 @@ const AuthPage = () => {
     // Also poll localStorage as fallback (in case postMessage was missed)
     const poll = setInterval(() => {
       try {
-        const stored = localStorage.getItem("restorecord_verified");
+        const stored = localStorage.getItem(VERIFIED_DISCORD_STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored);
           if (data?.type === "RESTORECORD_VERIFIED" && data.discord_id) {
-            setDiscordVerification({
+            const alreadyApplied = appliedDiscordIdRef.current === data.discord_id;
+            applyDiscordVerification({
               discord_id: data.discord_id,
               username: data.username || "Discord User",
               avatar: data.avatar || null,
             });
-            setIsLogin(false);
-            toast.success(`Discord verificado: ${data.username || data.discord_id}`);
-            localStorage.removeItem("restorecord_verified");
+            if (!alreadyApplied) {
+              toast.success(`Discord verificado: ${data.username || data.discord_id}`);
+            }
           }
         }
       } catch {}
@@ -113,7 +186,9 @@ const AuthPage = () => {
         setError(error.message.includes("Timeout") ? error.message : "Email ou senha inválidos");
       } else {
         toast.success("Login realizado com sucesso!");
-        navigate("/");
+        if (!localStorage.getItem(PENDING_DISCORD_LINK_STORAGE_KEY)) {
+          navigate("/");
+        }
       }
     } else {
       if (!discordVerification) {
@@ -127,25 +202,22 @@ const AuthPage = () => {
         return;
       }
 
+      const pendingDiscordLink: PendingDiscordLink = {
+        ...discordVerification,
+        email,
+        display_name: displayName.trim() || discordVerification.username,
+      };
+
+      try {
+        localStorage.setItem(PENDING_DISCORD_LINK_STORAGE_KEY, JSON.stringify(pendingDiscordLink));
+      } catch {}
+
       const { error: signUpError } = await signUp(email, password);
       if (signUpError) {
+        try { localStorage.removeItem(PENDING_DISCORD_LINK_STORAGE_KEY); } catch {}
         setError(signUpError.message.includes("Timeout") ? signUpError.message : "Erro ao criar conta. Tente outro email.");
       } else {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            await supabase.functions.invoke("restorecord-verify", {
-              body: {
-                action: "link_profile",
-                discord_id: discordVerification.discord_id,
-                user_id: session.user.id,
-              },
-            });
-          }
-        } catch {
-          // Profile linking will be retried on login
-        }
-        toast.success("Conta criada! Verifique seu email para confirmar.");
+        toast.success("Conta criada! Confirme seu email e faça login para concluir a vinculação do Discord.");
       }
     }
     setLoading(false);
@@ -290,7 +362,7 @@ const AuthPage = () => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => { setIsLogin(!isLogin); setError(""); setDiscordVerification(null); }}
+            onClick={() => { setIsLogin(!isLogin); setError(""); }}
             className="font-body text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             {isLogin ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
