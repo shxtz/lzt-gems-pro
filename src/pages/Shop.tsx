@@ -370,8 +370,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     queryKey: ["shop-categories-list"],
     enabled: authReady,
     retry: 1,
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000,
     initialData: () => readCache<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES),
     initialDataUpdatedAt: 0,
     queryFn: async () => {
@@ -380,7 +380,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
           supabase.from("shop_categories").select("id, name, slug, emoji, icon_url, sort_order").eq("visible", true).order("sort_order"),
         );
         if (error) throw error;
-        const nextData = (data && data.length > 0 ? data : SHOP_FALLBACK_CATEGORIES) as ShopCategory[];
+        const nextData = (data && data.length > 0 ? data.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)) : SHOP_FALLBACK_CATEGORIES) as ShopCategory[];
         writeCache(SHOP_CACHE_KEYS.shopCategories, nextData);
         return nextData;
       } catch {
