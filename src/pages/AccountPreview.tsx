@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { withTimeout } from "@/lib/supabase-resilience";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
   BarChart3, Coins, Mail, Phone, Clock, Gamepad2, Loader2, Crosshair,
-  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown, Key, Check
+  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown, Key, Check,
+  QrCode, Copy, X, Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 import { useState } from "react";
+import CredentialDisplay from "@/components/CredentialDisplay";
 import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import RecommendedAccounts from "@/components/marketing/RecommendedAccounts";
