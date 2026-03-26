@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Package, Grid3X3, ShoppingCart, Store, MessageCircle,
-  Ticket, Wallet, Users, MessageSquare, Eye, LogOut, Settings, Megaphone
+  Ticket, Wallet, Users, MessageSquare, Eye, LogOut, Settings, Megaphone, DollarSign
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ const navItems = [
   { title: "Chat", url: "/admin/tickets", icon: MessageCircle, badge: true },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
   { title: "Usuários", url: "/admin/users", icon: Users },
+  { title: "Saldo", url: "/admin/balance", icon: DollarSign },
   { title: "Discord API", url: "/admin/discord", icon: MessageSquare },
   { title: "Marketing", url: "/admin/campaigns", icon: Megaphone },
 ];
