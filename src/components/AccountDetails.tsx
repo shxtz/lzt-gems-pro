@@ -45,7 +45,7 @@ const formatDate = (dateStr?: string | number | null) => {
 };
 
 const DetailCard = ({ icon: Icon, label, value, image }: { icon: any; label: string; value: string | number; image?: string | null }) => (
-  <div className="rounded-xl bg-muted/10 border border-border/20 p-3 flex items-center gap-2.5">
+  <div className="rounded-xl bg-muted/10 border border-border/20 p-3 flex items-start gap-2.5">
     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
       {image ? (
         <img src={image} alt="" className="h-5 w-5 object-contain" />
@@ -53,9 +53,9 @@ const DetailCard = ({ icon: Icon, label, value, image }: { icon: any; label: str
         <Icon className="h-4 w-4 text-primary" />
       )}
     </div>
-    <div className="min-w-0">
+    <div className="min-w-0 flex-1 overflow-hidden">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-sm text-foreground font-medium break-words">{String(value)}</p>
+      <p className="text-sm text-foreground font-medium break-all whitespace-normal">{String(value)}</p>
     </div>
   </div>
 );
