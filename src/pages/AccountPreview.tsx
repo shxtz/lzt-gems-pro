@@ -18,6 +18,7 @@ import GameInventoryFull from "@/components/inventory/GameInventoryFull";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
+import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -426,6 +427,13 @@ const AccountPreview = () => {
   const valInventory = d?.valorantInventory;
   const hasValInventory = !!(valInventory && typeof valInventory === "object");
 
+  // Use admin category name for game detection (more reliable than LZT platform name)
+  const adminCategoryName = lztCategory?.name || "Conta";
+  const realCategory = adminCategoryName;
+  const catLower = realCategory.toLowerCase();
+  const isValorantAccount = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
+  const isLoLAccount = catLower.includes("league") || catLower.includes("lol");
+
   // Fetch enriched inventory from edge function for the 3x3 grid
   const { data: enrichedInventory } = useQuery({
     queryKey: ["enriched-inventory", account?.id],
@@ -436,8 +444,18 @@ const AccountPreview = () => {
       );
       return data;
     },
-    enabled: !!account?.id && hasValInventory,
+    enabled: !!account?.id && hasValInventory && isValorantAccount,
     staleTime: 5 * 60 * 1000,
+  });
+
+  useQuery({
+    queryKey: ["lol-preview-catalog"],
+    queryFn: async () => {
+      await prewarmChampionsCatalog();
+      return true;
+    },
+    enabled: isLoLAccount,
+    staleTime: 60 * 60 * 1000,
   });
 
   if (isLoading) {
@@ -462,21 +480,32 @@ const AccountPreview = () => {
     );
   }
 
-  // Use admin category name for game detection (more reliable than LZT platform name)
-  const adminCategoryName = lztCategory?.name || "Conta";
-  const realCategory = adminCategoryName;
   const theme = getTheme(realCategory);
   const CategoryIcon = theme.Icon;
   const mainImage = getLztAccountImageUrl(d, realCategory);
   const lztInv = getLztInventoryImages(d);
 
-  // Determine game type
-  const catLower = realCategory.toLowerCase();
-  const isValorantAccount = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
-  const isLoLAccount = catLower.includes("league") || catLower.includes("lol");
-
   const enrichedSkins = enrichedInventory?.skins || [];
-  const hasIndividualItems = enrichedSkins.length > 0 || (isValorantAccount && hasValInventory);
+  const lolPreviewItems = isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : [];
+
+  const previewTiles = isLoLAccount
+    ? lolPreviewItems.map((item) => ({
+        id: String(item.id),
+        image: item.imageUrl,
+        alt: item.skinName,
+        tier: item.tier,
+      }))
+    : isValorantAccount
+      ? enrichedSkins.map((skin: any) => ({
+          id: skin.uuid,
+          image: skin.icon,
+          alt: skin.name,
+          tier: skin.tier,
+          tierIcon: skin.tierIcon,
+        }))
+      : [];
+
+  const hasIndividualItems = previewTiles.length > 0;
   const hasInventory = hasIndividualItems || Object.values(lztInv).some(v => v !== null);
   const allImages = getAllPreviewImages(d, realCategory);
   const shortId = getShortId(account.lzt_item_id);
@@ -525,13 +554,13 @@ const AccountPreview = () => {
             {hasIndividualItems ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
                 <div className="grid grid-cols-3 gap-[1px] bg-border/10">
-                  {enrichedSkins.slice(0, 9).map((skin: any, i: number) => {
-                    const tier = skin.tier;
+                  {previewTiles.slice(0, 9).map((item: any, i: number) => {
+                    const tier = item.tier;
                     const tileColor = tier ? `rgb(${tier.tile[0]}, ${tier.tile[1]}, ${tier.tile[2]})` : undefined;
                     const outlineColor = tier ? `rgb(${tier.outline[0]}, ${tier.outline[1]}, ${tier.outline[2]})` : undefined;
                     return (
                       <div
-                        key={skin.uuid + i}
+                        key={item.id + i}
                         className="relative aspect-square overflow-hidden bg-card"
                         style={{
                           background: tileColor
@@ -540,18 +569,18 @@ const AccountPreview = () => {
                           border: outlineColor ? `1px solid ${outlineColor}40` : undefined,
                         }}
                       >
-                        {skin.icon && (
+                        {item.image && (
                           <img
-                            src={skin.icon}
-                            alt={skin.name}
+                            src={item.image}
+                            alt={item.alt}
                             className="absolute inset-0 w-full h-full object-contain p-2"
                             loading="lazy"
                             style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
                           />
                         )}
-                        {skin.tierIcon && (
+                        {item.tierIcon && (
                           <div className="absolute top-1.5 right-1.5">
-                            <img src={skin.tierIcon} alt="" className="h-4 w-4 drop-shadow-md" />
+                            <img src={item.tierIcon} alt="" className="h-4 w-4 drop-shadow-md" />
                           </div>
                         )}
                       </div>
