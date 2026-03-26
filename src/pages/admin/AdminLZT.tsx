@@ -199,28 +199,30 @@ const AdminLZT = () => {
     },
   });
 
-  // Clear all accounts + disable all auto imports
+  // Clear all accounts + disable ALL auto imports globally
   const clearAll = useMutation({
     mutationFn: async () => {
-      // First disable auto_import on all categories
-      const { error: updateError } = await supabase
+      // 1) Disable auto_import AND auto_delete_reimport on ALL categories
+      const { error: e1 } = await supabase
         .from("lzt_categories")
         .update({ auto_import: false, auto_delete_reimport: false })
-        .eq("auto_import", true);
-      if (updateError) throw updateError;
-
-      // Then clear all accounts
-      const { data, error } = await supabase.functions.invoke("lzt-import", {
-        body: { action: "clear_all" },
-      });
-      if (error) throw error;
-      return data;
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e1) throw e1;
+      // 2) Delete ALL lzt_accounts regardless of status
+      const { error: e2 } = await supabase
+        .from("lzt_accounts")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e2) throw e2;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
       queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
       toast.success("Todas as importações pausadas e contas removidas!");
     },
+    onError: (e) => toast.error(`Erro: ${e.message}`),
   });
 
   // Import single by ID
