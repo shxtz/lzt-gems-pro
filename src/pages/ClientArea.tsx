@@ -5,7 +5,7 @@ import { withTimeout } from "@/lib/supabase-resilience";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight } from "lucide-react";
+import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -79,6 +79,45 @@ const ClientArea = () => {
       }
     },
   });
+
+  // Fetch delivery logs for all delivered orders
+  const deliveredOrderIds = (orders ?? []).filter((o: any) => o.status === "delivered").map((o: any) => o.id);
+  const { data: deliveryLogs } = useQuery({
+    queryKey: ["client-delivery-logs", deliveredOrderIds],
+    enabled: deliveredOrderIds.length > 0,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("delivery_logs")
+            .select("order_id, credential_delivered")
+            .in("order_id", deliveredOrderIds),
+        );
+        if (error) throw error;
+        return data ?? [];
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  const credentialsByOrderId = (deliveryLogs ?? []).reduce<Record<string, string>>((acc, log: any) => {
+    acc[log.order_id] = log.credential_delivered;
+    return acc;
+  }, {});
+
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+
+  const copyCredential = (orderId: string, credential: string) => {
+    navigator.clipboard.writeText(credential);
+    setCopiedOrderId(orderId);
+    toast.success("Credencial copiada!");
+    setTimeout(() => setCopiedOrderId(null), 2000);
+  };
 
   const updateProfile = useMutation({
     mutationFn: async (name: string) => {
