@@ -818,6 +818,32 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   };
 
   const copyPix = () => {
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setApplyingCoupon(true);
+    try {
+      const { data } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.toUpperCase().trim())
+        .eq("active", true)
+        .maybeSingle();
+      if (!data) { toast.error("Cupom inválido ou expirado"); return; }
+      if (data.max_uses && (data.current_uses || 0) >= data.max_uses) { toast.error("Cupom esgotado"); return; }
+      if (data.expires_at && new Date(data.expires_at) < new Date()) { toast.error("Cupom expirado"); return; }
+      setCouponDiscount(data.discount_percent);
+      setCouponId(data.id);
+      toast.success(`Cupom aplicado! ${data.discount_percent}% de desconto`);
+    } catch { toast.error("Erro ao validar cupom"); }
+    finally { setApplyingCoupon(false); }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+    toast.info("Cupom removido");
+  };
+
+  const copyPix = () => {
     if (pixData?.copiaecola) {
       navigator.clipboard.writeText(pixData.copiaecola);
       setCopied(true);
