@@ -28,6 +28,7 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminBalance from "./pages/admin/AdminBalance";
 import AdminDiscord from "./pages/admin/AdminDiscord";
+import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="balance" element={<AdminBalance />} />
                 <Route path="discord" element={<AdminDiscord />} />
+                <Route path="campaigns" element={<AdminCampaigns />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

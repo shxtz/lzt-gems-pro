@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Package, Grid3X3, ShoppingCart, Store, MessageCircle,
-  Ticket, Wallet, Users, MessageSquare, Eye, LogOut, Settings
+  Ticket, Wallet, Users, MessageSquare, Eye, LogOut, Settings, Megaphone
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +22,7 @@ const navItems = [
   { title: "Saldo", url: "/admin/balance", icon: Wallet },
   { title: "Usuários", url: "/admin/users", icon: Users },
   { title: "Discord API", url: "/admin/discord", icon: MessageSquare },
+  { title: "Marketing", url: "/admin/campaigns", icon: Megaphone },
 ];
 
 const AdminLayout = () => {
