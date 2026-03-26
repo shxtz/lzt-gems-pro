@@ -75,7 +75,28 @@ Deno.serve(async (req) => {
       .update({ status: "paid", payment_method: "balance", payment_id: `balance-${Date.now()}` })
       .eq("id", orderId);
 
-    // Trigger delivery — call deliver-product or lzt-purchase depending on order type
+    // Helper: refund balance + remove account + mark order refunded
+    const autoRefund = async (reason: string) => {
+      // Refund balance
+      await supabase.from("profiles").update({ balance: balance }).eq("user_id", userId);
+      await supabase.from("balance_transactions").insert({
+        user_id: userId,
+        amount: amount,
+        type: "refund",
+        description: `Reembolso automático - ${reason} - pedido #${orderId.slice(0, 8)}`,
+      });
+      // Mark order as refunded
+      await supabase.from("orders").update({ status: "refunded" }).eq("id", orderId);
+      // Remove LZT account from store if applicable
+      if (order.lzt_item_id) {
+        await supabase
+          .from("lzt_accounts")
+          .update({ status: "unavailable" })
+          .eq("lzt_item_id", order.lzt_item_id);
+      }
+    };
+
+    // Trigger delivery
     let deliveryResult: any = null;
 
     if (order.lzt_item_id) {
@@ -97,19 +118,31 @@ Deno.serve(async (req) => {
           }),
         });
         deliveryResult = await lztRes.json();
+
+        // Check if LZT purchase actually failed
+        if (!deliveryResult?.success && !deliveryResult?.delivered && !deliveryResult?.credentials && !deliveryResult?.credential) {
+          console.error("LZT purchase failed:", deliveryResult);
+          await autoRefund("conta não disponível no momento");
+          return new Response(JSON.stringify({
+            paid: false,
+            delivered: false,
+            refunded: true,
+            error: "Esta conta não está mais disponível. Seu saldo foi reembolsado automaticamente.",
+            newBalance: balance,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       } catch (e) {
         console.error("LZT purchase error:", e);
-        // Mark as refund_needed
-        await supabase.from("orders").update({ status: "refund_needed" }).eq("id", orderId);
-        // Refund balance
-        await supabase.from("profiles").update({ balance: balance }).eq("user_id", userId);
-        await supabase.from("balance_transactions").insert({
-          user_id: userId,
-          amount: amount,
-          type: "refund",
-          description: `Reembolso - falha entrega pedido #${orderId.slice(0, 8)}`,
-        });
-        return new Response(JSON.stringify({ paid: true, delivered: false, error: "Falha na entrega, saldo reembolsado" }), {
+        await autoRefund("erro na compra da conta");
+        return new Response(JSON.stringify({
+          paid: false,
+          delivered: false,
+          refunded: true,
+          error: "Esta conta não está mais disponível. Seu saldo foi reembolsado automaticamente.",
+          newBalance: balance,
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -128,8 +161,32 @@ Deno.serve(async (req) => {
           }),
         });
         deliveryResult = await deliverRes.json();
+
+        if (!deliveryResult?.success && !deliveryResult?.delivered) {
+          console.error("Stock delivery failed:", deliveryResult);
+          await autoRefund("produto sem estoque");
+          return new Response(JSON.stringify({
+            paid: false,
+            delivered: false,
+            refunded: true,
+            error: "Produto sem estoque disponível. Seu saldo foi reembolsado automaticamente.",
+            newBalance: balance,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       } catch (e) {
         console.error("Delivery error:", e);
+        await autoRefund("erro na entrega do produto");
+        return new Response(JSON.stringify({
+          paid: false,
+          delivered: false,
+          refunded: true,
+          error: "Erro na entrega. Seu saldo foi reembolsado automaticamente.",
+          newBalance: balance,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
