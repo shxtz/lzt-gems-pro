@@ -19,7 +19,7 @@ const navItems = [
   { title: "LZT Market", url: "/admin/lzt", icon: Store },
   { title: "Chat", url: "/admin/tickets", icon: MessageCircle, badge: true },
   { title: "Cupons", url: "/admin/coupons", icon: Ticket },
-  { title: "Saldo", url: "/admin/balance", icon: Wallet },
+  
   { title: "Usuários", url: "/admin/users", icon: Users },
   { title: "Discord API", url: "/admin/discord", icon: MessageSquare },
   { title: "Marketing", url: "/admin/campaigns", icon: Megaphone },
