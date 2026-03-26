@@ -76,8 +76,13 @@ Deno.serve(async (req) => {
 
         for (const item of itemsToProcess) {
           const lztItemId = String(item.item_id);
-          const usdPrice = item.price || 0;
-          const brlPrice = Math.round(usdPrice * 5.5 * (1 + category.margin_percent / 100) * 100) / 100;
+          const rawPrice = item.price || 0;
+          const currency = (item.price_currency || item.priceCurrency || "usd").toLowerCase();
+          const isBrl = currency === "brl" || currency === "rub_brl" || currency === "r$";
+          // If price is already in BRL, just apply margin. Otherwise convert USD→BRL first.
+          const baseBrl = isBrl ? rawPrice : rawPrice * 5.5;
+          const brlPrice = Math.round(baseBrl * (1 + category.margin_percent / 100) * 100) / 100;
+          const usdPrice = isBrl ? rawPrice : rawPrice;
 
           // Check if already exists
           const { data: existing } = await supabase
