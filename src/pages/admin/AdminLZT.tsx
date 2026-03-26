@@ -699,9 +699,9 @@ const CategoryCard = ({
           />
         </div>
 
-        {/* Activity Log — shown when auto_import is enabled */}
-        {category.auto_import && (
-          <div className="rounded-xl border border-border/30 bg-background/50 overflow-hidden">
+        {/* Activity Log */}
+        {category.auto_import && activityLog.length > 0 && (
+          <div className="rounded-xl border border-border/30 bg-background/50 overflow-hidden" style={{ contain: "paint" }}>
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/20">
               <div className="flex items-center gap-2">
                 <Activity className="h-3.5 w-3.5 text-primary" />
@@ -724,18 +724,12 @@ const CategoryCard = ({
             </div>
             <div
               ref={logContainerRef}
-              className="max-h-48 overflow-y-auto p-3 space-y-1.5 scrollbar-thin"
+              className="max-h-36 overflow-y-auto p-3 space-y-1 scrollbar-thin"
             >
-              {activityLog.length === 0 ? (
-                <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Iniciando monitoramento...
-                </div>
-              ) : (
-                activityLog.map((entry) => (
+              {activityLog.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-start gap-2 text-[11px] leading-relaxed animate-in fade-in slide-in-from-top-1 duration-300"
+                    className="flex items-start gap-2 text-[11px] leading-relaxed"
                   >
                     <span className="mt-0.5">{logIcon(entry.type)}</span>
                     <span className="text-muted-foreground shrink-0 font-mono">
@@ -750,8 +744,7 @@ const CategoryCard = ({
                       {entry.message}
                     </span>
                   </div>
-                ))
-              )}
+              ))}
             </div>
           </div>
         )}
