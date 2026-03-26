@@ -98,6 +98,16 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "delete-user": {
+        // Delete profile first, then auth user
+        await supabase.from("user_roles").delete().eq("user_id", userId);
+        await supabase.from("profiles").delete().eq("user_id", userId);
+        await supabase.auth.admin.deleteUser(userId);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
