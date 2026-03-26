@@ -91,7 +91,13 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto flex h-18 items-center justify-between px-4 sm:px-6 py-3">
-        <Link to="/" className="group flex items-center gap-3">
+        <Link
+          to="/"
+          className="group flex items-center gap-3"
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
           <motion.img
             src={logo}
             alt="VBucks Barato"

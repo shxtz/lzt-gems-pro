@@ -915,7 +915,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
               {/* LZT Accounts Grid */}
               {selectedTab === "contas" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
                       const adminCategoryName = getCategoryName(account.category_id);
@@ -974,27 +974,27 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
 
                             const badgeRow = (
-                              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-[2]">
-                                <Badge className="bg-background/70 backdrop-blur-md text-[10px] uppercase font-display tracking-wider border-0 text-foreground flex items-center gap-1">
+                              <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 flex flex-wrap items-center gap-1 sm:gap-1.5 z-[2] max-w-[calc(100%-2.5rem)]">
+                                <Badge className="bg-background/70 backdrop-blur-md text-[8px] sm:text-[10px] uppercase font-display tracking-wider border-0 text-foreground flex items-center gap-1 px-1.5 sm:px-2 py-0.5">
                                   {(() => {
                                     const matchingShop = shopCategories?.find(sc => {
                                       const matchingIds = getMatchingLztCategoryIds(sc);
                                       return matchingIds.includes(account.category_id);
                                     });
-                                    return matchingShop?.icon_url ? <img src={matchingShop.icon_url} alt="" className="h-3.5 w-3.5 rounded-sm object-contain" /> : null;
+                                    return matchingShop?.icon_url ? <img src={matchingShop.icon_url} alt="" className="h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-sm object-contain" /> : null;
                                   })()}
-                                  {displayCategoryName}
+                                  <span className="truncate max-w-[60px] sm:max-w-none">{displayCategoryName}</span>
                                 </Badge>
                                 {valRankName && (
-                                  <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
-                                    {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3.5 w-3.5" />}
-                                    {valRankName}
+                                  <Badge className="bg-background/70 backdrop-blur-md text-[8px] sm:text-[10px] border-0 text-foreground flex items-center gap-1 px-1.5 sm:px-2 py-0.5">
+                                    {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                                    <span className="hidden sm:inline">{valRankName}</span>
                                   </Badge>
                                 )}
                                 {lolRank && lolRank !== "Unranked" && (
-                                  <Badge className="bg-background/70 backdrop-blur-md text-[10px] border-0 text-foreground flex items-center gap-1">
-                                    {lolRankIcon && <img src={lolRankIcon} alt={lolRank} className="h-4 w-4" />}
-                                    {lolRank}
+                                  <Badge className="bg-background/70 backdrop-blur-md text-[8px] sm:text-[10px] border-0 text-foreground flex items-center gap-1 px-1.5 sm:px-2 py-0.5">
+                                    {lolRankIcon && <img src={lolRankIcon} alt={lolRank} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                                    <span className="hidden sm:inline">{lolRank}</span>
                                   </Badge>
                                 )}
                               </div>
@@ -1115,8 +1115,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             );
                           })()}
 
-                          <div className="p-4 space-y-3">
-                            <h3 className="font-display text-sm text-foreground font-semibold">
+                          <div className="p-2.5 sm:p-4 space-y-2 sm:space-y-3">
+                            <h3 className="font-display text-xs sm:text-sm text-foreground font-semibold truncate">
                               {getMaskedName(getCategoryName(account.category_id), account.lzt_item_id)}
                             </h3>
                             {isAdmin && (
@@ -1131,11 +1131,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               </a>
                             )}
 
-
                             <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                              <span className="text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
-                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-xs font-bold h-9 px-4" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
-                                {purchasing === account.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Comprar</>}
+                              <span className="text-base sm:text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
+                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-[10px] sm:text-xs font-bold h-7 sm:h-9 px-2.5 sm:px-4" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
+                                {purchasing === account.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <><ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" /> <span className="hidden sm:inline">Comprar</span><span className="sm:hidden">Buy</span></>}
                               </Button>
                             </div>
                           </div>
