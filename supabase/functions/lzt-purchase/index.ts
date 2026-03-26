@@ -455,3 +455,15 @@ function extractPurchaseCredentials(buyData: any): string {
 
   return "Conta comprada — verifique sua área do cliente";
 }
+
+function buildCredentialFromReserved(creds: any): string {
+  const parts: string[] = [];
+  if (creds.login) parts.push(`Login: ${creds.login}`);
+  if (creds.password) parts.push(`Password: ${creds.password}`);
+  if (creds.old_password || creds.oldPassword) parts.push(`Old password: ${creds.old_password || creds.oldPassword}`);
+  if (creds.email) parts.push(`Access to email (auto registered):\nLogin: ${creds.email}`);
+  if (creds.email_password || creds.emailPassword) parts.push(`Password: ${creds.email_password || creds.emailPassword}`);
+  if (creds.provider) parts.push(`Provedor Email: ${creds.provider}`);
+  if (parts.length > 0) return parts.join("\n");
+  return typeof creds === "string" ? creds : JSON.stringify(creds, null, 2);
+}
