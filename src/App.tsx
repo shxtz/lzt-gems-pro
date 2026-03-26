@@ -31,6 +31,7 @@ import AdminBalance from "./pages/admin/AdminBalance";
 import AdminDiscord from "./pages/admin/AdminDiscord";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => (
                 <Route path="discord" element={<AdminDiscord />} />
                 <Route path="campaigns" element={<AdminCampaigns />} />
               </Route>
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>
