@@ -297,11 +297,23 @@ const AdminLZT = () => {
 
     queryClient.setQueryData(["lzt-categories"], reordered);
 
-    const updates = reordered.map((cat, i) =>
+    // Update lzt_categories sort_order
+    const lztUpdates = reordered.map((cat, i) =>
       supabase.from("lzt_categories").update({ sort_order: i }).eq("id", cat.id)
     );
-    await Promise.all(updates);
+    // Also sync shop_categories sort_order to match
+    const shopUpdates = reordered.map((cat, i) => {
+      const matchingShop = shopCategories?.find((sc) => sc.name.toLowerCase() === cat.name.toLowerCase());
+      if (matchingShop) {
+        return supabase.from("shop_categories").update({ sort_order: i }).eq("id", matchingShop.id);
+      }
+      return null;
+    }).filter(Boolean);
+
+    await Promise.all([...lztUpdates, ...shopUpdates]);
     queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-shop-categories"] });
+    queryClient.invalidateQueries({ queryKey: ["home-shop-categories"] });
     toast.success("Ordem atualizada!");
   };
 
