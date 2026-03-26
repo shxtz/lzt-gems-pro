@@ -78,7 +78,7 @@ const CategoriesSection = () => {
         </motion.div>
 
         {/* Top row */}
-        <div className="flex justify-center gap-4 md:gap-6 mb-4 md:mb-6 flex-wrap">
+        <div className="flex justify-center gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6 flex-wrap">
           {topRow.map((cat, i) => (
             <CategoryIcon key={cat.id} category={cat} index={i} onClick={() => navigate(`/contas/${cat.slug}`)} />
           ))}
@@ -86,7 +86,7 @@ const CategoriesSection = () => {
 
         {/* Bottom row */}
         {bottomRow.length > 0 && (
-          <div className="flex justify-center gap-4 md:gap-6 flex-wrap">
+          <div className="flex justify-center gap-3 sm:gap-4 md:gap-6 flex-wrap">
             {bottomRow.map((cat, i) => (
               <CategoryIcon key={cat.id} category={cat} index={i + 5} onClick={() => navigate(`/contas/${cat.slug}`)} />
             ))}
@@ -118,20 +118,20 @@ const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
       <motion.div
         whileHover={{ y: -8, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        className="relative w-[72px] h-[72px] md:w-[88px] md:h-[88px] rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)]"
+        className="relative w-[60px] h-[60px] sm:w-[72px] sm:h-[72px] md:w-[88px] md:h-[88px] rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.2)]"
       >
         {image ? (
           <img
             src={image}
             alt={category.name}
             loading="lazy"
-            className="w-[52px] h-[52px] md:w-[60px] md:h-[60px] object-contain transition-transform duration-300 group-hover:scale-110"
+            className="w-[40px] h-[40px] sm:w-[52px] sm:h-[52px] md:w-[60px] md:h-[60px] object-contain transition-transform duration-300 group-hover:scale-110"
           />
         ) : (
           <span className="text-3xl md:text-4xl">{category.emoji || "📦"}</span>
         )}
       </motion.div>
-      <span className="mt-2 text-[11px] md:text-xs font-display text-muted-foreground group-hover:text-foreground transition-colors duration-300 text-center max-w-[88px] leading-tight opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all">
+      <span className="mt-2 text-[10px] sm:text-[11px] md:text-xs font-display text-muted-foreground group-hover:text-foreground transition-colors duration-300 text-center max-w-[80px] sm:max-w-[88px] leading-tight sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-1 sm:group-hover:translate-y-0 transition-all">
         {category.name}
       </span>
     </motion.div>

@@ -100,10 +100,10 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="inline-flex items-center gap-3 rounded-full border border-primary/60 bg-background/85 px-7 py-3 mb-8 backdrop-blur-xl shadow-gold"
+            className="inline-flex items-center gap-2 sm:gap-3 rounded-full border border-primary/60 bg-background/85 px-4 sm:px-7 py-2.5 sm:py-3 mb-6 sm:mb-8 backdrop-blur-xl shadow-gold"
           >
-            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-            <span className="font-body text-[14px] font-black text-foreground tracking-[0.22em] uppercase drop-shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary animate-pulse" />
+            <span className="font-body text-[10px] sm:text-[14px] font-black text-foreground tracking-[0.15em] sm:tracking-[0.22em] uppercase drop-shadow-sm">
               Melhor preço do Brasil
             </span>
           </motion.div>
@@ -113,10 +113,10 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] mb-4 tracking-tight"
+            className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] mb-4 tracking-tight"
           >
             <span className="text-foreground block leading-none">VBUCKS</span>
-            <span className="text-gradient-gold-shine block leading-none -mt-3 md:-mt-5 lg:-mt-7">BARATO</span>
+            <span className="text-gradient-gold-shine block leading-none -mt-2 sm:-mt-3 md:-mt-5 lg:-mt-7">BARATO</span>
           </motion.h1>
 
           {/* Description */}
@@ -142,9 +142,9 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
               onClick={() => navigate("/vbucks")}
               whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(43 84% 55% / 0.3)" }}
               whileTap={{ scale: 0.97 }}
-              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-7 py-3 font-display text-[12px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-gold transition-all"
+              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-gold px-5 sm:px-7 py-3 font-display text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-primary-foreground shadow-gold transition-all w-full sm:w-auto justify-center"
             >
-              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-10 w-10 -ml-1" />
+              <img src={vbucksIcon} alt="V-Bucks" className="relative z-10 h-8 w-8 sm:h-10 sm:w-10 -ml-1" />
               <span className="relative z-10">Comprar V-Bucks</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               <motion.div
@@ -162,7 +162,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
               onClick={() => navigate("/loja")}
               whileHover={{ scale: 1.04, borderColor: "hsl(43 84% 55% / 0.5)" }}
               whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-3 rounded-2xl border border-border/60 glass px-9 py-4 font-display text-[12px] font-semibold uppercase tracking-[0.2em] text-foreground transition-all duration-300"
+              className="flex items-center justify-center gap-3 rounded-2xl border border-border/60 glass px-9 py-3.5 sm:py-4 font-display text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-foreground transition-all duration-300 w-full sm:w-auto"
             >
               Ver Contas
             </motion.button>
@@ -174,7 +174,7 @@ const HeroSection = ({ onScrollNext }: { onScrollNext?: () => void }) => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.8 }}
-          className="mt-20 flex items-center justify-center gap-0 max-w-xl mx-auto"
+          className="mt-12 sm:mt-20 flex items-center justify-center gap-0 max-w-xl mx-auto"
         >
           {[
             { value: "1.000+", label: "Clientes" },
