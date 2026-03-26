@@ -200,9 +200,6 @@ function FortniteInventory({ data }: { data: any }) {
       {danceCount > 0 && <Stat icon={Star} label="Danças" value={danceCount} />}
       {pickaxeCount > 0 && <Stat icon={Tag} label="Picaretas" value={pickaxeCount} />}
       {gliderCount > 0 && <Stat icon={Shield} label="Planadores" value={gliderCount} />}
-      {country && <Stat icon={Globe} label="País" value={`${countryFlag(country)} ${country}`} />}
-      {platform && <Stat icon={Gamepad2} label="Plataforma" value={platform} />}
-      {emailType && <Stat icon={Mail} label="Tipo Email" value={emailType} />}
       {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
       {lastActivity && <Stat icon={Calendar} label="Última Atividade" value={lastActivity} />}
     </div>
@@ -552,7 +549,7 @@ const AccountPreview = () => {
   const lolPreviewItems = isLoLAccount ? getLoLQuickPreviewItems(d?.lolInventory, 9) : [];
 
   // Unified preview tiles for ALL games
-  const gamePreviewItems = (!isValorantAccount && !isLoLAccount) ? getGamePreviewItems(d, realCategory, 9) : [];
+  const gamePreviewItems = (!isValorantAccount && !isLoLAccount) ? getGamePreviewItems(d, realCategory, 4) : [];
 
   const previewTiles = isLoLAccount
     ? lolPreviewItems.map((item) => ({
@@ -631,8 +628,8 @@ const AccountPreview = () => {
             {/* 3x3 Preview Grid */}
             {hasIndividualItems ? (
               <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
-                <div className="grid grid-cols-3 gap-[1px] bg-border/10">
-                  {previewTiles.slice(0, 9).map((item: any, i: number) => {
+                <div className="grid grid-cols-2 gap-[2px] bg-border/10">
+                  {previewTiles.slice(0, 4).map((item: any, i: number) => {
                     const tier = item.tier;
                     const tileColor = tier ? `rgb(${tier.tile[0]}, ${tier.tile[1]}, ${tier.tile[2]})` : undefined;
                     const outlineColor = tier ? `rgb(${tier.outline[0]}, ${tier.outline[1]}, ${tier.outline[2]})` : undefined;
@@ -642,25 +639,28 @@ const AccountPreview = () => {
                         className="relative aspect-square overflow-hidden bg-card"
                         style={{
                           background: tileColor
-                            ? `linear-gradient(135deg, ${tileColor}, rgba(0,0,0,0.6))`
+                            ? `linear-gradient(135deg, ${tileColor}, rgba(0,0,0,0.5))`
                             : undefined,
-                          border: outlineColor ? `1px solid ${outlineColor}40` : undefined,
+                          border: outlineColor ? `1px solid ${outlineColor}50` : undefined,
                         }}
                       >
                         {item.image && (
                           <img
                             src={item.image}
                             alt={item.alt}
-                            className="absolute inset-0 w-full h-full object-contain p-2"
+                            className="absolute inset-0 w-full h-full object-contain p-3"
                             loading="lazy"
-                            style={{ filter: "brightness(1.14) contrast(1.28) saturate(1.9) hue-rotate(-6deg)" }}
+                            style={{ filter: "brightness(1.1) contrast(1.2) saturate(1.8)" }}
                           />
                         )}
                         {item.tierIcon && (
-                          <div className="absolute top-1.5 right-1.5">
-                            <img src={item.tierIcon} alt="" className="h-4 w-4 drop-shadow-md" />
+                          <div className="absolute top-2 right-2">
+                            <img src={item.tierIcon} alt="" className="h-5 w-5 drop-shadow-md" />
                           </div>
                         )}
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                          <p className="text-[11px] font-semibold text-white truncate drop-shadow-lg">{item.alt}</p>
+                        </div>
                       </div>
                     );
                   })}
