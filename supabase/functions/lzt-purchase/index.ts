@@ -25,6 +25,20 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // ═══ AUTHENTICATION ═══
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const isServiceRole = token === serviceKey;
+    if (!isServiceRole) {
+      const { data: userData } = await supabase.auth.getUser(token);
+      if (!userData?.user) {
+        return json({ error: "Unauthorized" }, 401);
+      }
+    }
+
     const { action, lzt_item_id, account_id, order_id, buyer_id, price_brl, use_reserved, reserved_credentials } = await req.json();
 
     // ──────────────────────────────────────────────
