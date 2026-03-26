@@ -45,6 +45,9 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
+    // ═══ ADMIN/SERVICE AUTH ═══
+    await verifyAdminOrService(req, supabase, serviceKey);
+
     const { action, category_id, api_url, lzt_item_id, margin_percent } = await req.json();
 
     // Auto-import: fetch all categories with auto_import enabled
