@@ -87,10 +87,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       syncAuthState(nextSession);
     });
 
+    // Hard safety: ensure authReady=true within 5s no matter what
+    const safetyTimer = setTimeout(() => {
+      if (!mounted) return;
+      setLoading(false);
+      setAuthReady(true);
+    }, 5000);
+
     supabase.auth
       .getSession()
-      .then((result) => withTimeout(Promise.resolve(result), 6000))
+      .then((result) => withTimeout(Promise.resolve(result), 4000))
       .then(async (result) => {
+        clearTimeout(safetyTimer);
         if (!result) {
           // Timed out – session is stuck, clear and continue
           clearStoredAuthState();
@@ -110,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         syncAuthState(initialSession);
       })
       .catch(() => {
+        clearTimeout(safetyTimer);
         clearStoredAuthState();
         if (!mounted) return;
         setSession(null);
@@ -122,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, []);

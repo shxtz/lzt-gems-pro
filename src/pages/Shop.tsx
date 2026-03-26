@@ -257,6 +257,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const { data: lztCategories } = useQuery({
     queryKey: ["shop-lzt-categories"],
     enabled: authReady,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
     queryFn: async () => {
       const { data, error } = await supabase.from("lzt_categories").select("*").order("sort_order");
       if (error) throw error;
@@ -267,6 +269,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const { data: lztAccounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["shop-lzt-accounts"],
     enabled: authReady,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
     queryFn: async () => {
       const { data, error } = await supabase.from("lzt_accounts").select("*").eq("status", "available").order("imported_at", { ascending: false });
       if (error) throw error;
@@ -278,6 +282,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const { data: shopCategories } = useQuery({
     queryKey: ["shop-categories-list"],
     enabled: authReady,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
     queryFn: async () => {
       const { data, error } = await supabase.from("shop_categories").select("*").eq("visible", true).order("sort_order");
       if (error) throw error;
