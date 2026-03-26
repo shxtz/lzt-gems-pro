@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/supabase-resilience";
 import { useQuery } from "@tanstack/react-query";
 import vbucksNavIcon from "@/assets/vbucks-icon.png";
 
@@ -28,13 +29,22 @@ const Navbar = () => {
   const { data: profile } = useQuery({
     queryKey: ["navbar-profile", user?.id],
     enabled: authReady && !!user,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      return data;
+      try {
+        const { data } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("user_id", user!.id)
+            .maybeSingle(),
+        );
+        return data;
+      } catch {
+        return null;
+      }
     },
   });
 
