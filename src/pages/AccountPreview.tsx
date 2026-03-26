@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/supabase-resilience";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
