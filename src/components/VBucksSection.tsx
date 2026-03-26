@@ -124,10 +124,10 @@ const VBucksCard = ({ id, amount, price, original_price: originalPrice, popular,
 };
 
 const fallbackOptions: VBucksProduct[] = [
-  { id: "1", amount: 1000, price: 12.90, original_price: 16.77, popular: false },
-  { id: "2", amount: 2800, price: 29.90, original_price: 38.87, popular: false },
-  { id: "3", amount: 5000, price: 49.90, original_price: 64.87, popular: true },
-  { id: "4", amount: 13500, price: 119.90, original_price: 155.87, popular: false },
+  { id: "1", amount: 1000, price: 12.90, original_price: 31.99, popular: false },
+  { id: "2", amount: 2800, price: 29.90, original_price: 78.99, popular: false },
+  { id: "3", amount: 5000, price: 49.90, original_price: 124.99, popular: true },
+  { id: "4", amount: 13500, price: 119.90, original_price: 313.99, popular: false },
 ];
 
 const VBucksSection = () => {

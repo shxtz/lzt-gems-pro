@@ -27,7 +27,7 @@ const CrossSellBanner = ({ context }: CrossSellBannerProps) => {
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="absolute -top-2 -right-2 flex items-center justify-center h-7 w-7 rounded-full bg-gradient-gold shadow-[0_0_10px_hsl(var(--primary)/0.6)]"
           >
-            <span className="font-display text-[9px] font-black text-primary-foreground leading-none">-23%</span>
+            <span className="font-display text-[9px] font-black text-primary-foreground leading-none">-60%</span>
           </motion.div>
         </div>
         <div className="flex-1 min-w-0">
@@ -35,8 +35,8 @@ const CrossSellBanner = ({ context }: CrossSellBannerProps) => {
             <Zap className="h-3 w-3 text-primary" />
             <span className="font-display text-[10px] font-bold text-primary uppercase tracking-wider">Oferta Especial</span>
           </div>
-          <p className="font-display text-sm sm:text-base font-bold text-foreground">V-Bucks com até 23% OFF</p>
-          <p className="font-body text-[10px] sm:text-xs text-muted-foreground">Recarregue sua conta Fortnite com o melhor preço do Brasil</p>
+          <p className="font-display text-sm sm:text-base font-bold text-foreground">V-Bucks com até 62% OFF</p>
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground">Preços até 62% mais baratos que a loja oficial do Fortnite</p>
         </div>
         <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
       </motion.div>

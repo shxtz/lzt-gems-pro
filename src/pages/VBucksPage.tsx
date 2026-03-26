@@ -19,10 +19,10 @@ interface VBucksProduct {
 }
 
 const FALLBACK_PRODUCTS: VBucksProduct[] = [
-  { id: "fallback-1000", amount: 1000, price: 12.9, original_price: 24.99, popular: false },
-  { id: "fallback-2800", amount: 2800, price: 29.9, original_price: 64.99, popular: false },
-  { id: "fallback-5000", amount: 5000, price: 49.9, original_price: 109.99, popular: true },
-  { id: "fallback-13500", amount: 13500, price: 119.9, original_price: 274.99, popular: false },
+  { id: "fallback-1000", amount: 1000, price: 12.9, original_price: 31.99, popular: false },
+  { id: "fallback-2800", amount: 2800, price: 29.9, original_price: 78.99, popular: false },
+  { id: "fallback-5000", amount: 5000, price: 49.9, original_price: 124.99, popular: true },
+  { id: "fallback-13500", amount: 13500, price: 119.9, original_price: 313.99, popular: false },
 ];
 
 interface VBucksCardProps extends VBucksProduct {
