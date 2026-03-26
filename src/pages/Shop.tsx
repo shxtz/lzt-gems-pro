@@ -710,8 +710,73 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       setCheckingPayment(false);
     }
   };
+  const handlePayWithBalance = async () => {
+    if (!pixData || !user) return;
+    setPayingWithBalance(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
+        body: { orderId: pixData.orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-  const copyPix = () => {
+      if (data?.delivered) {
+        setDeliveredCredential({
+          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        refetchBalance();
+        setPixData(null);
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        return;
+      }
+
+      if (data?.paid) {
+        // Paid but delivery pending — poll
+        toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+        refetchBalance();
+        for (let i = 0; i < 24; i++) {
+          await new Promise((r) => setTimeout(r, 2500));
+          const { data: orderCheck } = await supabase
+            .from("orders")
+            .select("status")
+            .eq("id", pixData.orderId)
+            .single();
+          if (orderCheck?.status === "delivered") {
+            const { data: log } = await supabase
+              .from("delivery_logs")
+              .select("credential_delivered")
+              .eq("order_id", pixData.orderId)
+              .maybeSingle();
+            setDeliveredCredential({
+              credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
+              name: pixData.variationName,
+            });
+            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+            setPixData(null);
+            toast.success("Produto entregue com sucesso!");
+            return;
+          }
+          if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
+            toast.error("Falha na entrega. Saldo reembolsado automaticamente.");
+            refetchBalance();
+            setPixData(null);
+            return;
+          }
+        }
+        toast.warning("Entrega em processamento. Confira sua área do cliente.");
+        setPixData(null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erro ao pagar com saldo");
+    } finally {
+      setPayingWithBalance(false);
+    }
+  };
+
+
     if (pixData?.copiaecola) {
       navigator.clipboard.writeText(pixData.copiaecola);
       setCopied(true);
