@@ -428,18 +428,24 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                     )}
                   </div>
 
-                  {/* Rarity indicator */}
-                  {outlineColor && (
-                    <div className="absolute top-1.5 right-1.5">
+                  {/* Rarity indicator + Shop badge */}
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                    {(item as any).isShopItem && (
+                      <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[8px] font-bold uppercase bg-blue-500/90 text-white shadow-sm">
+                        <ShoppingBag className="h-2.5 w-2.5" />
+                        Loja
+                      </span>
+                    )}
+                    {outlineColor && (
                       <span
-                        className="inline-block h-3 w-3 rounded-sm"
+                        className="inline-block h-3 w-3 rounded-sm shrink-0"
                         style={{
                           background: `linear-gradient(135deg, ${outlineColor}, ${outlineColor}80)`,
                           boxShadow: `0 0 6px ${outlineColor}60`,
                         }}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Extra info badges */}
                   {(item.constellation !== undefined && item.constellation > 0) && (
