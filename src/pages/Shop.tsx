@@ -259,7 +259,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     },
   });
 
-  const { data: lztAccounts } = useQuery({
+  const { data: lztAccounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["shop-lzt-accounts"],
     queryFn: async () => {
       const { data, error } = await supabase.from("lzt_accounts").select("*").eq("status", "available").order("imported_at", { ascending: false });
@@ -1129,7 +1129,26 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                     })}
                   </AnimatePresence>
 
-                  {(!filteredAccounts || filteredAccounts.length === 0) && (
+                  {/* Loading skeleton */}
+                  {isLoadingAccounts && (!filteredAccounts || filteredAccounts.length === 0) && (
+                    <>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={`skel-${i}`} className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-pulse">
+                          <div className="h-36 bg-muted/20" />
+                          <div className="p-4 space-y-3">
+                            <div className="h-4 w-3/4 rounded bg-muted/20" />
+                            <div className="h-3 w-1/2 rounded bg-muted/15" />
+                            <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                              <div className="h-6 w-20 rounded bg-muted/20" />
+                              <div className="h-8 w-24 rounded bg-muted/20" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {!isLoadingAccounts && (!filteredAccounts || filteredAccounts.length === 0) && (
                     <div className="col-span-full text-center py-20">
                       <Gamepad2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
                       <p className="text-muted-foreground text-sm">Nenhuma conta disponível nesta categoria</p>
