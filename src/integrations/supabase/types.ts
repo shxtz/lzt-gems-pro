@@ -250,6 +250,8 @@ export type Database = {
           created_at: string
           fortnite_username: string | null
           id: string
+          lzt_account_id: string | null
+          lzt_item_id: string | null
           payment_id: string | null
           payment_method: string | null
           product_id: string | null
@@ -264,6 +266,8 @@ export type Database = {
           created_at?: string
           fortnite_username?: string | null
           id?: string
+          lzt_account_id?: string | null
+          lzt_item_id?: string | null
           payment_id?: string | null
           payment_method?: string | null
           product_id?: string | null
@@ -278,6 +282,8 @@ export type Database = {
           created_at?: string
           fortnite_username?: string | null
           id?: string
+          lzt_account_id?: string | null
+          lzt_item_id?: string | null
           payment_id?: string | null
           payment_method?: string | null
           product_id?: string | null

@@ -1,0 +1,4 @@
+
+ALTER TABLE public.orders
+ADD COLUMN IF NOT EXISTS lzt_item_id text DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS lzt_account_id uuid DEFAULT NULL;
