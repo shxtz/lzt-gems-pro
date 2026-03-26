@@ -61,7 +61,7 @@ const DeliveryConfirmationEmail = ({ productName, credential, orderId, totalPric
           </Text>
 
           <Section style={buttonWrapper}>
-            <Button style={button} <Button style={button} href="https://www.vbucksbarato.com/area-cliente">>
+            <Button style={button} href="https://www.vbucksbarato.com/minha-conta">
               🎮 ACESSAR MINHA ÁREA DO CLIENTE
             </Button>
           </Section>
