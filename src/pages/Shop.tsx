@@ -352,6 +352,17 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchInterval: 60000,
   });
 
+  // Realtime: auto-refresh when accounts are inserted/deleted/updated
+  useEffect(() => {
+    const channel = supabase
+      .channel("shop-lzt-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "lzt_accounts" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   const { data: shopCategories } = useQuery({
     queryKey: ["shop-categories-list"],
     enabled: authReady,
