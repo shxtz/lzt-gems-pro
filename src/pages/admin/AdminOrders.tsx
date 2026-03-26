@@ -235,7 +235,7 @@ const AdminOrders = () => {
                         <h4 className="text-xs font-display text-primary uppercase tracking-wider mb-2">Informações do Pedido</h4>
                         <InfoRow label="ID Pedido" value={order.id} copyId={`id-${order.id}`} mono />
                         <InfoRow label="Data/Hora" value={new Date(order.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} />
-                        <InfoRow label="Método" value={order.payment_method ? `Pix - Efi Pay` : "N/A"} />
+                        <InfoRow label="Método" value={order.payment_method === "balance" ? "Saldo da Plataforma" : order.payment_method ? "Pix - Efi Pay" : "N/A"} />
                         <InfoRow label="Total" value={`R$ ${Number(order.total_price).toFixed(2)}`} />
                         <InfoRow label="Produto ID" value={order.product_id} copyId={`pid-${order.id}`} mono />
                         {order.lzt_item_id && <InfoRow label="LZT Item" value={`#${order.lzt_item_id}`} copyId={`lzt-${order.id}`} mono />}
