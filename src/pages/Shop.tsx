@@ -778,13 +778,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 <h3 className="font-display text-lg text-foreground">Entrega Realizada!</h3>
                 <p className="text-xs text-muted-foreground mt-1">{deliveredCredential.name}</p>
               </div>
-              <div className="rounded-xl bg-muted/20 border border-border/30 p-4 max-h-48 overflow-y-auto">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-display">Sua credencial</p>
-                <p className="text-sm text-foreground font-mono break-all select-all whitespace-pre-wrap">{deliveredCredential.credential}</p>
+              <div className="max-h-64 overflow-y-auto">
+                <CredentialDisplay credential={deliveredCredential.credential} />
               </div>
               <div className="flex gap-2">
-                <Button onClick={copyCredential} className="flex-1 bg-gradient-gold text-primary-foreground">Copiar</Button>
-                <Button variant="outline" onClick={() => setDeliveredCredential(null)}>Fechar</Button>
+                <Button variant="outline" onClick={() => setDeliveredCredential(null)} className="flex-1">Fechar</Button>
               </div>
             </motion.div>
           </motion.div>
