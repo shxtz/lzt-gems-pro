@@ -550,12 +550,12 @@ const CategoryCard = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {getCategoryImage(category.name) ? (
-              <img src={getCategoryImage(category.name)!} alt="" className="h-6 w-6 rounded object-contain" />
-            ) : category.icon_url?.startsWith("http") ? (
+            {category.icon_url?.startsWith("http") ? (
               <img src={category.icon_url} alt="" className="h-6 w-6 rounded object-contain" />
+            ) : getCategoryImage(category.name) ? (
+              <img src={getCategoryImage(category.name)!} alt="" className="h-6 w-6 rounded object-contain" />
             ) : (
-              <span className="text-lg">{category.icon_url || "📦"}</span>
+              <span className="text-lg">📦</span>
             )}
             <h3 className="font-display text-base text-foreground font-semibold">{category.name}</h3>
             {category.auto_import && (
