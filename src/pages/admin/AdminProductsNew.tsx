@@ -895,12 +895,15 @@ const AdminProductsNew = () => {
           {(!filteredProducts || filteredProducts.length === 0) && (
             <div className="text-center py-16 text-muted-foreground">
               <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Nenhum produto cadastrado</p>
-              <p className="text-xs mt-1">Clique em "Novo Produto" para começar</p>
+              <p className="text-sm">Nenhum produto de estoque cadastrado</p>
+              <p className="text-xs mt-1">Clique em "Novo Produto" para adicionar produtos com variações e estoque manual</p>
             </div>
           )}
         </div>
       )}
+
+      {/* LZT Accounts Section */}
+      <LztAccountsSection />
     </div>
   );
 };
