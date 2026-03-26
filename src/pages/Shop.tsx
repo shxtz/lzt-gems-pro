@@ -934,13 +934,17 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
 
                       // Determine game type from admin category
                       const catLower = adminCategoryName.toLowerCase();
-                      const isValorant = catLower.includes("valorant") || catLower.includes("riot");
+                      const isValorant = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
                       const isLoL = catLower.includes("league") || catLower.includes("lol");
 
                       // Valorant rank badge - only for Valorant accounts
                       const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
                       const valRankIcon = getValorantRankIcon(valRank);
                       const valRankName = getValorantRankName(valRank);
+
+                      // LoL rank badge
+                      const lolRank = isLoL ? (account.data?.riot_lol_rank) : null;
+                      const lolRankIcon = getLoLRankIcon(lolRank);
 
                       return (
                         <motion.div key={account.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.02, 0.3) }} className="group rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative cursor-pointer" onClick={() => navigate(`/preview/${account.id}`)}>
@@ -954,15 +958,19 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                             const CategoryIcon = theme.Icon;
                             const angle = seed % 360;
 
-                            // Choose inventory based on game type
-                            let individualItems: (QuickPreviewItem | LoLPreviewItem)[] = [];
+                            // Choose inventory based on game type - unified for ALL games
+                            let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
                             if (isLoL && account.data?.lolInventory) {
                               individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
-                            } else if (!isLoL && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
+                            } else if (isValorant && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
                               individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
+                            } else {
+                              // Use unified preview for Genshin, Honkai, ZZZ, Fortnite, Minecraft
+                              individualItems = getGamePreviewItems(account.data, adminCategoryName, 9);
                             }
                             const hasIndividualItems = individualItems.length > 0;
-                            const inv = getLztInventoryImages(account.data);
+                            // Only fall back to LZT images if no individual items
+                            const inv = !hasIndividualItems ? getLztInventoryImages(account.data) : { weapons: null, agents: null, buddies: null };
                             const hasInventory = hasIndividualItems || Object.values(inv).some(v => v !== null);
 
                             const badgeRow = (
