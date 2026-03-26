@@ -5,7 +5,7 @@ import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
   QrCode, Copy, Check, X, Loader2, Eye, ChevronRight,
   Gamepad2, Star, Tag, SlidersHorizontal, Globe, Shield, Clock, Trophy, BarChart3,
-  Send, MessageCircle, Sword, Crosshair
+  Send, MessageCircle, Sword, Crosshair, Wallet
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -299,6 +299,22 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [viewAccount, setViewAccount] = useState<LztAccount | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [payingWithBalance, setPayingWithBalance] = useState(false);
+
+  // User balance query
+  const { data: userBalance, refetch: refetchBalance } = useQuery({
+    queryKey: ["user-balance", user?.id],
+    enabled: !!user,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", user!.id)
+        .single();
+      return Number(data?.balance || 0);
+    },
+  });
   const [filterCountry, setFilterCountry] = useState<string>("");
   const [filterPriceMax, setFilterPriceMax] = useState<string>("");
   const [filterSpamFree, setFilterSpamFree] = useState(false);
@@ -694,6 +710,71 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
       setCheckingPayment(false);
     }
   };
+  const handlePayWithBalance = async () => {
+    if (!pixData || !user) return;
+    setPayingWithBalance(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
+        body: { orderId: pixData.orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.delivered) {
+        setDeliveredCredential({
+          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        refetchBalance();
+        setPixData(null);
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        return;
+      }
+
+      if (data?.paid) {
+        // Paid but delivery pending — poll
+        toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+        refetchBalance();
+        for (let i = 0; i < 24; i++) {
+          await new Promise((r) => setTimeout(r, 2500));
+          const { data: orderCheck } = await supabase
+            .from("orders")
+            .select("status")
+            .eq("id", pixData.orderId)
+            .single();
+          if (orderCheck?.status === "delivered") {
+            const { data: log } = await supabase
+              .from("delivery_logs")
+              .select("credential_delivered")
+              .eq("order_id", pixData.orderId)
+              .maybeSingle();
+            setDeliveredCredential({
+              credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
+              name: pixData.variationName,
+            });
+            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+            setPixData(null);
+            toast.success("Produto entregue com sucesso!");
+            return;
+          }
+          if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
+            toast.error("Falha na entrega. Saldo reembolsado automaticamente.");
+            refetchBalance();
+            setPixData(null);
+            return;
+          }
+        }
+        toast.warning("Entrega em processamento. Confira sua área do cliente.");
+        setPixData(null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erro ao pagar com saldo");
+    } finally {
+      setPayingWithBalance(false);
+    }
+  };
 
   const copyPix = () => {
     if (pixData?.copiaecola) {
@@ -760,10 +841,36 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                   <Button size="sm" variant="outline" onClick={copyPix} className="shrink-0">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
                 </div>
               </div>
+              {/* Balance Payment Option */}
+              {user && (userBalance || 0) >= pixData.amount && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-display text-foreground">Pagar com Saldo</span>
+                    </div>
+                    <span className="text-xs text-primary font-medium">R$ {(userBalance || 0).toFixed(2)} disponível</span>
+                  </div>
+                  <Button
+                    onClick={handlePayWithBalance}
+                    disabled={payingWithBalance}
+                    className="w-full bg-primary text-primary-foreground font-display"
+                  >
+                    {payingWithBalance ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processando...</> : <>
+                      <Wallet className="h-4 w-4 mr-2" />Pagar R$ {pixData.amount.toFixed(2)} com Saldo
+                    </>}
+                  </Button>
+                </div>
+              )}
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/30" />
+                <span className="text-[10px] text-muted-foreground uppercase">ou pague via PIX</span>
+                <div className="flex-1 h-px bg-border/30" />
+              </div>
               <Button onClick={confirmPaymentAndDeliver} disabled={checkingPayment} className="w-full bg-gradient-gold text-primary-foreground font-display">
                 {checkingPayment ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirmando...</> : "Já paguei - Confirmar"}
               </Button>
-              <p className="text-[10px] text-muted-foreground text-center">Após pagar, clique em "Já paguei" para receber sua credencial.</p>
+              <p className="text-[10px] text-muted-foreground text-center">Após pagar via PIX, clique em "Já paguei" para receber sua credencial.</p>
             </motion.div>
           </motion.div>
         )}

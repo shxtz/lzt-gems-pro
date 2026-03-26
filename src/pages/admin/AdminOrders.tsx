@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Copy, Check, X, Eye, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, X, Eye, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,44 @@ const AdminOrders = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       toast.success("Status atualizado!");
     },
+  });
+
+  const refundToBalance = useMutation({
+    mutationFn: async ({ orderId, userId, amount }: { orderId: string; userId: string; amount: number }) => {
+      // 1. Add balance
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      const newBalance = Number(profile?.balance || 0) + amount;
+      const { error: balErr } = await supabase
+        .from("profiles")
+        .update({ balance: newBalance })
+        .eq("user_id", userId);
+      if (balErr) throw balErr;
+
+      // 2. Record transaction
+      const { error: txErr } = await supabase.from("balance_transactions").insert({
+        user_id: userId,
+        amount: amount,
+        type: "refund",
+        description: `Reembolso em saldo - pedido #${orderId.slice(0, 8)}`,
+      });
+      if (txErr) throw txErr;
+
+      // 3. Update order status
+      const { error: orderErr } = await supabase
+        .from("orders")
+        .update({ status: "refunded", updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+      if (orderErr) throw orderErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success("Reembolso em saldo realizado com sucesso!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao reembolsar"),
   });
 
   const getProfile = (userId: string | null) => profiles?.find((p) => p.user_id === userId);
@@ -197,7 +235,7 @@ const AdminOrders = () => {
                         <h4 className="text-xs font-display text-primary uppercase tracking-wider mb-2">Informações do Pedido</h4>
                         <InfoRow label="ID Pedido" value={order.id} copyId={`id-${order.id}`} mono />
                         <InfoRow label="Data/Hora" value={new Date(order.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} />
-                        <InfoRow label="Método" value={order.payment_method ? `Pix - Efi Pay` : "N/A"} />
+                        <InfoRow label="Método" value={order.payment_method === "balance" ? "Saldo da Plataforma" : order.payment_method ? "Pix - Efi Pay" : "N/A"} />
                         <InfoRow label="Total" value={`R$ ${Number(order.total_price).toFixed(2)}`} />
                         <InfoRow label="Produto ID" value={order.product_id} copyId={`pid-${order.id}`} mono />
                         {order.lzt_item_id && <InfoRow label="LZT Item" value={`#${order.lzt_item_id}`} copyId={`lzt-${order.id}`} mono />}
@@ -255,6 +293,26 @@ const AdminOrders = () => {
                         <option value="refund_needed">Reembolso Necessário</option>
                         <option value="refunded">Reembolsado</option>
                       </select>
+                      {(order.status === "delivered" || order.status === "paid" || order.status === "refund_needed") && order.user_id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (confirm(`Reembolsar R$ ${Number(order.total_price).toFixed(2)} em saldo para o cliente?`)) {
+                              refundToBalance.mutate({
+                                orderId: order.id,
+                                userId: order.user_id!,
+                                amount: Number(order.total_price),
+                              });
+                            }
+                          }}
+                          disabled={refundToBalance.isPending}
+                          className="text-orange-400 border-orange-500/30 hover:bg-orange-500/10 gap-1.5"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Reembolsar em Saldo
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
