@@ -5,7 +5,8 @@ import { withTimeout } from "@/lib/supabase-resilience";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight, Copy, Check, Eye, EyeOff } from "lucide-react";
+import { User, ShoppingBag, Settings, Camera, Lock, LogOut, Package, ChevronRight, Eye, EyeOff } from "lucide-react";
+import CredentialDisplay from "@/components/CredentialDisplay";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -427,22 +428,8 @@ const ClientArea = () => {
                                     className="overflow-hidden"
                                   >
                                     <div className="px-4 pb-4">
-                                      <div className="rounded-lg bg-muted/20 border border-border/30 p-3">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display">Credencial</p>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => copyCredential(order.id, credential)}
-                                            className="h-7 px-2 text-xs"
-                                          >
-                                            {copiedOrderId === order.id ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-                                            {copiedOrderId === order.id ? "Copiado" : "Copiar"}
-                                          </Button>
-                                        </div>
-                                        <p className="text-sm text-foreground font-mono break-all select-all whitespace-pre-wrap">{credential}</p>
-                                      </div>
-                                    </div>
+                                       <CredentialDisplay credential={credential} compact />
+                                     </div>
                                   </motion.div>
                                 )}
                               </AnimatePresence>
