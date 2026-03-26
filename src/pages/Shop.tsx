@@ -1146,6 +1146,34 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                               </div>
                             );
 
+                            const isMinecraft = catLower.includes("minecraft");
+
+                            // Minecraft: show single skin image centered
+                            if (isMinecraft && hasIndividualItems) {
+                              const skinItem = individualItems[0];
+                              return (
+                                <div className="relative">
+                                  <div className="relative aspect-square overflow-hidden border-b border-border/20 bg-gradient-to-b from-[hsl(var(--muted)/0.3)] to-[hsl(var(--background))]">
+                                    <div className="absolute inset-0 flex items-center justify-center p-6">
+                                      <img
+                                        src={skinItem.imageUrl}
+                                        alt=""
+                                        loading="lazy"
+                                        className="h-full w-auto object-contain drop-shadow-xl"
+                                        style={{ imageRendering: "pixelated" }}
+                                      />
+                                    </div>
+                                    <div className="absolute right-2 top-2 z-[3]">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm backdrop-blur-sm">
+                                        <Zap className="h-2.5 w-2.5" /> Automática
+                                      </span>
+                                    </div>
+                                    {badgeRow}
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             if (hasIndividualItems) {
                               const gridItems = individualItems.slice(0, 9);
                               const cols = 3;
