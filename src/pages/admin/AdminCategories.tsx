@@ -120,12 +120,17 @@ const AdminCategories = () => {
     queryClient.setQueryData(["admin-shop-categories"], reordered);
 
     // Persist all new sort_order values
-    const updates = reordered.map((cat, i) =>
+    const shopUpdates = reordered.map((cat, i) =>
       supabase.from("shop_categories").update({ sort_order: i }).eq("id", cat.id)
     );
-    await Promise.all(updates);
+    // Also sync lzt_categories sort_order
+    const lztSync = reordered.map((cat, i) =>
+      supabase.from("lzt_categories").update({ sort_order: i }).ilike("name", cat.name)
+    );
+    await Promise.all([...shopUpdates, ...lztSync]);
     queryClient.invalidateQueries({ queryKey: ["admin-shop-categories"] });
     queryClient.invalidateQueries({ queryKey: ["home-shop-categories"] });
+    queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
     toast.success("Ordem atualizada!");
   };
 
