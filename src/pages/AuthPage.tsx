@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const RESTORECORD_VERIFY_URL = "https://restorecord.com/verify/vbucksbarato";
+const DISCORD_CALLBACK_PATH = "/auth/discord-callback";
 
 interface DiscordVerification {
   discord_id: string;
@@ -33,7 +34,7 @@ const AuthPage = () => {
     if (user) navigate("/");
   }, [user, navigate]);
 
-  // Check for RestoreCord callback params
+  // Check for RestoreCord callback params (fallback for same-tab redirect)
   useEffect(() => {
     const discordId = searchParams.get("discord_id");
     const username = searchParams.get("username");
@@ -50,8 +51,30 @@ const AuthPage = () => {
     }
   }, [searchParams]);
 
+  // Listen for postMessage from popup callback
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "RESTORECORD_VERIFIED") {
+        setDiscordVerification({
+          discord_id: event.data.discord_id,
+          username: event.data.username || "Discord User",
+          avatar: event.data.avatar || null,
+        });
+        setIsLogin(false);
+        toast.success(`Discord verificado: ${event.data.username || event.data.discord_id}`);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   const openRestoreCord = () => {
-    window.open(RESTORECORD_VERIFY_URL, "_blank", "noopener,noreferrer");
+    const popup = window.open(RESTORECORD_VERIFY_URL, "restorecord_verify", "width=500,height=700,scrollbars=yes");
+    if (!popup) {
+      // Popup blocked, fallback to same tab
+      window.open(RESTORECORD_VERIFY_URL, "_blank");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

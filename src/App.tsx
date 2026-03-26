@@ -33,6 +33,7 @@ import AdminDiscord from "./pages/admin/AdminDiscord";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unsubscribe from "./pages/Unsubscribe";
+import DiscordCallback from "./pages/DiscordCallback";
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,7 @@ const App = () => (
                 <Route path="campaigns" element={<AdminCampaigns />} />
               </Route>
               <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/auth/discord-callback" element={<DiscordCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>
