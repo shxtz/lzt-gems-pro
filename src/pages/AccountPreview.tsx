@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { withTimeout } from "@/lib/supabase-resilience";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
   BarChart3, Coins, Mail, Phone, Clock, Gamepad2, Loader2, Crosshair,
-  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown, Key, Check
+  Sword, Send, MessageCircle, Eye, Zap, Tag, Hash, Users, Bot, Crown, Key, Check,
+  QrCode, Copy, X, Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
 import { useState } from "react";
+import CredentialDisplay from "@/components/CredentialDisplay";
 import { getLoLQuickPreviewItems, prewarmChampionsCatalog } from "@/lib/lol-api";
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import RecommendedAccounts from "@/components/marketing/RecommendedAccounts";
@@ -439,6 +441,21 @@ const AccountPreview = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [pixData, setPixData] = useState<{ qrcode: string; copiaecola: string; txid: string; orderId: string; variationName: string; amount: number; lztAccountId?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [payingWithBalance, setPayingWithBalance] = useState(false);
+  const [deliveredCredential, setDeliveredCredential] = useState<{ credential: string; name: string } | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: userBalance, refetch: refetchBalance } = useQuery({
+    queryKey: ["user-balance", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("balance").eq("user_id", user!.id).maybeSingle();
+      return data?.balance || 0;
+    },
+  });
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
@@ -617,14 +634,154 @@ const AccountPreview = () => {
       if (pixError) throw pixError;
       if (pixResponse?.error) throw new Error(pixResponse.error);
       await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      // Navigate to shop with the pix data encoded
-      navigate(`/loja?order=${order.id}`);
-      toast.success("Cobrança PIX gerada! Finalize o pagamento na loja.");
+      setPixData({
+        qrcode: pixResponse.qrcode,
+        copiaecola: pixResponse.copiaecola,
+        txid: pixResponse.txid,
+        orderId: order.id,
+        variationName: maskedName,
+        amount: finalPrice,
+        lztAccountId: account.id,
+      });
+      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+      toast.success("Cobrança PIX gerada!");
     } catch (err: any) {
       console.error(err);
       toast.error("Erro ao gerar pagamento.");
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  const confirmPaymentAndDeliver = async () => {
+    if (!pixData || !user) return;
+    setCheckingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("confirm-pix-payment", {
+        body: { orderId: pixData.orderId, txid: pixData.txid },
+      });
+      if (error) throw error;
+      if (data?.error && !data?.delivered && !data?.credential) {
+        if (data?.status === "refunded") {
+          toast.info(data?.error || "Problema na entrega. Valor reembolsado no saldo.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+        if (data?.status === "refund_needed" || data?.status === "cancelled") {
+          toast.error(data?.error || "Problema na entrega. Pedido marcado para reembolso.");
+          setPixData(null);
+          return;
+        }
+      }
+      if (data?.delivered || data?.credential) {
+        setDeliveredCredential({
+          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+        setPixData(null);
+        toast.success("Pagamento confirmado! Produto entregue.");
+        return;
+      }
+      // Poll order status
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const { data: orderCheck } = await supabase.from("orders").select("status").eq("id", pixData.orderId).single();
+        if (orderCheck?.status === "delivered") {
+          const { data: log } = await supabase.from("delivery_logs").select("credential_delivered").eq("order_id", pixData.orderId).maybeSingle();
+          setDeliveredCredential({
+            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
+            name: pixData.variationName,
+          });
+          queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+          setPixData(null);
+          toast.success("Pagamento confirmado! Produto entregue.");
+          return;
+        }
+        if (orderCheck?.status === "refunded") {
+          toast.info("Problema na entrega. Valor reembolsado no saldo.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+      }
+      toast.warning("Pagamento confirmado, mas entrega em processamento. Confira sua área do cliente.");
+      setPixData(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao confirmar pagamento.");
+    } finally {
+      setCheckingPayment(false);
+    }
+  };
+
+  const handlePayWithBalance = async () => {
+    if (!pixData || !user) return;
+    setPayingWithBalance(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
+        body: { orderId: pixData.orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.refunded) {
+        toast.error(data.error || "Conta não disponível. Saldo reembolsado.");
+        refetchBalance();
+        setPixData(null);
+        return;
+      }
+      if (data?.delivered) {
+        setDeliveredCredential({
+          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+        refetchBalance();
+        setPixData(null);
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        return;
+      }
+      toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+      refetchBalance();
+      for (let i = 0; i < 24; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const { data: orderCheck } = await supabase.from("orders").select("status").eq("id", pixData.orderId).single();
+        if (orderCheck?.status === "delivered") {
+          const { data: log } = await supabase.from("delivery_logs").select("credential_delivered").eq("order_id", pixData.orderId).maybeSingle();
+          setDeliveredCredential({
+            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
+            name: pixData.variationName,
+          });
+          queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+          refetchBalance();
+          setPixData(null);
+          toast.success("Produto entregue!");
+          return;
+        }
+        if (orderCheck?.status === "refunded") {
+          toast.info("Conta não disponível. Saldo reembolsado.");
+          refetchBalance();
+          setPixData(null);
+          return;
+        }
+      }
+      toast.warning("Entrega em processamento. Confira sua área do cliente.");
+      setPixData(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao pagar com saldo.");
+    } finally {
+      setPayingWithBalance(false);
+    }
+  };
+
+  const copyPix = () => {
+    if (pixData?.copiaecola) {
+      navigator.clipboard.writeText(pixData.copiaecola);
+      setCopied(true);
+      toast.success("Código PIX copiado!");
+      setTimeout(() => setCopied(false), 3000);
     }
   };
 
@@ -667,6 +824,78 @@ const AccountPreview = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
+      {/* PIX Modal */}
+      <AnimatePresence>
+        {pixData && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-primary/30 rounded-2xl p-6 max-w-md w-full space-y-5 shadow-gold relative">
+              <button onClick={() => setPixData(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3"><QrCode className="h-6 w-6 text-primary" /></div>
+                <h3 className="font-display text-lg text-foreground">Pagamento PIX</h3>
+                <p className="text-xs text-muted-foreground mt-1">{pixData.variationName}</p>
+                <p className="text-lg font-bold text-primary mt-2">R$ {pixData.amount.toFixed(2)}</p>
+              </div>
+              {pixData.qrcode && (
+                <div className="bg-white rounded-xl p-4 mx-auto w-fit">
+                  <img src={pixData.qrcode.startsWith("data:") ? pixData.qrcode : `data:image/png;base64,${pixData.qrcode}`} alt="QR Code PIX" className="w-48 h-48" />
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-display">Copia e Cola</p>
+                <div className="flex gap-2">
+                  <input readOnly value={pixData.copiaecola} className="flex-1 rounded-xl border border-border/40 bg-background px-3 py-2.5 text-xs text-foreground font-mono truncate" />
+                  <Button size="sm" variant="outline" onClick={copyPix} className="shrink-0">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
+                </div>
+              </div>
+              {user && (userBalance || 0) >= pixData.amount && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-display text-foreground">Pagar com Saldo</span>
+                    </div>
+                    <span className="text-xs text-primary font-medium">R$ {(userBalance || 0).toFixed(2)} disponível</span>
+                  </div>
+                  <Button onClick={handlePayWithBalance} disabled={payingWithBalance} className="w-full bg-primary text-primary-foreground font-display">
+                    {payingWithBalance ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processando...</> : <><Wallet className="h-4 w-4 mr-2" />Pagar R$ {pixData.amount.toFixed(2)} com Saldo</>}
+                  </Button>
+                </div>
+              )}
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/30" />
+                <span className="text-[10px] text-muted-foreground uppercase">ou pague via PIX</span>
+                <div className="flex-1 h-px bg-border/30" />
+              </div>
+              <Button onClick={confirmPaymentAndDeliver} disabled={checkingPayment} className="w-full bg-gradient-gold text-primary-foreground font-display">
+                {checkingPayment ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirmando...</> : "Já paguei - Confirmar"}
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center">Após pagar via PIX, clique em "Já paguei" para receber sua credencial.</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delivered Modal */}
+      <AnimatePresence>
+        {deliveredCredential && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDeliveredCredential(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-card border border-primary/30 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-gold">
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3"><Zap className="h-6 w-6 text-primary" /></div>
+                <h3 className="font-display text-lg text-foreground">Entrega Realizada!</h3>
+                <p className="text-xs text-muted-foreground mt-1">{deliveredCredential.name}</p>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                <CredentialDisplay credential={deliveredCredential.credential} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setDeliveredCredential(null)} className="flex-1">Fechar</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Back button */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-2">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground gap-1.5">
