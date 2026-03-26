@@ -1244,10 +1244,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                   </div>
                 </div>
                 {selectedTab === "contas" && (
-                  <div className="flex lg:hidden flex-wrap gap-1.5 w-full">
-                    <button onClick={() => { setSelectedCategory(null); navigate("/loja"); }} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>Todos</button>
+                  <div className="flex lg:hidden gap-1.5 w-full overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+                    <button onClick={() => { setSelectedCategory(null); navigate("/loja"); }} className={`px-3 py-1.5 rounded-full text-[10px] font-medium transition-all whitespace-nowrap shrink-0 ${!selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>Todos</button>
                     {shopCategories?.map((cat) => (
-                      <button key={cat.id} onClick={() => { setSelectedCategory(cat.slug); navigate(`/contas/${cat.slug}`); }} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-all ${selectedCategory === cat.slug ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>{cat.name}</button>
+                      <button key={cat.id} onClick={() => { setSelectedCategory(cat.slug); navigate(`/contas/${cat.slug}`); }} className={`px-3 py-1.5 rounded-full text-[10px] font-medium transition-all whitespace-nowrap shrink-0 ${selectedCategory === cat.slug ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground"}`}>{cat.name}</button>
                     ))}
                   </div>
                 )}
