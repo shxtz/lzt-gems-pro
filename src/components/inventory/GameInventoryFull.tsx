@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, Loader2, ImageIcon, Sparkles, Swords, Star, Shield, Gamepad2 } from "lucide-react";
+import { Filter, Loader2, ImageIcon, Sparkles, Swords, Star, Shield, Gamepad2, ShoppingBag } from "lucide-react";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
+import ItemDetailModal from "./ItemDetailModal";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -147,6 +148,7 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
   const [rarityFilter, setRarityFilter] = useState<string>("all");
   const [showGallery, setShowGallery] = useState(false);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   const gameKey = useMemo(() => {
     const cat = categoryName.toLowerCase();
@@ -391,7 +393,8 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: Math.min(i * 0.02, 0.4), duration: 0.25 }}
-                  className="group/tile relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-[1.04]"
+                  className="group/tile relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-[1.04] cursor-pointer"
+                  onClick={() => setSelectedItem(item)}
                   style={{
                     background: tileColor
                       ? `linear-gradient(135deg, ${tileColor}, rgba(0,0,0,0.6))`
@@ -425,18 +428,24 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
                     )}
                   </div>
 
-                  {/* Rarity indicator */}
-                  {outlineColor && (
-                    <div className="absolute top-1.5 right-1.5">
+                  {/* Rarity indicator + Shop badge */}
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                    {(item as any).isShopItem && (
+                      <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[8px] font-bold uppercase bg-blue-500/90 text-white shadow-sm">
+                        <ShoppingBag className="h-2.5 w-2.5" />
+                        Loja
+                      </span>
+                    )}
+                    {outlineColor && (
                       <span
-                        className="inline-block h-3 w-3 rounded-sm"
+                        className="inline-block h-3 w-3 rounded-sm shrink-0"
                         style={{
                           background: `linear-gradient(135deg, ${outlineColor}, ${outlineColor}80)`,
                           boxShadow: `0 0 6px ${outlineColor}60`,
                         }}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Extra info badges */}
                   {(item.constellation !== undefined && item.constellation > 0) && (
@@ -484,6 +493,15 @@ export default function GameInventoryFull({ lztData, accountId, categoryName }: 
         <div className="text-center py-8 text-muted-foreground text-sm">
           Nenhum item encontrado com este filtro.
         </div>
+      )}
+
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          gameTheme={{ primary: theme.primary, primaryRgb: theme.primaryRgb }}
+          onClose={() => setSelectedItem(null)}
+        />
       )}
     </div>
   );

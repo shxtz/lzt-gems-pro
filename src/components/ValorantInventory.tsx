@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, Users, Sparkles, Loader2, Filter, Swords } from "lucide-react";
 import { fetchEdgeJson } from "@/lib/fetchEdgeJson";
+import ItemDetailModal from "./inventory/ItemDetailModal";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -54,6 +55,7 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
   const [totals, setTotals] = useState({ skins: 0, agents: 0, buddies: 0 });
   const [loading, setLoading] = useState(true);
   const [rarityFilter, setRarityFilter] = useState("all");
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => {
     if (!accountId || !lztData?.valorantInventory) {
@@ -215,7 +217,14 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: Math.min(i * 0.02, 0.4), duration: 0.25 }}
-                  className="group/tile relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-[1.04]"
+                  className="group/tile relative overflow-hidden rounded-xl transition-all duration-300 hover:scale-[1.04] cursor-pointer"
+                  onClick={() => setSelectedItem({
+                    id: item.uuid,
+                    name: item.name,
+                    icon: item.icon,
+                    type: activeTab === "skins" ? "skin" : activeTab === "agents" ? "character" : "buddy",
+                    tier: { key: item.tier.key, name: item.tier.key, color: item.tier.outline, bgColor: item.tier.tile },
+                  })}
                   style={{
                     background: tileColor
                       ? `linear-gradient(135deg, ${tileColor}, rgba(0,0,0,0.6))`
@@ -272,6 +281,15 @@ export default function ValorantInventory({ lztData, accountId, compact = false 
         <div className="text-center py-8 text-muted-foreground text-sm">
           Nenhum item encontrado.
         </div>
+      )}
+
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          gameTheme={{ primary: "rgb(255, 70, 85)", primaryRgb: "255,70,85" }}
+          onClose={() => setSelectedItem(null)}
+        />
       )}
     </div>
   );
