@@ -578,8 +578,8 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         }
       }
 
-      // Step 2: Create order + generate PIX
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending" }).select().single();
+      // Step 2: Create order with LZT info + generate PIX
+      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: account.price_brl, payment_method: "pix", status: "pending", lzt_item_id: account.lzt_item_id, lzt_account_id: account.id } as any).select().single();
       if (orderError) throw orderError;
       const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
       const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: account.price_brl, description: `${accountName} - Loja` } });
@@ -613,43 +613,55 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     setCheckingPayment(true);
     try {
       if (pixData.variationId) {
+        // Regular product: deliver from stock
         const { data, error } = await supabase.functions.invoke("deliver-product", { body: { variationId: pixData.variationId, buyerId: user.id, orderId: pixData.orderId } });
         if (error) throw error;
         if (data.error) { toast.error(data.error); return; }
         await supabase.from("orders").update({ status: "paid" }).eq("id", pixData.orderId);
         setDeliveredCredential({ credential: data.credential, name: pixData.variationName });
       } else if (pixData.lztAccountId) {
-        // Find the account to get lzt_item_id
-        const account = lztAccounts?.find((a) => a.id === pixData.lztAccountId);
-        if (!account) { toast.error("Conta não encontrada"); return; }
+        // LZT account: poll for delivery (payment webhook handles the purchase)
+        toast.info("Aguardando confirmação do pagamento...");
+        let delivered = false;
+        for (let i = 0; i < 60; i++) { // Poll for up to 5 minutes
+          await new Promise((r) => setTimeout(r, 5000));
+          const { data: orderCheck } = await supabase
+            .from("orders")
+            .select("status")
+            .eq("id", pixData.orderId)
+            .single();
 
-        // Call fast_buy on LZT — this verifies, purchases, and delivers
-        const { data: buyResult, error: buyError } = await supabase.functions.invoke("lzt-purchase", {
-          body: {
-            action: "fast_buy",
-            lzt_item_id: account.lzt_item_id,
-            account_id: pixData.lztAccountId,
-            order_id: pixData.orderId,
-            buyer_id: user.id,
-            price_brl: pixData.amount,
-          },
-        });
+          if (orderCheck?.status === "delivered") {
+            // Get credentials from delivery_logs
+            const { data: log } = await supabase
+              .from("delivery_logs")
+              .select("credential_delivered")
+              .eq("order_id", pixData.orderId)
+              .maybeSingle();
 
-        if (buyError) throw buyError;
+            setDeliveredCredential({
+              credential: log?.credential_delivered || "Conta entregue — verifique sua área do cliente",
+              name: pixData.variationName,
+            });
+            delivered = true;
+            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+            break;
+          }
 
-        if (buyResult?.needsRefund) {
-          toast.error(buyResult.error || "Erro na compra — reembolso será processado.");
+          if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
+            toast.error("Erro na compra da conta — reembolso será processado.");
+            setPixData(null);
+            setCheckingPayment(false);
+            return;
+          }
+        }
+
+        if (!delivered) {
+          toast.warning("Pagamento ainda não confirmado. Verifique sua área do cliente em alguns minutos.");
           setPixData(null);
+          setCheckingPayment(false);
           return;
         }
-
-        if (buyResult?.error) {
-          toast.error(buyResult.error);
-          return;
-        }
-
-        setDeliveredCredential({ credential: buyResult.credential, name: pixData.variationName });
-        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
       }
       setPixData(null);
       toast.success("Pagamento confirmado! Produto entregue.");

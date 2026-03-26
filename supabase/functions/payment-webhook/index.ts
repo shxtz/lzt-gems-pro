@@ -60,8 +60,57 @@ Deno.serve(async (req) => {
 
       console.log(`Order ${order.id} marked as paid`);
 
-      // Trigger automatic delivery if product has stock
-      if (order.product_id) {
+      // ═══════════════════════════════════════════════════════
+      // LZT ACCOUNT: Buy from LZT Market after payment confirmed
+      // ═══════════════════════════════════════════════════════
+      if (order.lzt_item_id && order.lzt_account_id) {
+        console.log(`Order ${order.id} is LZT account — executing fast_buy for item #${order.lzt_item_id}`);
+        try {
+          const lztResult = await fetch(`${supabaseUrl}/functions/v1/lzt-purchase`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({
+              action: "fast_buy",
+              lzt_item_id: order.lzt_item_id,
+              account_id: order.lzt_account_id,
+              order_id: order.id,
+              buyer_id: order.user_id,
+              price_brl: order.total_price,
+            }),
+          });
+
+          const lztData = await lztResult.json();
+
+          if (lztData.success) {
+            console.log(`LZT fast_buy SUCCESS for order ${order.id}`);
+          } else if (lztData.needsRefund) {
+            console.error(`LZT fast_buy FAILED for order ${order.id}, needs refund:`, lztData.error);
+            await supabase.from("orders").update({
+              status: "refund_needed",
+              updated_at: new Date().toISOString(),
+            }).eq("id", order.id);
+          } else {
+            console.error(`LZT fast_buy error for order ${order.id}:`, lztData.error);
+            await supabase.from("orders").update({
+              status: "refund_needed",
+              updated_at: new Date().toISOString(),
+            }).eq("id", order.id);
+          }
+        } catch (lztErr) {
+          console.error(`LZT fast_buy exception for order ${order.id}:`, lztErr);
+          await supabase.from("orders").update({
+            status: "refund_needed",
+            updated_at: new Date().toISOString(),
+          }).eq("id", order.id);
+        }
+      }
+      // ═══════════════════════════════════════════════════════
+      // REGULAR PRODUCT: Deliver from stock
+      // ═══════════════════════════════════════════════════════
+      else if (order.product_id) {
         try {
           const deliverResponse = await fetch(`${supabaseUrl}/functions/v1/deliver-product`, {
             method: "POST",
@@ -81,7 +130,6 @@ Deno.serve(async (req) => {
               .from("orders")
               .update({ status: "delivered", updated_at: new Date().toISOString() })
               .eq("id", order.id);
-
             console.log(`Order ${order.id} delivered automatically`);
           }
         } catch (deliverErr) {
@@ -93,6 +141,7 @@ Deno.serve(async (req) => {
       const discordWebhookUrl = Deno.env.get("DISCORD_WEBHOOK_SALES");
       if (discordWebhookUrl) {
         try {
+          const orderType = order.lzt_item_id ? "Conta LZT" : "Produto";
           await fetch(discordWebhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -102,7 +151,8 @@ Deno.serve(async (req) => {
                 color: 0xFFD700,
                 fields: [
                   { name: "Pedido", value: order.id, inline: true },
-                  { name: "Valor", value: `R$ ${order.total_price.toFixed(2)}`, inline: true },
+                  { name: "Valor", value: `R$ ${Number(order.total_price).toFixed(2)}`, inline: true },
+                  { name: "Tipo", value: orderType, inline: true },
                   { name: "Status", value: "Pago ✅", inline: true },
                 ],
                 timestamp: new Date().toISOString(),
