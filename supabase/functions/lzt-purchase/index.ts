@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { action, lzt_item_id, account_id, order_id, buyer_id, price_brl } = await req.json();
+    const { action, lzt_item_id, account_id, order_id, buyer_id, price_brl, use_reserved, reserved_credentials } = await req.json();
 
     // ──────────────────────────────────────────────
     // 1. CHECK AVAILABILITY — before generating PIX
