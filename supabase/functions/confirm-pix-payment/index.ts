@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
-      .select("id, user_id, status, payment_id, total_price, product_id, lzt_item_id, lzt_account_id")
+      .select("id, user_id, status, payment_id, total_price, product_id, lzt_item_id, lzt_account_id, lzt_reserved_credentials, pix_e2eid")
       .eq("id", orderId)
       .eq("payment_id", txid)
       .eq("user_id", userData.user.id)
