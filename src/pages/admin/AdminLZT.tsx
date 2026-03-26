@@ -1,12 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Plus, Trash2, Download, Search, Save, RefreshCw, Settings2, Link2, Percent, AlertTriangle,
+  Activity, CheckCircle2, XCircle, Clock, Loader2, ArrowDownCircle, ArrowUpCircle, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+
+/* ── Activity log types ────────────────────────────────── */
+
+interface ActivityEntry {
+  id: string;
+  timestamp: Date;
+  type: "info" | "success" | "warning" | "error" | "importing" | "checking";
+  message: string;
+}
+
+const logIcon = (type: ActivityEntry["type"]) => {
+  switch (type) {
+    case "success": return <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />;
+    case "warning": return <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0" />;
+    case "error": return <XCircle className="h-3 w-3 text-red-400 shrink-0" />;
+    case "importing": return <ArrowDownCircle className="h-3 w-3 text-blue-400 shrink-0 animate-bounce" />;
+    case "checking": return <RefreshCw className="h-3 w-3 text-purple-400 shrink-0 animate-spin" />;
+    default: return <Activity className="h-3 w-3 text-muted-foreground shrink-0" />;
+  }
+};
 
 const AdminLZT = () => {
   const queryClient = useQueryClient();
@@ -45,6 +68,7 @@ const AdminLZT = () => {
       });
       return counts;
     },
+    refetchInterval: 15000, // Refresh counts every 15s for live feel
   });
 
   const totalAccounts = Object.values(accountCounts || {}).reduce((s, c) => s + c, 0);
@@ -88,7 +112,7 @@ const AdminLZT = () => {
       queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
       toast.success(`${data?.imported || 0} contas importadas!`);
       if (data?.skipped) {
-        toast.warning(`${data.skipped} conta(s) ignorada(s) por categoria incompatível com a busca configurada.`);
+        toast.warning(`${data.skipped} conta(s) ignorada(s) por categoria incompatível.`);
       }
     },
     onError: (e) => toast.error(`Erro: ${e.message}`),
@@ -356,6 +380,8 @@ const AdminLZT = () => {
   );
 };
 
+/* ── CategoryCard with live activity log ───────────────── */
+
 interface CategoryCardProps {
   category: any;
   count: number;
@@ -377,104 +403,290 @@ const CategoryCard = ({
   isImporting,
   isSearching,
 }: CategoryCardProps) => {
+  const queryClient = useQueryClient();
   const [localUrl, setLocalUrl] = useState(category.api_url || "");
   const [localMargin, setLocalMargin] = useState(String(category.margin_percent));
+  const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollCycle, setPollCycle] = useState(0);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  const addLog = useCallback((type: ActivityEntry["type"], message: string) => {
+    setActivityLog((prev) => {
+      const entry: ActivityEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: new Date(),
+        type,
+        message,
+      };
+      return [entry, ...prev].slice(0, 50); // keep last 50
+    });
+  }, []);
+
+  // Auto-poll when auto_import is enabled
+  const runPollCycle = useCallback(async () => {
+    if (!category.auto_import || !category.api_url) return;
+
+    setIsPolling(true);
+    addLog("importing", "Buscando novas contas no LZT Market...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("lzt-realtime-poll", {});
+
+      if (error) {
+        addLog("error", `Erro na importação: ${error.message}`);
+      } else if (data) {
+        const { imported = 0, updated = 0, removed = 0, categories: catCount = 0 } = data;
+        
+        if (imported > 0) {
+          addLog("success", `✅ ${imported} conta(s) importada(s) com sucesso`);
+        }
+        if (updated > 0) {
+          addLog("info", `🔄 ${updated} preço(s) atualizado(s)`);
+        }
+        if (removed > 0) {
+          addLog("warning", `🗑️ ${removed} conta(s) removida(s) (vendidas/banidas)`);
+        }
+        if (imported === 0 && updated === 0 && removed === 0) {
+          addLog("info", "Nenhuma alteração detectada — estoque atualizado");
+        }
+
+        // Refresh counts
+        queryClient.invalidateQueries({ queryKey: ["lzt-account-counts"] });
+        queryClient.invalidateQueries({ queryKey: ["lzt-categories"] });
+      }
+    } catch (err: any) {
+      addLog("error", `Erro: ${err.message || "Falha na conexão"}`);
+    } finally {
+      setIsPolling(false);
+      setPollCycle((c) => c + 1);
+    }
+  }, [category.auto_import, category.api_url, addLog, queryClient]);
+
+  useEffect(() => {
+    if (!category.auto_import) {
+      if (pollRef.current) clearTimeout(pollRef.current);
+      return;
+    }
+
+    // Add initial log when enabled
+    if (activityLog.length === 0) {
+      addLog("info", "⚡ Auto Import ativado — monitoramento iniciado");
+      addLog("info", `URL: ${category.api_url ? category.api_url.slice(0, 60) + "..." : "Não configurada"}`);
+      addLog("info", `Margem: ${category.margin_percent}% | Limite: ${category.account_limit} contas`);
+    }
+
+    // Run first cycle after a short delay
+    const initialDelay = setTimeout(() => {
+      runPollCycle();
+    }, 2000);
+
+    return () => clearTimeout(initialDelay);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category.auto_import]);
+
+  // Schedule next poll after each cycle completes
+  useEffect(() => {
+    if (!category.auto_import || pollCycle === 0) return;
+
+    const nextPoll = setTimeout(() => {
+      runPollCycle();
+    }, 60000); // Every 60 seconds
+
+    pollRef.current = nextPoll;
+    return () => clearTimeout(nextPoll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollCycle, category.auto_import]);
+
+  // Clear log when auto_import is disabled
+  useEffect(() => {
+    if (!category.auto_import && activityLog.length > 0) {
+      addLog("info", "Auto Import desativado");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category.auto_import]);
+
+  const fillPercent = Math.min(100, Math.round((count / category.account_limit) * 100));
 
   return (
-    <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-base text-foreground font-semibold">{category.name}</h3>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1">
-            <div className={`h-2 w-2 rounded-full ${count > 0 ? "bg-primary" : "bg-destructive"}`} />
-            <span className="text-foreground font-bold">{count}/{category.account_limit}</span>
-          </span>
-          {category.last_import_at && (
-            <span className="text-muted-foreground">
-              {new Date(category.last_import_at).toLocaleString("pt-BR", {
-                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-              })}
+    <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+      <div className="p-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h3 className="font-display text-base text-foreground font-semibold">{category.name}</h3>
+            {category.auto_import && (
+              <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] uppercase tracking-wider gap-1">
+                <Zap className="h-2.5 w-2.5" /> Ativo
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1">
+              <div className={`h-2 w-2 rounded-full ${count > 0 ? "bg-primary" : "bg-destructive"}`} />
+              <span className="text-foreground font-bold">{count}/{category.account_limit}</span>
             </span>
-          )}
+            {category.last_import_at && (
+              <span className="text-muted-foreground">
+                {new Date(category.last_import_at).toLocaleString("pt-BR", {
+                  day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Toggle */}
-      <div className="rounded-xl border border-border/30 p-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-foreground font-medium flex items-center gap-1">
-            ⚡ Auto Delete + Auto Import
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Importa contas novas automaticamente e verifica a cada 1 min se continuam válidas no LZT. Remove vendidas/banidas.
-          </p>
+        {/* Progress bar */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>Estoque: {count} de {category.account_limit}</span>
+            <span>{fillPercent}%</span>
+          </div>
+          <Progress value={fillPercent} className="h-1.5" />
         </div>
-        <Switch
-          checked={category.auto_import}
-          onCheckedChange={(val) => onUpdateField("auto_import", val)}
-        />
-      </div>
 
-      {/* URL + Margin */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
-          <input
-            value={localUrl}
-            onChange={(e) => setLocalUrl(e.target.value)}
-            placeholder="https://prod-api.lzt.market/riot?pmax=250&..."
-            className="flex-1 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
+        {/* Toggle */}
+        <div className={`rounded-xl border p-4 flex items-center justify-between transition-colors ${
+          category.auto_import ? "border-emerald-500/30 bg-emerald-500/5" : "border-border/30"
+        }`}>
+          <div>
+            <p className="text-sm text-foreground font-medium flex items-center gap-1.5">
+              <Zap className={`h-3.5 w-3.5 ${category.auto_import ? "text-emerald-400" : "text-muted-foreground"}`} />
+              Auto Delete + Auto Import
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Importa contas novas automaticamente e verifica a cada 1 min se continuam válidas no LZT. Remove vendidas/banidas.
+            </p>
+          </div>
+          <Switch
+            checked={category.auto_import}
+            onCheckedChange={(val) => {
+              onUpdateField("auto_import", val);
+              if (val) {
+                setActivityLog([]);
+              }
+            }}
           />
-          <button
-            onClick={() => onUpdateField("api_url", localUrl)}
-            className="rounded-xl border border-border/40 px-4 py-3 text-xs font-medium text-foreground hover:bg-muted/50 transition"
-          >
-            Salvar
-          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
-          <input
-            value={localMargin}
-            onChange={(e) => setLocalMargin(e.target.value)}
-            type="number"
-            className="w-20 rounded-xl border border-border/40 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
-          <span className="text-xs text-muted-foreground">% lucro</span>
-          {localMargin !== String(category.margin_percent) && (
+
+        {/* Activity Log — shown when auto_import is enabled */}
+        {category.auto_import && (
+          <div className="rounded-xl border border-border/30 bg-background/50 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/20">
+              <div className="flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-display text-foreground uppercase tracking-wider">Atividade em Tempo Real</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isPolling && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-blue-400">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Processando...
+                  </div>
+                )}
+                {!isPolling && pollCycle > 0 && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Próximo ciclo em ~60s
+                  </div>
+                )}
+              </div>
+            </div>
+            <div
+              ref={logContainerRef}
+              className="max-h-48 overflow-y-auto p-3 space-y-1.5 scrollbar-thin"
+            >
+              {activityLog.length === 0 ? (
+                <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Iniciando monitoramento...
+                </div>
+              ) : (
+                activityLog.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-2 text-[11px] leading-relaxed animate-in fade-in slide-in-from-top-1 duration-300"
+                  >
+                    <span className="mt-0.5">{logIcon(entry.type)}</span>
+                    <span className="text-muted-foreground shrink-0 font-mono">
+                      {entry.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    </span>
+                    <span className={`${
+                      entry.type === "success" ? "text-emerald-400" :
+                      entry.type === "warning" ? "text-amber-400" :
+                      entry.type === "error" ? "text-red-400" :
+                      "text-foreground"
+                    }`}>
+                      {entry.message}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* URL + Margin */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <input
+              value={localUrl}
+              onChange={(e) => setLocalUrl(e.target.value)}
+              placeholder="https://prod-api.lzt.market/riot?pmax=250&..."
+              className="flex-1 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
             <button
-              onClick={() => onUpdateField("margin_percent", parseInt(localMargin))}
-              className="text-xs text-primary underline"
+              onClick={() => onUpdateField("api_url", localUrl)}
+              className="rounded-xl border border-border/40 px-4 py-3 text-xs font-medium text-foreground hover:bg-muted/50 transition"
             >
               Salvar
             </button>
-          )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
+            <input
+              value={localMargin}
+              onChange={(e) => setLocalMargin(e.target.value)}
+              type="number"
+              className="w-20 rounded-xl border border-border/40 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+            <span className="text-xs text-muted-foreground">% lucro</span>
+            {localMargin !== String(category.margin_percent) && (
+              <button
+                onClick={() => onUpdateField("margin_percent", parseInt(localMargin))}
+                className="text-xs text-primary underline"
+              >
+                Salvar
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 justify-end flex-wrap">
-        <button
-          onClick={onSearch}
-          disabled={isSearching || !localUrl}
-          className="flex items-center gap-2 rounded-xl border border-border/40 px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition disabled:opacity-50"
-        >
-          <Search className="h-3 w-3" /> Buscar
-        </button>
-        <button
-          onClick={onImport}
-          disabled={isImporting || !localUrl}
-          className="flex items-center gap-2 rounded-xl bg-primary/20 border border-primary/30 px-4 py-2 text-xs font-medium text-primary hover:bg-primary/30 transition disabled:opacity-50"
-        >
-          <Download className="h-3 w-3" /> Importar
-        </button>
-        <button
-          onClick={onClear}
-          className="flex items-center gap-2 rounded-xl border border-destructive/40 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition"
-        >
-          <Trash2 className="h-3 w-3" /> Limpar ({count})
-        </button>
+        {/* Actions */}
+        <div className="flex gap-2 justify-end flex-wrap">
+          <button
+            onClick={onSearch}
+            disabled={isSearching || !localUrl}
+            className="flex items-center gap-2 rounded-xl border border-border/40 px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition disabled:opacity-50"
+          >
+            <Search className="h-3 w-3" /> Buscar
+          </button>
+          <button
+            onClick={onImport}
+            disabled={isImporting || !localUrl}
+            className="flex items-center gap-2 rounded-xl bg-primary/20 border border-primary/30 px-4 py-2 text-xs font-medium text-primary hover:bg-primary/30 transition disabled:opacity-50"
+          >
+            <Download className="h-3 w-3" /> Importar
+          </button>
+          <button
+            onClick={onClear}
+            className="flex items-center gap-2 rounded-xl border border-destructive/40 px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition"
+          >
+            <Trash2 className="h-3 w-3" /> Limpar ({count})
+          </button>
+        </div>
       </div>
     </div>
   );
