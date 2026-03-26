@@ -441,6 +441,21 @@ const AccountPreview = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponId, setCouponId] = useState<string | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [pixData, setPixData] = useState<{ qrcode: string; copiaecola: string; txid: string; orderId: string; variationName: string; amount: number; lztAccountId?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [payingWithBalance, setPayingWithBalance] = useState(false);
+  const [deliveredCredential, setDeliveredCredential] = useState<{ credential: string; name: string } | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: userBalance, refetch: refetchBalance } = useQuery({
+    queryKey: ["user-balance", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("balance").eq("user_id", user!.id).maybeSingle();
+      return data?.balance || 0;
+    },
+  });
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
