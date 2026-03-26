@@ -248,6 +248,7 @@ export type Database = {
         Row: {
           coupon_id: string | null
           created_at: string
+          delivered_at: string | null
           fortnite_username: string | null
           id: string
           lzt_account_id: string | null
@@ -255,7 +256,12 @@ export type Database = {
           lzt_reserved_credentials: Json | null
           payment_id: string | null
           payment_method: string | null
+          pix_bank_code: string | null
+          pix_client_doc: string | null
+          pix_client_name: string | null
           pix_e2eid: string | null
+          pix_institution: string | null
+          pix_key: string | null
           product_id: string | null
           quantity: number
           status: string
@@ -267,6 +273,7 @@ export type Database = {
         Insert: {
           coupon_id?: string | null
           created_at?: string
+          delivered_at?: string | null
           fortnite_username?: string | null
           id?: string
           lzt_account_id?: string | null
@@ -274,7 +281,12 @@ export type Database = {
           lzt_reserved_credentials?: Json | null
           payment_id?: string | null
           payment_method?: string | null
+          pix_bank_code?: string | null
+          pix_client_doc?: string | null
+          pix_client_name?: string | null
           pix_e2eid?: string | null
+          pix_institution?: string | null
+          pix_key?: string | null
           product_id?: string | null
           quantity?: number
           status?: string
@@ -286,6 +298,7 @@ export type Database = {
         Update: {
           coupon_id?: string | null
           created_at?: string
+          delivered_at?: string | null
           fortnite_username?: string | null
           id?: string
           lzt_account_id?: string | null
@@ -293,7 +306,12 @@ export type Database = {
           lzt_reserved_credentials?: Json | null
           payment_id?: string | null
           payment_method?: string | null
+          pix_bank_code?: string | null
+          pix_client_doc?: string | null
+          pix_client_name?: string | null
           pix_e2eid?: string | null
+          pix_institution?: string | null
+          pix_key?: string | null
           product_id?: string | null
           quantity?: number
           status?: string
