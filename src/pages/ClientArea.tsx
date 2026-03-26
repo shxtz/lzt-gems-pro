@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/supabase-resilience";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,29 +36,47 @@ const ClientArea = () => {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["client-profile", user?.id],
     enabled: authReady && !!user,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      if (data) setDisplayName(data.display_name || "");
-      return data;
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", user!.id)
+            .maybeSingle(),
+        );
+        if (error) throw error;
+        if (data) setDisplayName(data.display_name || "");
+        return data;
+      } catch {
+        return null;
+      }
     },
   });
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["client-orders", user?.id],
     enabled: authReady && !!user,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, vbucks_products(amount)")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("orders")
+            .select("*, vbucks_products(amount)")
+            .eq("user_id", user!.id)
+            .order("created_at", { ascending: false }),
+        );
+        if (error) throw error;
+        return data ?? [];
+      } catch {
+        return [];
+      }
     },
   });
 

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Zap, ShoppingBag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/supabase-resilience";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import vbucksIcon from "@/assets/vbucks-icon.png";
@@ -122,14 +123,23 @@ const VBucksSection = () => {
   const { data: products } = useQuery({
     queryKey: ["vbucks-products"],
     enabled: authReady,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vbucks_products")
-        .select("*")
-        .eq("active", true)
-        .order("sort_order");
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("vbucks_products")
+            .select("*")
+            .eq("active", true)
+            .order("sort_order"),
+        );
+        if (error) throw error;
+        return data;
+      } catch {
+        return null;
+      }
     },
   });
 

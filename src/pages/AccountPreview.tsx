@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/supabase-resilience";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
@@ -427,28 +428,46 @@ const AccountPreview = () => {
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account-preview", id],
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lzt_accounts")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("lzt_accounts")
+            .select("*")
+            .eq("id", id!)
+            .maybeSingle(),
+        );
+        if (error) throw error;
+        return data;
+      } catch {
+        return null;
+      }
     },
     enabled: authReady && !!id,
   });
 
   const { data: lztCategory } = useQuery({
     queryKey: ["lzt-cat", account?.category_id],
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lzt_categories")
-        .select("name")
-        .eq("id", account!.category_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("lzt_categories")
+            .select("name")
+            .eq("id", account!.category_id)
+            .maybeSingle(),
+        );
+        if (error) throw error;
+        return data;
+      } catch {
+        return null;
+      }
     },
     enabled: authReady && !!account?.category_id,
   });

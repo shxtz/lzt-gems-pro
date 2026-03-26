@@ -96,6 +96,8 @@ const SHOP_FALLBACK_CATEGORIES: ShopCategory[] = [
   { id: "fallback-zzz", name: "Zenless Zone Zero", slug: "zzz", emoji: "⚡", icon_url: null, sort_order: 8 },
 ];
 
+import { withTimeout, readCache, writeCache } from "@/lib/supabase-resilience";
+
 const SHOP_CACHE_KEYS = {
   lztCategories: "shop-cache:lzt-categories",
   lztAccounts: "shop-cache:lzt-accounts",
@@ -104,31 +106,6 @@ const SHOP_CACHE_KEYS = {
   variations: "shop-cache:variations",
   stockCounts: "shop-cache:stock-counts",
 } as const;
-
-const readCachedValue = <T,>(key: string, fallback: T): T => {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const writeCachedValue = (key: string, value: unknown) => {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-};
-
-const withQueryTimeout = async <T,>(promise: PromiseLike<T>, ms = 8000): Promise<T> => {
-  const timeout = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error("timeout")), ms);
-  });
-
-  return Promise.race([Promise.resolve(promise), timeout]);
-};
 
 const GAME_PREFIX_MAP: Record<string, string> = {
   valorant: "VAL", riot: "VAL", fortnite: "FN", lol: "LOL", league: "LOL",

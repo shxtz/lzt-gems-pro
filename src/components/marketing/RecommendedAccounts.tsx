@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/supabase-resilience";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Star, ArrowRight, ShoppingCart } from "lucide-react";
@@ -18,18 +19,26 @@ const RecommendedAccounts = ({ currentAccountId, categoryId, categoryName, maxIt
 
   const { data: recommendations } = useQuery({
     queryKey: ["recommended-accounts", categoryId, currentAccountId],
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
     queryFn: async () => {
-      // Fetch same-category accounts, excluding current
-      const { data, error } = await supabase
-        .from("lzt_accounts")
-        .select("id, lzt_item_id, price_brl, category_id, data")
-        .eq("status", "available")
-        .eq("category_id", categoryId)
-        .neq("id", currentAccountId)
-        .order("imported_at", { ascending: false })
-        .limit(maxItems);
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from("lzt_accounts")
+            .select("id, lzt_item_id, price_brl, category_id, data")
+            .eq("status", "available")
+            .eq("category_id", categoryId)
+            .neq("id", currentAccountId)
+            .order("imported_at", { ascending: false })
+            .limit(maxItems),
+        );
+        if (error) throw error;
+        return data;
+      } catch {
+        return [];
+      }
     },
     enabled: !!categoryId && !!currentAccountId,
   });
