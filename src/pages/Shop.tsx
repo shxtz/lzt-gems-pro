@@ -1185,7 +1185,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                             )}
                                             {useCompactGrid && (
                                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4">
-                                                <p className="text-[9px] font-semibold text-white text-center leading-tight line-clamp-1 drop-shadow-md">{item.name}</p>
+                                                <p className="text-[9px] font-semibold text-white text-center leading-tight line-clamp-1 drop-shadow-md">{"name" in item ? item.name : "championName" in item ? (item as any).championName : ""}</p>
                                               </div>
                                             )}
                                           </div>
