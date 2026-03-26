@@ -133,36 +133,8 @@ Deno.serve(async (req) => {
       const buyData = await buyRes.json();
       console.log("LZT fast_buy success:", JSON.stringify(buyData));
 
-      // Extract credentials from buy response
-      let credential = "Conta comprada — verifique sua área do cliente";
-      if (buyData.item?.loginData) {
-        const login = buyData.item.loginData;
-        const parts = [];
-        if (login.login) parts.push(`Login: ${login.login}`);
-        if (login.password) parts.push(`Senha: ${login.password}`);
-        if (login.email) parts.push(`Email: ${login.email}`);
-        if (login.emailPassword) parts.push(`Senha Email: ${login.emailPassword}`);
-        // Detect email provider
-        if (login.email) {
-          const domain = login.email.split("@")[1]?.toLowerCase() || "";
-          const providers: Record<string, string> = {
-            "gmail.com": "Google (Gmail)", "googlemail.com": "Google (Gmail)",
-            "outlook.com": "Microsoft (Outlook)", "hotmail.com": "Microsoft (Hotmail)",
-            "live.com": "Microsoft (Live)", "mail.ru": "Mail.ru",
-            "yahoo.com": "Yahoo Mail", "icloud.com": "Apple (iCloud)",
-            "protonmail.com": "ProtonMail", "proton.me": "ProtonMail",
-            "rambler.ru": "Rambler", "yandex.ru": "Yandex", "yandex.com": "Yandex",
-          };
-          const provider = providers[domain] || domain;
-          parts.push(`Provedor Email: ${provider}`);
-        }
-        if (login.raw) parts.push(login.raw);
-        if (parts.length > 0) credential = parts.join("\n");
-      } else if (buyData.item?.account) {
-        credential = typeof buyData.item.account === "string"
-          ? buyData.item.account
-          : JSON.stringify(buyData.item.account, null, 2);
-      }
+      // Extract credentials using robust multi-source extraction
+      const credential = extractPurchaseCredentials(buyData);
 
       // Update our DB: mark account as sold
       await supabase
