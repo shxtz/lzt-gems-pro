@@ -100,8 +100,12 @@ Deno.serve(async (req) => {
       }
 
       const item = data.item;
-      const usdPrice = item.price || 0;
-      const brlPrice = usdPrice * 5.5 * (1 + (margin_percent || 30) / 100);
+      const rawPrice = item.price || 0;
+      const currency = (item.price_currency || item.priceCurrency || "usd").toLowerCase();
+      const isBrl = currency === "brl" || currency === "rub_brl" || currency === "r$";
+      const baseBrl = isBrl ? rawPrice : rawPrice * 5.5;
+      const brlPrice = baseBrl * (1 + (margin_percent || 30) / 100);
+      const usdPrice = rawPrice;
 
       const { error } = await supabase.from("lzt_accounts").upsert(
         {
