@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Trash2, ShoppingBag, QrCode, Copy, Check, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.png";
 import vbucksIcon from "@/assets/vbucks-icon.png";
+import CrossSellBanner from "@/components/marketing/CrossSellBanner";
 
 const Checkout = () => {
   const { items, removeItem, clearCart, totalPrice } = useCart();
@@ -230,6 +231,9 @@ const Checkout = () => {
               <QrCode className="h-5 w-5" />
               {loading ? "Gerando PIX..." : "Pagar com PIX"}
             </motion.button>
+
+            {/* Cross-sell */}
+            <CrossSellBanner context="checkout" />
           </div>
         ) : (
           /* PIX Payment Screen */

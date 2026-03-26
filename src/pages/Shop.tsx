@@ -23,6 +23,9 @@ import { prewarmChampionsCatalog, getLoLQuickPreviewItems, type LoLPreviewItem }
 import { getGamePreviewItems, getLoLRankIcon, type GamePreviewItem } from "@/lib/game-preview";
 import AccountDetails, { extractAccountInfo, getValorantRankIcon, getValorantRankName } from "@/components/AccountDetails";
 import ValorantInventory from "@/components/ValorantInventory";
+import ScarcityBadge from "@/components/marketing/ScarcityBadge";
+import SocialProofBar from "@/components/marketing/SocialProofBar";
+import CrossSellBanner from "@/components/marketing/CrossSellBanner";
 
 interface LztAccount {
   id: string;
@@ -892,6 +895,16 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
             </div>
 
             <div className="p-4 sm:p-6">
+              {/* V-Bucks Cross-sell Banner */}
+              {selectedTab === "contas" && (
+                <div className="mb-5">
+                  <CrossSellBanner context="shop" />
+                </div>
+              )}
+
+              {/* Social Proof */}
+              <SocialProofBar />
+
               {/* Section Title */}
               <div className="flex items-center gap-2 mb-5">
                 {selectedTab === "contas" ? (
@@ -1222,6 +1235,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                           <div>
                                             <span className="text-sm text-foreground">{v.name}</span>
                                             <span className={`text-[10px] ml-2 ${stock > 0 ? "text-green-500" : "text-destructive"}`}>{stock > 0 ? `${stock} disponível` : "Esgotado"}</span>
+                                            {stock > 0 && stock <= 5 && <ScarcityBadge count={stock} className="ml-1" />}
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-3">
