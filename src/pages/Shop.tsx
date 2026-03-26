@@ -122,12 +122,12 @@ const writeCachedValue = (key: string, value: unknown) => {
   } catch {}
 };
 
-const withQueryTimeout = async <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
+const withQueryTimeout = async <T,>(promise: PromiseLike<T>, ms = 8000): Promise<T> => {
   const timeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error("timeout")), ms);
   });
 
-  return Promise.race([promise, timeout]);
+  return Promise.race([Promise.resolve(promise), timeout]);
 };
 
 const GAME_PREFIX_MAP: Record<string, string> = {
