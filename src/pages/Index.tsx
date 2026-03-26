@@ -6,12 +6,14 @@ import CategoriesSection from "@/components/CategoriesSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import FloatingChat from "@/components/FloatingChat";
 import Footer from "@/components/Footer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const sections = ["hero", "vbucks", "categories", "features"] as const;
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnimatingRef = useRef(false);
+  const isMobile = useIsMobile();
 
   const getCurrentSectionIndex = useCallback(() => {
     const container = containerRef.current;
@@ -53,15 +55,15 @@ const Index = () => {
     }
   }, [scrollToSection]);
 
+  // Only enable snap scroll on desktop
   useEffect(() => {
+    if (isMobile) return;
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (event: WheelEvent) => {
       if (Math.abs(event.deltaY) < 15) return;
-
       event.preventDefault();
-
       if (isAnimatingRef.current) return;
 
       const currentIndex = getCurrentSectionIndex();
@@ -74,25 +76,22 @@ const Index = () => {
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener("wheel", handleWheel);
-    };
-  }, [getCurrentSectionIndex, scrollToSection]);
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [getCurrentSectionIndex, scrollToSection, isMobile]);
 
   return (
-    <div ref={containerRef} className="h-screen overflow-y-auto snap-container bg-background">
+    <div ref={containerRef} className={`h-screen overflow-y-auto bg-background ${isMobile ? '' : 'snap-container'}`}>
       <Navbar />
-      <section id="hero" className="snap-section">
+      <section id="hero" className={isMobile ? '' : 'snap-section'}>
         <HeroSection onScrollNext={() => scrollToNext("hero")} />
       </section>
-      <section id="vbucks" className="snap-section">
+      <section id="vbucks" className={isMobile ? '' : 'snap-section'}>
         <VBucksSection />
       </section>
-      <section id="categories" className="snap-section">
+      <section id="categories" className={isMobile ? '' : 'snap-section'}>
         <CategoriesSection />
       </section>
-      <section id="features" className="snap-section relative flex flex-col">
+      <section id="features" className={`${isMobile ? '' : 'snap-section'} relative flex flex-col`}>
         <div className="flex-1">
           <FeaturesSection />
         </div>
