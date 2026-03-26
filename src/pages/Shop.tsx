@@ -299,6 +299,22 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [viewAccount, setViewAccount] = useState<LztAccount | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [payingWithBalance, setPayingWithBalance] = useState(false);
+
+  // User balance query
+  const { data: userBalance, refetch: refetchBalance } = useQuery({
+    queryKey: ["user-balance", user?.id],
+    enabled: !!user,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", user!.id)
+        .single();
+      return Number(data?.balance || 0);
+    },
+  });
   const [filterCountry, setFilterCountry] = useState<string>("");
   const [filterPriceMax, setFilterPriceMax] = useState<string>("");
   const [filterSpamFree, setFilterSpamFree] = useState(false);
