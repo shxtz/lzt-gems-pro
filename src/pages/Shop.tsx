@@ -282,18 +282,18 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
-    initialData: () => readCachedValue<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []),
+    initialData: () => readCache<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []),
     queryFn: async () => {
       try {
-        const { data, error } = await withQueryTimeout(
+        const { data, error } = await withTimeout(
           supabase.from("lzt_categories").select("id, name, icon_url, margin_percent").order("sort_order"),
         );
         if (error) throw error;
         const nextData = (data ?? []) as LztCategory[];
-        writeCachedValue(SHOP_CACHE_KEYS.lztCategories, nextData);
+        writeCache(SHOP_CACHE_KEYS.lztCategories, nextData);
         return nextData;
       } catch {
-        return readCachedValue<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []);
+        return readCache<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []);
       }
     },
   });
@@ -304,18 +304,18 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 60 * 1000,
-    initialData: () => readCachedValue<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []),
+    initialData: () => readCache<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []),
     queryFn: async () => {
       try {
-        const { data, error } = await withQueryTimeout(
+        const { data, error } = await withTimeout(
           supabase.from("lzt_accounts").select("id, lzt_item_id, title, price_brl, price_usd, status, category_id, data, imported_at").eq("status", "available").order("imported_at", { ascending: false }),
         );
         if (error) throw error;
         const nextData = (data ?? []) as LztAccount[];
-        writeCachedValue(SHOP_CACHE_KEYS.lztAccounts, nextData);
+        writeCache(SHOP_CACHE_KEYS.lztAccounts, nextData);
         return nextData;
       } catch {
-        return readCachedValue<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []);
+        return readCache<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []);
       }
     },
     refetchInterval: 60000,
@@ -327,18 +327,18 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
-    initialData: () => readCachedValue<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES),
+    initialData: () => readCache<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES),
     queryFn: async () => {
       try {
-        const { data, error } = await withQueryTimeout(
+        const { data, error } = await withTimeout(
           supabase.from("shop_categories").select("id, name, slug, emoji, icon_url, sort_order").eq("visible", true).order("sort_order"),
         );
         if (error) throw error;
         const nextData = (data && data.length > 0 ? data : SHOP_FALLBACK_CATEGORIES) as ShopCategory[];
-        writeCachedValue(SHOP_CACHE_KEYS.shopCategories, nextData);
+        writeCache(SHOP_CACHE_KEYS.shopCategories, nextData);
         return nextData;
       } catch {
-        return readCachedValue<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES);
+        return readCache<ShopCategory[]>(SHOP_CACHE_KEYS.shopCategories, SHOP_FALLBACK_CATEGORIES);
       }
     },
   });
@@ -349,18 +349,18 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
-    initialData: () => readCachedValue<Product[]>(SHOP_CACHE_KEYS.products, []),
+    initialData: () => readCache<Product[]>(SHOP_CACHE_KEYS.products, []),
     queryFn: async () => {
       try {
-        const { data, error } = await withQueryTimeout(
+        const { data, error } = await withTimeout(
           supabase.from("products").select("id, name, description, category, image_url, active").eq("active", true).order("sort_order"),
         );
         if (error) throw error;
         const nextData = (data ?? []) as Product[];
-        writeCachedValue(SHOP_CACHE_KEYS.products, nextData);
+        writeCache(SHOP_CACHE_KEYS.products, nextData);
         return nextData;
       } catch {
-        return readCachedValue<Product[]>(SHOP_CACHE_KEYS.products, []);
+        return readCache<Product[]>(SHOP_CACHE_KEYS.products, []);
       }
     },
   });
@@ -371,18 +371,18 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
-    initialData: () => readCachedValue<Variation[]>(SHOP_CACHE_KEYS.variations, []),
+    initialData: () => readCache<Variation[]>(SHOP_CACHE_KEYS.variations, []),
     queryFn: async () => {
       try {
-        const { data, error } = await withQueryTimeout(
+        const { data, error } = await withTimeout(
           supabase.from("product_variations").select("id, product_id, name, price, original_price, credential_type, active").eq("active", true).order("sort_order"),
         );
         if (error) throw error;
         const nextData = (data ?? []) as Variation[];
-        writeCachedValue(SHOP_CACHE_KEYS.variations, nextData);
+        writeCache(SHOP_CACHE_KEYS.variations, nextData);
         return nextData;
       } catch {
-        return readCachedValue<Variation[]>(SHOP_CACHE_KEYS.variations, []);
+        return readCache<Variation[]>(SHOP_CACHE_KEYS.variations, []);
       }
     },
   });
@@ -393,10 +393,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 60 * 1000,
-    initialData: () => readCachedValue<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {}),
+    initialData: () => readCache<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {}),
     queryFn: async () => {
       try {
-        const { data, error } = await withQueryTimeout(
+        const { data, error } = await withTimeout(
           supabase.from("product_stock").select("variation_id").eq("status", "available"),
         );
         if (error) throw error;
@@ -404,10 +404,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         data?.forEach((s) => {
           counts[s.variation_id] = (counts[s.variation_id] || 0) + 1;
         });
-        writeCachedValue(SHOP_CACHE_KEYS.stockCounts, counts);
+        writeCache(SHOP_CACHE_KEYS.stockCounts, counts);
         return counts;
       } catch {
-        return readCachedValue<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {});
+        return readCache<Record<string, number>>(SHOP_CACHE_KEYS.stockCounts, {});
       }
     },
     refetchInterval: 60000,
