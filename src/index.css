@@ -105,6 +105,14 @@
 }
 
 @layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .snap-container {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
