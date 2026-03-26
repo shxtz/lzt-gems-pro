@@ -180,15 +180,29 @@ function ValorantInventory({ data }: { data: any }) {
 }
 
 function FortniteInventory({ data }: { data: any }) {
-  const vbucks = data?.fortnite_vbucks || data?.vbucks;
+  const vbucks = data?.fortnite_balance || data?.fortnite_vbucks || data?.vbucks;
+  const level = data?.fortnite_level || data?.fortnite_book_level;
+  const country = data?.fortnite_country;
+  const platform = data?.fortnite_platform;
   const region = data?.fortnite_region || data?.region;
   const lastActivity = formatDate(data?.last_activity || data?.lastActivity);
-  const cosmeticsCount = Array.isArray(data?.fortniteCosmetics) ? data.fortniteCosmetics.length : 0;
+  const emailType = data?.email_type;
+  const skinCount = Array.isArray(data?.fortniteSkins) ? data.fortniteSkins.length : 0;
+  const danceCount = Array.isArray(data?.fortniteDance) ? data.fortniteDance.length : 0;
+  const pickaxeCount = Array.isArray(data?.fortnitePickaxe) ? data.fortnitePickaxe.length : 0;
+  const gliderCount = Array.isArray(data?.fortniteGliders) ? data.fortniteGliders.length : 0;
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {vbucks !== null && vbucks !== undefined && <Stat icon={Coins} label="V-Bucks" value={vbucks} highlight />}
-      {cosmeticsCount > 0 && <Stat icon={Sword} label="Cosméticos" value={cosmeticsCount} highlight />}
+      {level && <Stat icon={BarChart3} label="Nível" value={level} highlight />}
+      {vbucks !== null && vbucks !== undefined && <Stat icon={Coins} label="V-Bucks" value={Number(vbucks).toLocaleString("pt-BR")} highlight />}
+      {skinCount > 0 && <Stat icon={Sword} label="Skins" value={skinCount} highlight />}
+      {danceCount > 0 && <Stat icon={Star} label="Danças" value={danceCount} />}
+      {pickaxeCount > 0 && <Stat icon={Tag} label="Picaretas" value={pickaxeCount} />}
+      {gliderCount > 0 && <Stat icon={Shield} label="Planadores" value={gliderCount} />}
+      {country && <Stat icon={Globe} label="País" value={`${countryFlag(country)} ${country}`} />}
+      {platform && <Stat icon={Gamepad2} label="Plataforma" value={platform} />}
+      {emailType && <Stat icon={Mail} label="Tipo Email" value={emailType} />}
       {region && <Stat icon={Globe} label="Região" value={String(region).toUpperCase()} />}
       {lastActivity && <Stat icon={Calendar} label="Última Atividade" value={lastActivity} />}
     </div>

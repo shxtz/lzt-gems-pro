@@ -62,6 +62,20 @@ function flattenCollection(input: any): any[] {
 }
 
 function getFortniteCosmetics(data: any): any[] {
+  // Check structured arrays first (LZT format)
+  const skins = data?.fortniteSkins || data?.fortniteOutfit || [];
+  const dances = data?.fortniteDance || [];
+  const pickaxes = data?.fortnitePickaxe || [];
+  const gliders = data?.fortniteGliders || [];
+  if (skins.length > 0 || dances.length > 0 || pickaxes.length > 0 || gliders.length > 0) {
+    return [
+      ...skins.map((s: any) => ({ ...s, type: s.type || "outfit" })),
+      ...pickaxes.map((s: any) => ({ ...s, type: s.type || "pickaxe" })),
+      ...gliders.map((s: any) => ({ ...s, type: s.type || "glider" })),
+      ...dances.map((s: any) => ({ ...s, type: s.type || "emote" })),
+    ];
+  }
+  // Fallback to generic fields
   return flattenCollection(
     data?.fortniteCosmetics ||
       data?.fortnite_cosmetics ||
