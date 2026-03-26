@@ -918,9 +918,207 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
                   <AnimatePresence mode="popLayout">
                     {filteredAccounts?.map((account, index) => {
-...
-                          <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-                            <h3 className="font-display text-sm text-foreground font-semibold truncate">
+                      const adminCategoryName = getCategoryName(account.category_id);
+                      const displayCategoryName = (() => {
+                        const matchingShop = shopCategories?.find((sc) => {
+                          const matchingIds = getMatchingLztCategoryIds(sc);
+                          return matchingIds.includes(account.category_id);
+                        });
+                        return matchingShop?.name || adminCategoryName;
+                      })();
+
+                      const realCategory = adminCategoryName;
+                      const accountImg = getAccountImage(account.data, realCategory);
+                      const catLower = adminCategoryName.toLowerCase();
+                      const isValorant = catLower.includes("valorant") || (catLower.includes("riot") && !catLower.includes("league") && !catLower.includes("lol"));
+                      const isLoL = catLower.includes("league") || catLower.includes("lol");
+                      const valRank = isValorant ? (account.data?.riot_valorant_rank || account.data?.valorant_rank || account.data?.rank) : null;
+                      const valRankIcon = getValorantRankIcon(valRank);
+                      const valRankName = getValorantRankName(valRank);
+                      const lolRank = isLoL ? account.data?.riot_lol_rank : null;
+                      const lolRankIcon = getLoLRankIcon(lolRank);
+
+                      return (
+                        <motion.div
+                          key={account.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ delay: Math.min(index * 0.02, 0.3) }}
+                          className="group relative min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-border/40 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                          onClick={() => navigate(`/preview/${account.id}`)}
+                        >
+                          <div
+                            className="pointer-events-none absolute inset-0 z-[1] rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                            style={{ background: `radial-gradient(400px circle at 50% 0%, ${getCategoryTheme(realCategory).accent}15, transparent 60%)` }}
+                          />
+
+                          {(() => {
+                            const theme = getCategoryTheme(realCategory);
+                            const seed = hashId(account.lzt_item_id);
+                            const CategoryIcon = theme.Icon;
+                            const angle = seed % 360;
+
+                            let individualItems: (QuickPreviewItem | LoLPreviewItem | GamePreviewItem)[] = [];
+                            if (isLoL && account.data?.lolInventory) {
+                              individualItems = getLoLQuickPreviewItems(account.data.lolInventory, 9);
+                            } else if (isValorant && account.data?.valorantInventory && typeof account.data.valorantInventory === "object") {
+                              individualItems = getQuickPreviewItems(account.data.valorantInventory, 9);
+                            } else {
+                              individualItems = getGamePreviewItems(account.data, adminCategoryName, 9);
+                            }
+
+                            const hasIndividualItems = individualItems.length > 0;
+                            const inv = !hasIndividualItems ? getLztInventoryImages(account.data) : { weapons: null, agents: null, buddies: null };
+                            const hasInventory = hasIndividualItems || Object.values(inv).some((v) => v !== null);
+
+                            const badgeRow = (
+                              <div className="absolute left-1.5 top-1.5 z-[2] flex max-w-[calc(100%-2.5rem)] flex-wrap items-center gap-1 sm:left-2.5 sm:top-2.5 sm:gap-1.5">
+                                <Badge className="flex items-center gap-1 border-0 bg-background/70 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-foreground backdrop-blur-md sm:px-2 sm:text-[10px]">
+                                  {(() => {
+                                    const matchingShop = shopCategories?.find((sc) => {
+                                      const matchingIds = getMatchingLztCategoryIds(sc);
+                                      return matchingIds.includes(account.category_id);
+                                    });
+                                    return matchingShop?.icon_url ? <img src={matchingShop.icon_url} alt="" className="h-3 w-3 rounded-sm object-contain sm:h-3.5 sm:w-3.5" /> : null;
+                                  })()}
+                                  <span className="max-w-[76px] truncate sm:max-w-none">{displayCategoryName}</span>
+                                </Badge>
+                                {valRankName && (
+                                  <Badge className="flex items-center gap-1 border-0 bg-background/70 px-1.5 py-0.5 text-[8px] text-foreground backdrop-blur-md sm:px-2 sm:text-[10px]">
+                                    {valRankIcon && <img src={valRankIcon} alt={valRankName} className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                                    <span className="hidden sm:inline">{valRankName}</span>
+                                  </Badge>
+                                )}
+                                {lolRank && lolRank !== "Unranked" && (
+                                  <Badge className="flex items-center gap-1 border-0 bg-background/70 px-1.5 py-0.5 text-[8px] text-foreground backdrop-blur-md sm:px-2 sm:text-[10px]">
+                                    {lolRankIcon && <img src={lolRankIcon} alt={lolRank} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                                    <span className="hidden sm:inline">{lolRank}</span>
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+
+                            if (hasIndividualItems) {
+                              const gridItems = individualItems.slice(0, 9);
+                              return (
+                                <div className="relative">
+                                  <div className="relative aspect-square overflow-hidden border-b border-border/20">
+                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[2px] bg-border/10">
+                                      {gridItems.map((item) => {
+                                        const { tile, outline } = item.tier;
+                                        const itemKey = "uuid" in item ? item.uuid : String(item.id);
+                                        const tierIcon = "tierIcon" in item ? item.tierIcon : null;
+                                        const isLoLItem = "championName" in item;
+                                        return (
+                                          <div
+                                            key={itemKey}
+                                            className="group/tile relative flex items-center justify-center overflow-hidden"
+                                            style={{
+                                              background: `linear-gradient(135deg, rgba(${tile.join(",")}, 0.85), rgba(${tile.join(",")}, 0.35))`,
+                                              borderRight: `1px solid rgba(${outline.join(",")}, 0.25)`,
+                                              borderBottom: `1px solid rgba(${outline.join(",")}, 0.25)`,
+                                            }}
+                                          >
+                                            <img
+                                              src={item.imageUrl}
+                                              alt=""
+                                              loading="lazy"
+                                              className={`h-full w-full ${isLoLItem ? "object-cover" : "object-contain p-1.5"} saturate-[1.8] brightness-110 drop-shadow-md transition-transform duration-300 group-hover/tile:scale-110`}
+                                            />
+                                            {tierIcon && (
+                                              <div className="absolute right-1 top-1">
+                                                <img src={tierIcon} alt="" className="h-3.5 w-3.5 drop-shadow-lg" />
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                      {gridItems.length < 9 && Array.from({ length: 9 - gridItems.length }).map((_, emptyIndex) => (
+                                        <div
+                                          key={`empty-${emptyIndex}`}
+                                          className="relative flex items-center justify-center overflow-hidden bg-muted/5"
+                                          style={{ borderRight: "1px solid rgba(120,120,120,0.1)", borderBottom: "1px solid rgba(120,120,120,0.1)" }}
+                                        >
+                                          <CategoryIcon className="h-4 w-4 text-muted-foreground/10" strokeWidth={1} />
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute right-2 top-2 z-[3]">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm backdrop-blur-sm">
+                                        <Zap className="h-2.5 w-2.5" /> Automática
+                                      </span>
+                                    </div>
+                                    {badgeRow}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (hasInventory) {
+                              const inventoryItems = Object.entries(inv)
+                                .filter(([_, src]) => src !== null)
+                                .map(([key, src]) => ({ src: src as string, label: key }))
+                                .slice(0, 4);
+
+                              return (
+                                <div className="relative">
+                                  <div className="relative aspect-square overflow-hidden border-b border-border/20 bg-background">
+                                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[2px] bg-border/10">
+                                      {inventoryItems.map((item, invIndex) => (
+                                        <div key={invIndex} className="relative overflow-hidden bg-background">
+                                          <img
+                                            src={item.src}
+                                            alt={item.label}
+                                            loading="lazy"
+                                            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                            style={{ filter: "saturate(1.15) contrast(1.08) brightness(1.02)" }}
+                                          />
+                                        </div>
+                                      ))}
+                                      {inventoryItems.length < 4 && Array.from({ length: 4 - inventoryItems.length }).map((_, emptyIndex) => (
+                                        <div key={`inv-empty-${emptyIndex}`} className="relative flex items-center justify-center overflow-hidden bg-background">
+                                          <CategoryIcon className="h-6 w-6 text-muted-foreground/15" strokeWidth={1} />
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute right-2 top-2 z-[3]">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm backdrop-blur-sm">
+                                        <Zap className="h-2.5 w-2.5" /> Automática
+                                      </span>
+                                    </div>
+                                    {badgeRow}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (accountImg) {
+                              return (
+                                <div className="h-36 overflow-hidden relative">
+                                  <img src={accountImg} alt="" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" loading="lazy" style={{ filter: "saturate(1.15) contrast(1.05)" }} />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+                                  {badgeRow}
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className={`relative h-36 overflow-hidden bg-gradient-to-br ${theme.gradient}`}>
+                                <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3C/g%3E%3C/svg%3E\")" }} />
+                                <div className="absolute rounded-full opacity-25 blur-2xl transition-opacity duration-700 group-hover:opacity-40" style={{ background: `radial-gradient(circle, ${theme.accent}, transparent)`, width: 100, height: 100, left: `${30 + (seed % 40)}%`, top: `${10 + (seed % 50)}%` }} />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <CategoryIcon className="h-12 w-12 text-white/10 transition-all duration-500 group-hover:scale-110 group-hover:text-white/20" strokeWidth={1} style={{ transform: `rotate(${angle % 20 - 10}deg)` }} />
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                                {badgeRow}
+                              </div>
+                            );
+                          })()}
+
+                          <div className="space-y-2 p-3 sm:space-y-3 sm:p-4 min-w-0">
+                            <h3 className="truncate font-display text-sm font-semibold text-foreground">
                               {getMaskedName(getCategoryName(account.category_id), account.lzt_item_id)}
                             </h3>
                             {isAdmin && (
@@ -929,16 +1127,24 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-block text-[10px] font-mono px-2 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                className="inline-block rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary transition-colors hover:bg-primary/20"
                               >
                                 LZT#{account.lzt_item_id}
                               </a>
                             )}
 
-                            <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/20">
-                              <span className="text-xl font-bold text-primary whitespace-nowrap">R$ {Number(account.price_brl).toFixed(2)}</span>
-                              <Button size="sm" className="bg-gradient-gold text-primary-foreground text-xs font-bold h-9 px-4 shrink-0" disabled={purchasing === account.id} onClick={(e) => { e.stopPropagation(); handleBuyAccount(account); }}>
-                                {purchasing === account.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Comprar</>}
+                            <div className="flex items-center justify-between gap-3 border-t border-border/20 pt-2 min-w-0">
+                              <span className="whitespace-nowrap text-xl font-bold text-primary">R$ {Number(account.price_brl).toFixed(2)}</span>
+                              <Button
+                                size="sm"
+                                className="h-9 shrink-0 bg-gradient-gold px-4 text-xs font-bold text-primary-foreground"
+                                disabled={purchasing === account.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBuyAccount(account);
+                                }}
+                              >
+                                {purchasing === account.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Comprar</>}
                               </Button>
                             </div>
                           </div>
@@ -947,16 +1153,15 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                     })}
                   </AnimatePresence>
 
-                  {/* Loading skeleton */}
                   {isLoadingAccounts && (!filteredAccounts || filteredAccounts.length === 0) && (
                     <>
                       {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={`skel-${i}`} className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-pulse">
+                        <div key={`skel-${i}`} className="overflow-hidden rounded-2xl border border-border/30 bg-card animate-pulse">
                           <div className="h-36 bg-muted/20" />
-                          <div className="p-4 space-y-3">
+                          <div className="space-y-3 p-4">
                             <div className="h-4 w-3/4 rounded bg-muted/20" />
                             <div className="h-3 w-1/2 rounded bg-muted/15" />
-                            <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                            <div className="flex items-center justify-between border-t border-border/20 pt-2">
                               <div className="h-6 w-20 rounded bg-muted/20" />
                               <div className="h-8 w-24 rounded bg-muted/20" />
                             </div>
@@ -967,11 +1172,11 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
                   )}
 
                   {!isLoadingAccounts && (!filteredAccounts || filteredAccounts.length === 0) && (
-                    <div className="col-span-full text-center py-20">
-                      <Gamepad2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                      <p className="text-muted-foreground text-sm">Nenhuma conta disponível nesta categoria</p>
+                    <div className="col-span-full py-20 text-center">
+                      <Gamepad2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
+                      <p className="text-sm text-muted-foreground">Nenhuma conta disponível nesta categoria</p>
                       {activeFiltersCount > 0 && (
-                        <button onClick={() => { setFilterCountry(""); setFilterPriceMax(""); setFilterSpamFree(false); setFilterPremium(false); }} className="text-xs text-primary hover:underline mt-2">Limpar filtros</button>
+                        <button onClick={() => { setFilterCountry(""); setFilterPriceMax(""); setFilterSpamFree(false); setFilterPremium(false); }} className="mt-2 text-xs text-primary hover:underline">Limpar filtros</button>
                       )}
                     </div>
                   )}
