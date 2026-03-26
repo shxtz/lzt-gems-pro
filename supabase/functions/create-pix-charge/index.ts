@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import forge from "npm:node-forge@1.3.1";
 
 const corsHeaders = {
@@ -113,11 +114,56 @@ serve(async (req) => {
   let client: Deno.HttpClient | null = null;
 
   try {
+    // ═══ AUTHENTICATION ═══
+    const authHeader = req.headers.get("Authorization");
+    const isServiceRole = authHeader?.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "___NONE___");
+    
+    if (!isServiceRole) {
+      // Validate user JWT
+      if (!authHeader?.startsWith("Bearer ")) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !userData.user) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+    }
+
     const { orderId, amount, description } = await req.json();
     const numericAmount = Number(amount);
 
     if (!orderId || !Number.isFinite(numericAmount) || numericAmount <= 0) {
       return jsonResponse({ error: "orderId e amount válidos são obrigatórios" }, 400);
+    }
+
+    // ═══ VALIDATE AMOUNT AGAINST ORDER ═══
+    if (!isServiceRole) {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: order } = await supabase
+        .from("orders")
+        .select("total_price, status")
+        .eq("id", orderId)
+        .single();
+      
+      if (!order) {
+        return jsonResponse({ error: "Pedido não encontrado" }, 404);
+      }
+      if (order.status !== "pending") {
+        return jsonResponse({ error: "Pedido já processado" }, 400);
+      }
+      // Validate amount matches order to prevent price manipulation
+      const expectedAmount = Number(order.total_price);
+      if (Math.abs(numericAmount - expectedAmount) > 0.01) {
+        return jsonResponse({ error: "Valor não corresponde ao pedido" }, 400);
+      }
     }
 
     const config = getEfiConfig();
@@ -169,8 +215,8 @@ serve(async (req) => {
       status: charge.status,
     });
   } catch (error: any) {
-    console.error("PIX charge error:", error);
-    return jsonResponse({ error: error.message || "Internal error" }, 500);
+    console.error("PIX charge error:", error.message);
+    return jsonResponse({ error: "Erro ao gerar cobrança PIX" }, 500);
   } finally {
     client?.close();
   }

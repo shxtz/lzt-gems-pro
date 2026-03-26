@@ -8,6 +8,24 @@ const corsHeaders = {
 
 const LZT_API_BASE = "https://api.lzt.market";
 
+// ═══ ADMIN AUTH HELPER ═══
+async function verifyAdminOrService(req: Request, supabase: any, serviceRoleKey: string) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) throw new Error("Unauthorized");
+  const token = authHeader.replace("Bearer ", "");
+  if (token === serviceRoleKey) return; // service_role is always allowed
+  
+  const { data: userData } = await supabase.auth.getUser(token);
+  if (!userData?.user) throw new Error("Unauthorized");
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("role", "admin")
+    .single();
+  if (!roleData) throw new Error("Forbidden");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,6 +45,9 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
+    // ═══ ADMIN/SERVICE AUTH ═══
+    await verifyAdminOrService(req, supabase, serviceKey);
+
     const { action, category_id, api_url, lzt_item_id, margin_percent } = await req.json();
 
     // Auto-import: fetch all categories with auto_import enabled

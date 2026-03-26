@@ -28,17 +28,13 @@ const Checkout = () => {
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
-    const { data } = await supabase
-      .from("coupons")
-      .select("*")
-      .eq("code", couponCode.toUpperCase())
-      .eq("active", true)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("validate_coupon", { coupon_code: couponCode.trim() });
+    const coupon = Array.isArray(data) ? data[0] : data;
 
-    if (data) {
-      setDiscount(data.discount_percent);
-      setCouponId(data.id);
-      toast.success(`Cupom aplicado! ${data.discount_percent}% de desconto`);
+    if (!error && coupon) {
+      setDiscount(coupon.discount_percent);
+      setCouponId(coupon.id);
+      toast.success(`Cupom aplicado! ${coupon.discount_percent}% de desconto`);
     } else {
       toast.error("Cupom inválido ou expirado");
     }

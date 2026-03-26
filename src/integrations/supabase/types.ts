@@ -284,6 +284,13 @@ export type Database = {
             referencedRelation: "lzt_categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lzt_accounts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "lzt_categories_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lzt_categories: {
@@ -782,7 +789,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lzt_categories_public: {
+        Row: {
+          created_at: string | null
+          icon_url: string | null
+          id: string | null
+          name: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          icon_url?: string | null
+          id?: string | null
+          name?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          icon_url?: string | null
+          id?: string | null
+          name?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_email: {
@@ -815,6 +848,14 @@ export type Database = {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      validate_coupon: {
+        Args: { coupon_code: string }
+        Returns: {
+          code: string
+          discount_percent: number
+          id: string
         }[]
       }
     }
