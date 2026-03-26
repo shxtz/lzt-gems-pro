@@ -571,15 +571,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         return;
       }
 
-      // Check if price changed on LZT
-      if (checkResult.currentPriceUsd) {
-        const lztCategory = lztCategories?.find((c) => c.id === account.category_id);
-        const margin = lztCategory?.margin_percent || 30;
-        const expectedBrl = Math.round(checkResult.currentPriceUsd * 5.5 * (1 + margin / 100) * 100) / 100;
-        const priceDiff = Math.abs(expectedBrl - Number(account.price_brl));
-        if (priceDiff > 0.5) {
-          toast.warning(`O preço desta conta mudou! Novo preço: R$${expectedBrl.toFixed(2)}`);
+      // Check if price changed on LZT (compare stored USD price vs current)
+      if (checkResult.currentPriceUsd && account.price_usd) {
+        const storedUsd = Number(account.price_usd);
+        const currentUsd = Number(checkResult.currentPriceUsd);
+        const priceDiffPercent = storedUsd > 0 ? Math.abs(currentUsd - storedUsd) / storedUsd : 0;
+        if (priceDiffPercent > 0.1) { // More than 10% change
           queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+          toast.warning("O preço desta conta mudou. Atualizando...");
           return;
         }
       }
