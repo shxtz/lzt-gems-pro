@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
               await supabase
                 .from("lzt_accounts")
                 .update({
-                  price_usd: newUsdPrice,
+                  price_usd: newRawPrice,
                   price_brl: newBrlPrice,
                   data: { ...((account.data as Record<string, unknown>) || {}), ...item, price_changed: true, previous_price_brl: account.price_brl },
                 })
