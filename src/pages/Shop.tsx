@@ -314,6 +314,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
     initialData: () => readCache<LztCategory[]>(SHOP_CACHE_KEYS.lztCategories, []),
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
@@ -336,6 +337,7 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     refetchOnWindowFocus: false,
     staleTime: 60 * 1000,
     initialData: () => readCache<LztAccount[]>(SHOP_CACHE_KEYS.lztAccounts, []),
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
