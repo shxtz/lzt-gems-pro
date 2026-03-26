@@ -22,6 +22,7 @@ const navItems = [
   { title: "Saldo", url: "/admin/balance", icon: Wallet },
   { title: "Usuários", url: "/admin/users", icon: Users },
   { title: "Discord API", url: "/admin/discord", icon: MessageSquare },
+  { title: "Marketing", url: "/admin/campaigns", icon: Megaphone },
 ];
 
 const AdminLayout = () => {
