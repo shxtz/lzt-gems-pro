@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ShoppingBag, ArrowLeft, Shield, Clock, Headphones, MessageCircle } from "lucide-react";
+import { Zap, ShoppingBag, ArrowLeft, Shield, Clock, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
