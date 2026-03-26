@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { action, lzt_item_id, account_id, order_id, buyer_id, price_brl } = await req.json();
+    const { action, lzt_item_id, account_id, order_id, buyer_id, price_brl, use_reserved, reserved_credentials } = await req.json();
 
     // ──────────────────────────────────────────────
     // 1. CHECK AVAILABILITY — before generating PIX
@@ -79,6 +79,41 @@ Deno.serve(async (req) => {
     if (action === "fast_buy") {
       if (!lzt_item_id || !account_id || !order_id || !buyer_id) {
         return json({ error: "Missing required fields" }, 400);
+      }
+
+      // ── If pre-reserved credentials are provided, skip LZT API call ──
+      if (use_reserved && reserved_credentials) {
+        console.log(`Using pre-reserved credentials for order ${order_id}`);
+
+        const credential = typeof reserved_credentials === "string"
+          ? reserved_credentials
+          : buildCredentialFromReserved(reserved_credentials);
+
+        // Update our DB: mark account as sold
+        await supabase
+          .from("lzt_accounts")
+          .update({
+            status: "sold",
+            buyer_id: buyer_id,
+            sold_at: new Date().toISOString(),
+            sold_price: price_brl,
+          })
+          .eq("id", account_id);
+
+        // Update order as delivered
+        await supabase
+          .from("orders")
+          .update({ status: "delivered" })
+          .eq("id", order_id);
+
+        // Log delivery
+        await supabase.from("delivery_logs").insert({
+          order_id: order_id,
+          buyer_id: buyer_id,
+          credential_delivered: credential,
+        });
+
+        return json({ success: true, credential });
       }
 
       // Double-check availability before buying
@@ -419,4 +454,16 @@ function extractPurchaseCredentials(buyData: any): string {
   if (raw) return typeof raw === "string" ? raw : JSON.stringify(raw, null, 2);
 
   return "Conta comprada — verifique sua área do cliente";
+}
+
+function buildCredentialFromReserved(creds: any): string {
+  const parts: string[] = [];
+  if (creds.login) parts.push(`Login: ${creds.login}`);
+  if (creds.password) parts.push(`Password: ${creds.password}`);
+  if (creds.old_password || creds.oldPassword) parts.push(`Old password: ${creds.old_password || creds.oldPassword}`);
+  if (creds.email) parts.push(`Access to email (auto registered):\nLogin: ${creds.email}`);
+  if (creds.email_password || creds.emailPassword) parts.push(`Password: ${creds.email_password || creds.emailPassword}`);
+  if (creds.provider) parts.push(`Provedor Email: ${creds.provider}`);
+  if (parts.length > 0) return parts.join("\n");
+  return typeof creds === "string" ? creds : JSON.stringify(creds, null, 2);
 }

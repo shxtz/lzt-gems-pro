@@ -252,8 +252,10 @@ export type Database = {
           id: string
           lzt_account_id: string | null
           lzt_item_id: string | null
+          lzt_reserved_credentials: Json | null
           payment_id: string | null
           payment_method: string | null
+          pix_e2eid: string | null
           product_id: string | null
           quantity: number
           status: string
@@ -269,8 +271,10 @@ export type Database = {
           id?: string
           lzt_account_id?: string | null
           lzt_item_id?: string | null
+          lzt_reserved_credentials?: Json | null
           payment_id?: string | null
           payment_method?: string | null
+          pix_e2eid?: string | null
           product_id?: string | null
           quantity?: number
           status?: string
@@ -286,8 +290,10 @@ export type Database = {
           id?: string
           lzt_account_id?: string | null
           lzt_item_id?: string | null
+          lzt_reserved_credentials?: Json | null
           payment_id?: string | null
           payment_method?: string | null
+          pix_e2eid?: string | null
           product_id?: string | null
           quantity?: number
           status?: string
