@@ -182,6 +182,7 @@ function ValorantInventory({ data }: { data: any }) {
 function FortniteInventory({ data }: { data: any }) {
   const vbucks = data?.fortnite_balance || data?.fortnite_vbucks || data?.vbucks;
   const level = data?.fortnite_level || data?.fortnite_book_level;
+  const lastActivity = formatDate(data?.last_activity || data?.lastActivity);
   const region = data?.fortnite_region || data?.region;
   const skinCount = Array.isArray(data?.fortniteSkins) ? data.fortniteSkins.length : 0;
   const danceCount = Array.isArray(data?.fortniteDance) ? data.fortniteDance.length : 0;
