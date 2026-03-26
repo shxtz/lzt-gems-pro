@@ -1,6 +1,5 @@
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -201,13 +200,6 @@ const CategoryIcon = ({ category, index, onClick }: CategoryIconProps) => {
 /* ─── FORTNITE FEATURED HERO CARD ─── */
 const FortniteFeaturedCard = ({ category, onClick }: { category: ShopCategory; onClick: () => void }) => {
   const image = category.icon_url || SLUG_IMAGES[category.slug];
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => `${Math.floor(v).toLocaleString("pt-BR")}+`);
-
-  useEffect(() => {
-    const ctrl = animate(count, 4800, { duration: 2.5, ease: "easeOut" });
-    return () => ctrl.stop();
-  }, [count]);
 
   return (
     <motion.div
@@ -249,34 +241,26 @@ const FortniteFeaturedCard = ({ category, onClick }: { category: ShopCategory; o
 
         {/* Content */}
         <div className="flex-1 min-w-0 relative z-10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/15 border border-primary/25 text-primary font-display text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
-              🔥 Mais Vendido
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive font-display text-[9px] font-bold uppercase tracking-wider animate-pulse">
-              ⚡ Hot
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary font-display text-[10px] sm:text-[11px] font-black uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Mais Vendido
             </span>
           </div>
           <h3 className="font-display text-xl sm:text-2xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors duration-300">
             {category.name}
           </h3>
-          <p className="font-body text-[10px] sm:text-xs text-muted-foreground mt-0.5 font-medium">
+          <p className="font-body text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">
             Contas com skins raras • Entrega automática
           </p>
-          <div className="flex items-center gap-3 mt-2.5">
-            <div className="flex items-center gap-1">
-              <div className="flex -space-x-1">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 border border-primary/30" />
-                ))}
-              </div>
-              <motion.span className="font-display text-[10px] sm:text-xs text-primary font-bold ml-1">
-                {rounded}
-              </motion.span>
-              <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">vendidos</span>
-            </div>
-            <span className="w-[1px] h-3 bg-border/40" />
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">⭐ 4.9/5</span>
+          <div className="flex items-center gap-2.5 mt-3">
+            <span className="font-display text-xs sm:text-sm text-primary/80 font-bold">
+              ⭐ 4.9
+            </span>
+            <span className="w-[1px] h-3 bg-border/30" />
+            <span className="font-display text-[10px] sm:text-xs text-muted-foreground font-medium">
+              Milhares de vendas
+            </span>
           </div>
         </div>
 
