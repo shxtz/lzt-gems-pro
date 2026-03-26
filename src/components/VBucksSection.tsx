@@ -192,7 +192,8 @@ const VBucksSection = () => {
             <span className="text-gradient-gold-shine text-glow-gold">V-BUCKS</span>
           </h2>
           <p className="font-body text-xs sm:text-sm text-muted-foreground max-w-sm sm:max-w-md mx-auto leading-relaxed">
-            Escolha a quantidade e receba instantaneamente na sua conta Fortnite.
+            Escolha a quantidade ideal de V-Bucks para você! <br />
+            Todos os nossos produtos, incluindo V-Bucks e contas, funcionam perfeitamente em qualquer plataforma: PC, CONSOLE ou MOBILE.
           </p>
         </motion.div>
 
