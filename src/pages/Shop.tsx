@@ -781,8 +781,9 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
             toast.success("Produto entregue com sucesso!");
             return;
           }
-          if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
-            toast.error("Falha na entrega. Saldo reembolsado automaticamente.");
+          if (orderCheck?.status === "refunded" || orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
+            toast.error("Conta não disponível. Seu saldo foi reembolsado automaticamente.");
+            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
             refetchBalance();
             setPixData(null);
             return;
