@@ -260,6 +260,7 @@ export type Database = {
           total_price: number
           updated_at: string
           user_id: string | null
+          variation_id: string | null
         }
         Insert: {
           coupon_id?: string | null
@@ -276,6 +277,7 @@ export type Database = {
           total_price: number
           updated_at?: string
           user_id?: string | null
+          variation_id?: string | null
         }
         Update: {
           coupon_id?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           total_price?: number
           updated_at?: string
           user_id?: string | null
+          variation_id?: string | null
         }
         Relationships: [
           {
@@ -299,13 +302,6 @@ export type Database = {
             columns: ["coupon_id"]
             isOneToOne: false
             referencedRelation: "coupons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "vbucks_products"
             referencedColumns: ["id"]
           },
         ]
