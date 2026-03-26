@@ -42,23 +42,25 @@ const DesktopCursor = () => {
   if (isMobile) return null;
   return (
     <AnimatedCursor
-      innerSize={8}
-      outerSize={35}
+      innerSize={6}
+      outerSize={28}
       innerScale={1}
-      outerScale={1.7}
+      outerScale={2}
       outerAlpha={0}
       innerStyle={{
         backgroundColor: 'hsl(43, 84%, 55%)',
         zIndex: '9999',
       }}
       outerStyle={{
-        border: '3px solid hsl(43, 84%, 55%)',
+        border: '2px solid hsl(43, 84%, 55%)',
         zIndex: '9999',
+        mixBlendMode: 'difference' as any,
       }}
+      trailingSpeed={12}
       clickables={[
         'a', 'input[type="text"]', 'input[type="email"]',
         'input[type="number"]', 'input[type="submit"]',
-        'input[type="image"]', 'label[for]', 'select',
+        'input[type="password"]', 'label[for]', 'select',
         'textarea', 'button', '.link', '[role="button"]',
       ]}
     />
