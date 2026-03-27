@@ -12,7 +12,7 @@ const VERIFIED_DISCORD_STORAGE_KEY = "restorecord_verified";
 const PENDING_DISCORD_LINK_STORAGE_KEY = "restorecord_pending_link";
 
 interface DiscordVerification {
-  discord_id: string;
+  discord_id: string | null;
   username: string;
   avatar: string | null;
 }
@@ -50,15 +50,32 @@ const AuthPage = () => {
     const finalizePendingDiscordLink = async () => {
       try {
         const pending = JSON.parse(pendingRaw) as PendingDiscordLink;
-        const { error: linkError } = await supabase.functions.invoke("restorecord-verify", {
-          body: {
-            action: "link_profile",
-            discord_id: pending.discord_id,
-            display_name: pending.display_name,
-          },
-        });
+        let linkError: Error | null = null;
 
-        if (linkError) throw linkError;
+        if (pending.discord_id) {
+          const { error } = await supabase.functions.invoke("restorecord-verify", {
+            body: {
+              action: "link_profile",
+              discord_id: pending.discord_id,
+              display_name: pending.display_name,
+            },
+          });
+
+          linkError = error ? new Error(error.message) : null;
+        }
+
+        if (!pending.discord_id || linkError) {
+          const { error: retryError } = await supabase.functions.invoke("retry-discord-lookup", {
+            body: {
+              userId: user.id,
+              email: pending.email,
+            },
+          });
+
+          if (retryError) {
+            throw retryError;
+          }
+        }
 
         localStorage.removeItem(PENDING_DISCORD_LINK_STORAGE_KEY);
         localStorage.removeItem(VERIFIED_DISCORD_STORAGE_KEY);
@@ -109,16 +126,17 @@ const AuthPage = () => {
     const discordId = searchParams.get("discord_id");
     const username = searchParams.get("username");
     const avatar = searchParams.get("avatar");
+    const verified = searchParams.get("restorecord_verified");
 
-    if (discordId) {
-      const alreadyApplied = appliedDiscordIdRef.current === discordId;
+    if (discordId || verified === "1") {
+      const alreadyApplied = discordId ? appliedDiscordIdRef.current === discordId : false;
       applyDiscordVerification({
-        discord_id: discordId,
-        username: username || "Discord User",
+        discord_id: discordId || null,
+        username: username || "Discord verificado",
         avatar: avatar || null,
       });
       if (!alreadyApplied) {
-        toast.success(`Discord verificado: ${username || discordId}`);
+        toast.success(`Discord verificado: ${username || "pronto para cadastro"}`);
       }
     }
   }, [searchParams]);
@@ -127,14 +145,14 @@ const AuthPage = () => {
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "RESTORECORD_VERIFIED") {
-        const alreadyApplied = appliedDiscordIdRef.current === event.data.discord_id;
+        const alreadyApplied = event.data.discord_id ? appliedDiscordIdRef.current === event.data.discord_id : false;
         applyDiscordVerification({
-          discord_id: event.data.discord_id,
-          username: event.data.username || "Discord User",
+          discord_id: event.data.discord_id || null,
+          username: event.data.username || "Discord verificado",
           avatar: event.data.avatar || null,
         });
         if (!alreadyApplied) {
-          toast.success(`Discord verificado: ${event.data.username || event.data.discord_id}`);
+          toast.success(`Discord verificado: ${event.data.username || "pronto para cadastro"}`);
         }
       }
     };
@@ -146,15 +164,15 @@ const AuthPage = () => {
         const stored = localStorage.getItem(VERIFIED_DISCORD_STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored);
-          if (data?.type === "RESTORECORD_VERIFIED" && data.discord_id) {
-            const alreadyApplied = appliedDiscordIdRef.current === data.discord_id;
+          if (data?.type === "RESTORECORD_VERIFIED") {
+            const alreadyApplied = data.discord_id ? appliedDiscordIdRef.current === data.discord_id : false;
             applyDiscordVerification({
-              discord_id: data.discord_id,
-              username: data.username || "Discord User",
+              discord_id: data.discord_id || null,
+              username: data.username || "Discord verificado",
               avatar: data.avatar || null,
             });
             if (!alreadyApplied) {
-              toast.success(`Discord verificado: ${data.username || data.discord_id}`);
+              toast.success(`Discord verificado: ${data.username || "pronto para cadastro"}`);
             }
           }
         }
