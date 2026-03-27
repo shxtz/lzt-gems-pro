@@ -1,71 +1,37 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 
 const DiscordCallback = () => {
-  const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
-
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const getParam = (key: string) => searchParams.get(key) ?? hashParams.get(key);
-
-    const discordId = getParam("discord_id");
-    const username = getParam("username");
-    const avatar = getParam("avatar");
-    const verifiedFlag = getParam("restorecord_verified") ?? getParam("verified") ?? getParam("success");
-    const hasVerification = Boolean(
-      discordId ||
-      verifiedFlag === "1" ||
-      verifiedFlag === "true" ||
-      document.referrer.includes("restorecord.com") ||
-      document.referrer.includes("discord.com"),
-    );
-
-    if (!hasVerification) {
-      setStatus("error");
-      setTimeout(() => window.close(), 2000);
-      return;
-    }
+    // RestoreCord redirects here after successful verification.
+    // It does NOT pass any query params — landing on this page IS the proof.
+    // The actual discord_id will be resolved later via retry-discord-lookup.
 
     const payload = {
       type: "RESTORECORD_VERIFIED",
       verified: true,
-      discord_id: discordId || null,
-      username: username || "Discord verificado",
-      avatar: avatar || null,
+      discord_id: null,
+      username: "Discord verificado",
+      avatar: null,
     };
 
-    // Also persist to localStorage so the parent can pick it up even if postMessage fails
     try {
       localStorage.setItem("restorecord_verified", JSON.stringify(payload));
     } catch {}
 
     if (window.opener) {
       try { window.opener.postMessage(payload, "*"); } catch {}
-      setStatus("success");
       setTimeout(() => window.close(), 600);
     } else {
-      setStatus("success");
       setTimeout(() => {
-        const redirectParams = new URLSearchParams({
-          restorecord_verified: "1",
-          username: username || "Discord verificado",
-        });
-
-        if (discordId) redirectParams.set("discord_id", discordId);
-        if (avatar) redirectParams.set("avatar", avatar);
-
-        window.location.href = `/auth?${redirectParams.toString()}`;
+        window.location.href = "/auth?restorecord_verified=1";
       }, 300);
     }
-  }, [searchParams]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <p className="text-muted-foreground text-sm animate-pulse">
-        {status === "verifying" && "Verificando Discord..."}
-        {status === "success" && "✅ Verificado! Fechando..."}
-        {status === "error" && "❌ Erro na verificação"}
+        ✅ Verificado! Redirecionando...
       </p>
     </div>
   );
