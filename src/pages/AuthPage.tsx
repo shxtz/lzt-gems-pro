@@ -121,22 +121,20 @@ const AuthPage = () => {
     } catch {}
   };
 
-  // Check for RestoreCord callback params (fallback for same-tab redirect)
+  // Check for RestoreCord callback params (same-tab redirect fallback)
   useEffect(() => {
-    const discordId = searchParams.get("discord_id");
-    const username = searchParams.get("username");
-    const avatar = searchParams.get("avatar");
     const verified = searchParams.get("restorecord_verified");
 
-    if (discordId || verified === "1") {
-      const alreadyApplied = discordId ? appliedDiscordIdRef.current === discordId : false;
+    if (verified === "1") {
+      const alreadyApplied = appliedDiscordIdRef.current === "__verified__";
       applyDiscordVerification({
-        discord_id: discordId || null,
-        username: username || "Discord verificado",
-        avatar: avatar || null,
+        discord_id: null,
+        username: "Discord verificado",
+        avatar: null,
       });
       if (!alreadyApplied) {
-        toast.success(`Discord verificado: ${username || "pronto para cadastro"}`);
+        appliedDiscordIdRef.current = "__verified__";
+        toast.success("Discord verificado! Preencha os dados para criar sua conta.");
       }
     }
   }, [searchParams]);
