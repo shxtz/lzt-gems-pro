@@ -6,11 +6,22 @@ const DiscordCallback = () => {
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
 
   useEffect(() => {
-    const discordId = searchParams.get("discord_id");
-    const username = searchParams.get("username");
-    const avatar = searchParams.get("avatar");
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const getParam = (key: string) => searchParams.get(key) ?? hashParams.get(key);
 
-    if (!discordId) {
+    const discordId = getParam("discord_id");
+    const username = getParam("username");
+    const avatar = getParam("avatar");
+    const verifiedFlag = getParam("restorecord_verified") ?? getParam("verified") ?? getParam("success");
+    const hasVerification = Boolean(
+      discordId ||
+      verifiedFlag === "1" ||
+      verifiedFlag === "true" ||
+      document.referrer.includes("restorecord.com") ||
+      document.referrer.includes("discord.com"),
+    );
+
+    if (!hasVerification) {
       setStatus("error");
       setTimeout(() => window.close(), 2000);
       return;
@@ -18,8 +29,9 @@ const DiscordCallback = () => {
 
     const payload = {
       type: "RESTORECORD_VERIFIED",
-      discord_id: discordId,
-      username: username || "Discord User",
+      verified: true,
+      discord_id: discordId || null,
+      username: username || "Discord verificado",
       avatar: avatar || null,
     };
 
@@ -29,16 +41,21 @@ const DiscordCallback = () => {
     } catch {}
 
     if (window.opener) {
-      // Try posting to both possible origins
       try { window.opener.postMessage(payload, "*"); } catch {}
       setStatus("success");
-      // Small delay so parent can process the message
       setTimeout(() => window.close(), 600);
     } else {
-      // No opener – redirect to /auth with params
       setStatus("success");
       setTimeout(() => {
-        window.location.href = `/auth?discord_id=${discordId}&username=${encodeURIComponent(username || "")}&avatar=${encodeURIComponent(avatar || "")}`;
+        const redirectParams = new URLSearchParams({
+          restorecord_verified: "1",
+          username: username || "Discord verificado",
+        });
+
+        if (discordId) redirectParams.set("discord_id", discordId);
+        if (avatar) redirectParams.set("avatar", avatar);
+
+        window.location.href = `/auth?${redirectParams.toString()}`;
       }, 300);
     }
   }, [searchParams]);
