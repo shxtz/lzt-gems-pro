@@ -421,10 +421,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
-          supabase.from("products_public").select("id, name, description, category, image_url, active").eq("active", true).order("sort_order"),
+          supabase.from("products_public" as any).select("id, name, description, category, image_url, active").eq("active", true).order("sort_order"),
         );
         if (error) throw error;
-        const nextData = (data ?? []) as Product[];
+        const nextData = (data ?? []) as unknown as Product[];
         writeCache(SHOP_CACHE_KEYS.products, nextData);
         return nextData;
       } catch {
