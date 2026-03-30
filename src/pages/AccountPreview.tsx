@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { withTimeout } from "@/lib/supabase-resilience";
+import { secureCheckout, generatePixPayment, pollOrderDelivery } from "@/lib/secure-purchase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Globe, Calendar, Shield, Star, Trophy,
@@ -613,41 +614,46 @@ const AccountPreview = () => {
     if (!account) return;
     setPurchasing(true);
     try {
-      const { data: checkResult, error: checkError } = await supabase.functions.invoke("lzt-purchase", {
-        body: { action: "check_availability", lzt_item_id: account.lzt_item_id },
+      const result = await secureCheckout({
+        product_id: account.id,
+        lzt_item_id: account.lzt_item_id,
+        lzt_account_id: account.id,
+        coupon_code: couponCode.trim() || undefined,
       });
-      if (checkError) throw checkError;
-      if (!checkResult?.available) {
-        toast.error(checkResult?.reason || "Conta indisponível");
+
+      if (result.delivered) {
+        setDeliveredCredential({
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
+          name: maskedName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        setCouponCode(""); setCouponDiscount(0); setCouponId(null);
         return;
       }
-      const { data: order, error: orderError } = await supabase.from("orders").insert({
-        user_id: user.id, quantity: 1, total_price: finalPrice,
-        payment_method: "pix", status: "pending",
-        lzt_item_id: account.lzt_item_id, lzt_account_id: account.id,
-        coupon_id: couponId,
-      } as any).select().single();
-      if (orderError) throw orderError;
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", {
-        body: { orderId: order.id, amount: finalPrice, description: `${maskedName} - Loja` },
-      });
-      if (pixError) throw pixError;
-      if (pixResponse?.error) throw new Error(pixResponse.error);
-      await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      setPixData({
-        qrcode: pixResponse.qrcode,
-        copiaecola: pixResponse.copiaecola,
-        txid: pixResponse.txid,
-        orderId: order.id,
-        variationName: maskedName,
-        amount: finalPrice,
-        lztAccountId: account.id,
-      });
-      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
-      toast.success("Cobrança PIX gerada!");
+
+      if (result.refunded) {
+        toast.error(result.error || "Conta não disponível. Saldo reembolsado.");
+        return;
+      }
+
+      if (result.requiresPix) {
+        const pixResponse = await generatePixPayment(result.orderId);
+        setPixData({
+          qrcode: pixResponse.qrcode,
+          copiaecola: pixResponse.copiaecola,
+          txid: pixResponse.txid,
+          orderId: result.orderId,
+          variationName: maskedName,
+          amount: finalPrice,
+          lztAccountId: account.id,
+        });
+        setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+        toast.success("Cobrança PIX gerada!");
+      }
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao gerar pagamento.");
+      toast.error(err?.message || "Erro ao gerar pagamento.");
     } finally {
       setPurchasing(false);
     }
@@ -657,26 +663,11 @@ const AccountPreview = () => {
     if (!pixData || !user) return;
     setCheckingPayment(true);
     try {
-      const { data, error } = await supabase.functions.invoke("confirm-pix-payment", {
-        body: { orderId: pixData.orderId, txid: pixData.txid },
-      });
-      if (error) throw error;
-      if (data?.error && !data?.delivered && !data?.credential) {
-        if (data?.status === "refunded") {
-          toast.info(data?.error || "Problema na entrega. Valor reembolsado no saldo.");
-          refetchBalance();
-          setPixData(null);
-          return;
-        }
-        if (data?.status === "refund_needed" || data?.status === "cancelled") {
-          toast.error(data?.error || "Problema na entrega. Pedido marcado para reembolso.");
-          setPixData(null);
-          return;
-        }
-      }
-      if (data?.delivered || data?.credential) {
+      const result = await pollOrderDelivery(pixData.orderId, 24, 2500);
+
+      if (result.delivered) {
         setDeliveredCredential({
-          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
           name: pixData.variationName,
         });
         queryClient.invalidateQueries({ queryKey: ["account-preview"] });
@@ -684,30 +675,21 @@ const AccountPreview = () => {
         toast.success("Pagamento confirmado! Produto entregue.");
         return;
       }
-      // Poll order status
-      for (let i = 0; i < 12; i++) {
-        await new Promise((r) => setTimeout(r, 2500));
-        const { data: orderCheck } = await supabase.from("orders").select("status").eq("id", pixData.orderId).single();
-        if (orderCheck?.status === "delivered") {
-          const { data: log } = await supabase.from("delivery_logs").select("credential_delivered").eq("order_id", pixData.orderId).maybeSingle();
-          setDeliveredCredential({
-            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
-            name: pixData.variationName,
-          });
-          queryClient.invalidateQueries({ queryKey: ["account-preview"] });
-          setPixData(null);
-          toast.success("Pagamento confirmado! Produto entregue.");
-          return;
-        }
-        if (orderCheck?.status === "refunded") {
-          toast.info("Problema na entrega. Valor reembolsado no saldo.");
-          refetchBalance();
-          setPixData(null);
-          return;
-        }
+
+      if (result.status === "refunded") {
+        toast.info("Problema na entrega. Valor reembolsado no saldo.");
+        refetchBalance();
+        setPixData(null);
+        return;
       }
-      toast.warning("Pagamento confirmado, mas entrega em processamento. Confira sua área do cliente.");
-      setPixData(null);
+
+      if (result.status === "refund_needed" || result.status === "cancelled") {
+        toast.error("Problema na entrega. Pedido marcado para reembolso.");
+        setPixData(null);
+        return;
+      }
+
+      toast.warning("Pagamento ainda não identificado. Aguarde alguns instantes e tente novamente.");
     } catch (err: any) {
       console.error(err);
       toast.error("Erro ao confirmar pagamento.");
@@ -720,17 +702,19 @@ const AccountPreview = () => {
     if (!pixData || !user) return;
     setPayingWithBalance(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
-        body: { orderId: pixData.orderId },
+      const { data, error } = await supabase.functions.invoke("secure-checkout", {
+        body: { orderId: pixData.orderId, pay_with_balance: true },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+
       if (data?.refunded) {
         toast.error(data.error || "Conta não disponível. Saldo reembolsado.");
         refetchBalance();
         setPixData(null);
         return;
       }
+
       if (data?.delivered) {
         setDeliveredCredential({
           credential: data.credential || "Produto entregue — verifique sua área do cliente",
@@ -742,32 +726,27 @@ const AccountPreview = () => {
         toast.success("Compra realizada com saldo! Produto entregue.");
         return;
       }
+
       toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
       refetchBalance();
-      for (let i = 0; i < 24; i++) {
-        await new Promise((r) => setTimeout(r, 2500));
-        const { data: orderCheck } = await supabase.from("orders").select("status").eq("id", pixData.orderId).single();
-        if (orderCheck?.status === "delivered") {
-          const { data: log } = await supabase.from("delivery_logs").select("credential_delivered").eq("order_id", pixData.orderId).maybeSingle();
-          setDeliveredCredential({
-            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
-            name: pixData.variationName,
-          });
-          queryClient.invalidateQueries({ queryKey: ["account-preview"] });
-          refetchBalance();
-          setPixData(null);
-          toast.success("Produto entregue!");
-          return;
-        }
-        if (orderCheck?.status === "refunded") {
-          toast.info("Conta não disponível. Saldo reembolsado.");
-          refetchBalance();
-          setPixData(null);
-          return;
-        }
+      const result = await pollOrderDelivery(pixData.orderId);
+      if (result.delivered) {
+        setDeliveredCredential({
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["account-preview"] });
+        refetchBalance();
+        setPixData(null);
+        toast.success("Produto entregue!");
+      } else if (result.status === "refunded" || result.status === "refund_needed" || result.status === "cancelled") {
+        toast.info("Conta não disponível. Saldo reembolsado.");
+        refetchBalance();
+        setPixData(null);
+      } else {
+        toast.warning("Entrega em processamento. Confira sua área do cliente.");
+        setPixData(null);
       }
-      toast.warning("Entrega em processamento. Confira sua área do cliente.");
-      setPixData(null);
     } catch (err: any) {
       console.error(err);
       toast.error("Erro ao pagar com saldo.");
