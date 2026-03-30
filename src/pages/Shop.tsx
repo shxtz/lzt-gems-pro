@@ -653,39 +653,13 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
   const confirmPaymentAndDeliver = async () => {
     if (!pixData || !user) return;
     setCheckingPayment(true);
-
     try {
-      const { data, error } = await supabase.functions.invoke("confirm-pix-payment", {
-        body: {
-          orderId: pixData.orderId,
-          txid: pixData.txid,
-        },
-      });
+      // Poll order status — the webhook handles payment confirmation and delivery
+      const result = await pollOrderDelivery(pixData.orderId, 24, 2500);
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      if (!data?.paid) {
-        toast.warning("O pagamento ainda não foi identificado. Aguarde alguns instantes e tente novamente.");
-        return;
-      }
-
-      if (data?.status === "refunded") {
-        toast.info(data?.error || "Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
-        refetchBalance();
-        setPixData(null);
-        return;
-      }
-
-      if (data?.status === "refund_needed" || data?.status === "cancelled") {
-        toast.error(data?.error || "Houve um problema na entrega. O pedido foi marcado para reembolso.");
-        setPixData(null);
-        return;
-      }
-
-      if (data?.delivered) {
+      if (result.status === "delivered" && result.delivered) {
         setDeliveredCredential({
-          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
           name: pixData.variationName,
         });
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
@@ -694,49 +668,20 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         return;
       }
 
-      toast.info("Pagamento identificado. Finalizando a entrega...");
-
-      for (let i = 0; i < 24; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-        const { data: orderCheck } = await supabase
-          .from("orders")
-          .select("status")
-          .eq("id", pixData.orderId)
-          .single();
-
-        if (orderCheck?.status === "delivered") {
-          const { data: log } = await supabase
-            .from("delivery_logs")
-            .select("credential_delivered")
-            .eq("order_id", pixData.orderId)
-            .maybeSingle();
-
-          setDeliveredCredential({
-            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
-            name: pixData.variationName,
-          });
-          queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-          setPixData(null);
-          toast.success("Pagamento confirmado! Produto entregue.");
-          return;
-        }
-
-        if (orderCheck?.status === "refunded") {
-          toast.info("Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
-          refetchBalance();
-          setPixData(null);
-          return;
-        }
-
-        if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
-          toast.error("Houve um problema na entrega. O pedido foi marcado para reembolso.");
-          setPixData(null);
-          return;
-        }
+      if (result.status === "refunded") {
+        toast.info("Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
+        refetchBalance();
+        setPixData(null);
+        return;
       }
 
-      toast.warning("Pagamento confirmado, mas a entrega ainda está em processamento. Confira sua área do cliente em instantes.");
-      setPixData(null);
+      if (result.status === "refund_needed" || result.status === "cancelled") {
+        toast.error("Houve um problema na entrega. O pedido foi marcado para reembolso.");
+        setPixData(null);
+        return;
+      }
+
+      toast.warning("Pagamento ainda não identificado. Aguarde alguns instantes e tente novamente.");
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Erro ao confirmar pagamento.");
@@ -748,13 +693,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (!pixData || !user) return;
     setPayingWithBalance(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
-        body: { orderId: pixData.orderId },
+      // Use secure-checkout with balance — the backend handles debit
+      // Since order already exists, we poll for delivery after backend processes it
+      const { data, error } = await supabase.functions.invoke("secure-checkout", {
+        body: { orderId: pixData.orderId, pay_with_balance: true },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Handle refund case
       if (data?.refunded) {
         toast.error(data.error || "Conta não disponível. Saldo reembolsado.");
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
@@ -775,40 +721,24 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         return;
       }
 
-      if (data?.paid) {
-        // Paid but delivery pending — poll
-        toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+      toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+      refetchBalance();
+      const result = await pollOrderDelivery(pixData.orderId);
+      if (result.delivered) {
+        setDeliveredCredential({
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
         refetchBalance();
-        for (let i = 0; i < 24; i++) {
-          await new Promise((r) => setTimeout(r, 2500));
-          const { data: orderCheck } = await supabase
-            .from("orders")
-            .select("status")
-            .eq("id", pixData.orderId)
-            .single();
-          if (orderCheck?.status === "delivered") {
-            const { data: log } = await supabase
-              .from("delivery_logs")
-              .select("credential_delivered")
-              .eq("order_id", pixData.orderId)
-              .maybeSingle();
-            setDeliveredCredential({
-              credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
-              name: pixData.variationName,
-            });
-            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-            setPixData(null);
-            toast.success("Produto entregue com sucesso!");
-            return;
-          }
-          if (orderCheck?.status === "refunded" || orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
-            toast.error("Conta não disponível. Seu saldo foi reembolsado automaticamente.");
-            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-            refetchBalance();
-            setPixData(null);
-            return;
-          }
-        }
+        setPixData(null);
+        toast.success("Produto entregue com sucesso!");
+      } else if (result.status === "refunded" || result.status === "refund_needed" || result.status === "cancelled") {
+        toast.error("Conta não disponível. Seu saldo foi reembolsado automaticamente.");
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        refetchBalance();
+        setPixData(null);
+      } else {
         toast.warning("Entrega em processamento. Confira sua área do cliente.");
         setPixData(null);
       }
