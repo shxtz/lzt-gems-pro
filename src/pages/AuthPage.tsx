@@ -31,6 +31,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [discordVerification, setDiscordVerification] = useState<DiscordVerification | null>(null);
   const appliedDiscordIdRef = useRef<string | null>(null);
+  const verificationAppliedRef = useRef(false);
 
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -106,12 +107,25 @@ const AuthPage = () => {
     };
   }, [user, navigate]);
 
-  const applyDiscordVerification = (payload: DiscordVerification) => {
-    appliedDiscordIdRef.current = payload.discord_id;
+  const applyDiscordVerification = (payload: DiscordVerification, showToast = true) => {
+    // Prevent duplicate applications
+    if (verificationAppliedRef.current) return;
+    verificationAppliedRef.current = true;
+    appliedDiscordIdRef.current = payload.discord_id ?? "__verified__";
+
     setDiscordVerification(payload);
-    setDisplayName((current) => current || payload.username || "");
+    // Only set displayName if user hasn't typed anything yet
+    setDisplayName((current) => current.trim() ? current : (payload.username || ""));
     setIsLogin(false);
     setError("");
+
+    if (showToast) {
+      toast.success(
+        payload.username && payload.username !== "Discord verificado"
+          ? `Discord verificado: ${payload.username}`
+          : "Discord verificado! Preencha os dados para criar sua conta."
+      );
+    }
 
     try {
       localStorage.setItem(
@@ -123,55 +137,48 @@ const AuthPage = () => {
 
   // Check for RestoreCord callback params (same-tab redirect fallback)
   useEffect(() => {
+    if (verificationAppliedRef.current) return;
     const verified = searchParams.get("restorecord_verified");
 
     if (verified === "1") {
-      const alreadyApplied = appliedDiscordIdRef.current === "__verified__";
       applyDiscordVerification({
         discord_id: null,
         username: "Discord verificado",
         avatar: null,
       });
-      if (!alreadyApplied) {
-        appliedDiscordIdRef.current = "__verified__";
-        toast.success("Discord verificado! Preencha os dados para criar sua conta.");
-      }
     }
   }, [searchParams]);
 
   // Listen for postMessage from popup callback
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      if (verificationAppliedRef.current) return;
       if (event.data?.type === "RESTORECORD_VERIFIED") {
-        const alreadyApplied = event.data.discord_id ? appliedDiscordIdRef.current === event.data.discord_id : false;
         applyDiscordVerification({
           discord_id: event.data.discord_id || null,
           username: event.data.username || "Discord verificado",
           avatar: event.data.avatar || null,
         });
-        if (!alreadyApplied) {
-          toast.success(`Discord verificado: ${event.data.username || "pronto para cadastro"}`);
-        }
       }
     };
     window.addEventListener("message", handler);
 
-    // Also poll localStorage as fallback (in case postMessage was missed)
+    // Poll localStorage as fallback (stops once applied)
     const poll = setInterval(() => {
+      if (verificationAppliedRef.current) {
+        clearInterval(poll);
+        return;
+      }
       try {
         const stored = localStorage.getItem(VERIFIED_DISCORD_STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored);
           if (data?.type === "RESTORECORD_VERIFIED") {
-            const alreadyApplied = data.discord_id ? appliedDiscordIdRef.current === data.discord_id : false;
             applyDiscordVerification({
               discord_id: data.discord_id || null,
               username: data.username || "Discord verificado",
               avatar: data.avatar || null,
             });
-            if (!alreadyApplied) {
-              toast.success(`Discord verificado: ${data.username || "pronto para cadastro"}`);
-            }
           }
         }
       } catch {}
