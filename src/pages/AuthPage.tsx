@@ -31,6 +31,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [discordVerification, setDiscordVerification] = useState<DiscordVerification | null>(null);
   const appliedDiscordIdRef = useRef<string | null>(null);
+  const verificationAppliedRef = useRef(false);
 
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
