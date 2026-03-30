@@ -11,6 +11,7 @@ import vbucksIcon from "@/assets/vbucks-icon.png";
 import CrossSellBanner from "@/components/marketing/CrossSellBanner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { secureCheckout, generatePixPayment } from "@/lib/secure-purchase";
 
 const Checkout = () => {
   const { items, removeItem, clearCart, totalPrice } = useCart();
@@ -54,52 +55,38 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      // Create order
       const item = items[0];
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
-          product_id: item.productId,
-          quantity: item.quantity,
-          total_price: finalPrice,
-          fortnite_username: fortniteUsername,
-          coupon_id: couponId,
-          payment_method: "pix",
-          status: "pending",
-        })
-        .select()
-        .single();
 
-      if (orderError) throw orderError;
-
-      // Create PIX charge
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", {
-        body: {
-          orderId: order.id,
-          amount: finalPrice,
-          description: `${item.amount} V-Bucks - VBucks Barato`,
-        },
+      // Step 1: Create order securely on backend
+      const checkoutResult = await secureCheckout({
+        product_id: item.productId,
+        quantity: item.quantity,
+        coupon_code: couponCode.trim() || undefined,
+        fortnite_username: fortniteUsername,
       });
 
-      if (pixError) throw pixError;
+      if (checkoutResult.delivered) {
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        clearCart();
+        navigate("/minha-conta");
+        return;
+      }
 
-      setPixData({
-        qrcode: pixResponse.qrcode,
-        copiaecola: pixResponse.copiaecola,
-        txid: pixResponse.txid,
-      });
+      if (checkoutResult.requiresPix) {
+        // Step 2: Generate PIX payment server-side
+        const pixResponse = await generatePixPayment(checkoutResult.orderId);
 
-      // Update order with payment ID
-      await supabase
-        .from("orders")
-        .update({ payment_id: pixResponse.txid })
-        .eq("id", order.id);
+        setPixData({
+          qrcode: pixResponse.qrcode,
+          copiaecola: pixResponse.copiaecola,
+          txid: pixResponse.txid,
+        });
 
-      toast.success("Cobrança PIX gerada!");
+        toast.success("Cobrança PIX gerada!");
+      }
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao gerar pagamento. Tente novamente.");
+      toast.error(err?.message || "Erro ao gerar pagamento. Tente novamente.");
     }
     setLoading(false);
   };
