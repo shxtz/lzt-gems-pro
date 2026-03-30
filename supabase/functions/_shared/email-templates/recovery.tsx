@@ -1,44 +1,36 @@
 /// <reference types="npm:@types/react@18.3.1" />
-
 import * as React from 'npm:react@18.3.1'
+import { Body, Button, Container, Head, Heading, Html, Preview, Text, Img, Section, Hr } from 'npm:@react-email/components@0.0.22'
 
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Text,
-} from 'npm:@react-email/components@0.0.22'
+const LOGO_URL = 'https://augzjiubwfmybwncbbgv.supabase.co/storage/v1/object/public/category-icons/email-logo.png'
 
-interface RecoveryEmailProps {
-  siteName: string
-  confirmationUrl: string
-}
+interface RecoveryEmailProps { siteName: string; confirmationUrl: string }
 
-export const RecoveryEmail = ({
-  siteName,
-  confirmationUrl,
-}: RecoveryEmailProps) => (
-  <Html lang="en" dir="ltr">
+export const RecoveryEmail = ({ siteName, confirmationUrl }: RecoveryEmailProps) => (
+  <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Reset your password for {siteName}</Preview>
+    <Preview>Redefina sua senha — {siteName}</Preview>
     <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Reset your password</Heading>
-        <Text style={text}>
-          We received a request to reset your password for {siteName}. Click
-          the button below to choose a new password.
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Reset Password
-        </Button>
-        <Text style={footer}>
-          If you didn't request a password reset, you can safely ignore this
-          email. Your password will not be changed.
-        </Text>
+      <Container style={wrapper}>
+        <Section style={header}>
+          <Img src={LOGO_URL} alt="VBUCKS BARATO" width="140" height="auto" style={logo} />
+        </Section>
+        <Section style={heroBar} />
+        <Section style={content}>
+          <Heading style={h1}>Redefinir senha 🔑</Heading>
+          <Text style={text}>
+            Alguém solicitou a redefinição de senha da sua conta na <strong style={goldText}>VBUCKS BARATO</strong>. Clique no botão abaixo para criar uma nova senha.
+          </Text>
+          <Section style={buttonWrapper}>
+            <Button style={button} href={confirmationUrl}>🔒 REDEFINIR MINHA SENHA</Button>
+          </Section>
+          <Hr style={divider} />
+          <Text style={small}>Se você não solicitou esta redefinição, ignore este e-mail. Sua senha continuará a mesma.</Text>
+        </Section>
+        <Section style={footer}>
+          <Text style={footerText}>© {new Date().getFullYear()} VBUCKS BARATO — Todos os direitos reservados</Text>
+          <Text style={footerSub}>Feito por Ajazz & Bypass</Text>
+        </Section>
       </Container>
     </Body>
   </Html>
@@ -46,26 +38,19 @@ export const RecoveryEmail = ({
 
 export default RecoveryEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const main = { backgroundColor: '#f5f0e8', fontFamily: "'Urbanist', 'Segoe UI', Arial, sans-serif" }
+const wrapper = { maxWidth: '520px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden' as const, boxShadow: '0 8px 40px rgba(78, 40, 2, 0.08)' }
+const header = { backgroundColor: '#1a1108', padding: '28px 0', textAlign: 'center' as const }
+const logo = { margin: '0 auto' }
+const heroBar = { height: '4px', background: 'linear-gradient(90deg, #D4A843, #ecb32c, #D4A843)' }
+const content = { padding: '36px 32px 28px' }
+const h1 = { fontSize: '22px', fontWeight: '800' as const, color: '#1a1108', margin: '0 0 16px', lineHeight: '1.3' }
+const goldText = { color: '#D4A843' }
+const text = { fontSize: '14px', color: '#5c5147', lineHeight: '1.7', margin: '0 0 16px' }
+const buttonWrapper = { textAlign: 'center' as const, margin: '24px 0' }
+const button = { backgroundColor: '#D4A843', color: '#1a1108', fontSize: '13px', fontWeight: '800' as const, borderRadius: '10px', padding: '14px 36px', textDecoration: 'none', letterSpacing: '0.05em', textTransform: 'uppercase' as const }
+const divider = { borderColor: '#ede8df', margin: '24px 0 16px' }
+const small = { fontSize: '12px', color: '#a09888', lineHeight: '1.5', margin: '0' }
+const footer = { backgroundColor: '#1a1108', padding: '20px 32px', textAlign: 'center' as const }
+const footerText = { fontSize: '11px', color: '#8a7a60', margin: '0 0 4px' }
+const footerSub = { fontSize: '10px', color: '#5c4a30', margin: '0' }
