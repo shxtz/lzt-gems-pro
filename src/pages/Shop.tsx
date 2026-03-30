@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { secureCheckout, generatePixPayment, pollOrderDelivery } from "@/lib/secure-purchase";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search, ShoppingCart, Zap, Package, Key, Mail,
@@ -420,10 +421,10 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     queryFn: async () => {
       try {
         const { data, error } = await withTimeout(
-          supabase.from("products").select("id, name, description, category, image_url, active").eq("active", true).order("sort_order"),
+          supabase.from("products_public" as any).select("id, name, description, category, image_url, active").eq("active", true).order("sort_order"),
         );
         if (error) throw error;
-        const nextData = (data ?? []) as Product[];
+        const nextData = (data ?? []) as unknown as Product[];
         writeCache(SHOP_CACHE_KEYS.products, nextData);
         return nextData;
       } catch {
@@ -580,50 +581,39 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (!user) { toast.error("Faça login para comprar"); navigate("/auth"); return; }
     setPurchasing(account.id);
     try {
-      // Step 1: Check availability on LZT before anything
-      const { data: checkResult, error: checkError } = await supabase.functions.invoke("lzt-purchase", {
-        body: { action: "check_availability", lzt_item_id: account.lzt_item_id },
+      // Step 1: Secure checkout — backend validates everything
+      const result = await secureCheckout({
+        product_id: account.id,
+        lzt_item_id: account.lzt_item_id,
+        lzt_account_id: account.id,
+        coupon_code: couponCode.trim() || undefined,
       });
-      if (checkError) throw checkError;
-      if (!checkResult?.available) {
-        toast.error(checkResult?.reason || "Conta indisponível no LZT Market");
+
+      if (result.delivered) {
+        setDeliveredCredential({
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
+          name: getMaskedName(getCategoryName(account.category_id), account.lzt_item_id),
+        });
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+        return;
+      }
+
+      if (result.refunded) {
+        toast.error(result.error || "Conta não disponível. Saldo reembolsado.");
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
         return;
       }
 
-      if (checkResult.currentPriceUsd && account.price_usd) {
-        const storedUsd = Number(account.price_usd);
-        const currentUsd = Number(checkResult.currentPriceUsd);
-        const priceDiffPercent = storedUsd > 0 ? Math.abs(currentUsd - storedUsd) / storedUsd : 0;
-        if (priceDiffPercent > 0.1) {
-          queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-          toast.warning("O preço desta conta mudou. Atualizando...");
-          return;
-        }
+      if (result.requiresPix) {
+        // Step 2: Generate PIX — backend knows the amount
+        const pixResponse = await generatePixPayment(result.orderId);
+        const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
+        setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: result.orderId, variationName: accountName, amount: account.price_brl, lztAccountId: account.id });
+        setCouponCode(""); setCouponDiscount(0); setCouponId(null);
       }
-
-      // Apply coupon discount
-      const basePrice = account.price_brl;
-      const finalPrice = couponDiscount > 0 ? Math.round(basePrice * (1 - couponDiscount / 100) * 100) / 100 : basePrice;
-
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, quantity: 1, total_price: finalPrice, payment_method: "pix", status: "pending", lzt_item_id: account.lzt_item_id, lzt_account_id: account.id, coupon_id: couponId } as any).select().single();
-      if (orderError) throw orderError;
-      const accountName = getMaskedName(getCategoryName(account.category_id), account.lzt_item_id);
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: finalPrice, description: `${accountName} - Loja` } });
-      if (pixError) throw pixError;
-      if (pixResponse?.error) throw new Error(pixResponse.error);
-      await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      // Increment coupon uses
-      if (couponId) {
-        await supabase.rpc("has_role", { _user_id: user.id, _role: "user" }).then(() => {
-          // just a no-op to keep TS happy
-        });
-        await supabase.from("coupons").update({ current_uses: (couponDiscount > 0 ? 1 : 0) } as any).eq("id", couponId);
-      }
-      setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: order.id, variationName: accountName, amount: finalPrice, lztAccountId: account.id });
-      // Reset coupon after purchase
-      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
-    } catch (err: any) { console.error(err); toast.error("Erro ao gerar pagamento PIX."); }
+    } catch (err: any) { console.error(err); toast.error(err?.message || "Erro ao gerar pagamento PIX."); }
     finally { setPurchasing(null); }
   };
 
@@ -633,56 +623,43 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (stock === 0) { toast.error("Produto sem estoque disponível"); return; }
     setPurchasing(variation.id);
     try {
-      const basePrice = Number(variation.price);
-      const finalPrice = couponDiscount > 0 ? Math.round(basePrice * (1 - couponDiscount / 100) * 100) / 100 : basePrice;
-      const { data: order, error: orderError } = await supabase.from("orders").insert({ user_id: user.id, product_id: variation.id, quantity: 1, total_price: finalPrice, payment_method: "pix", status: "pending", coupon_id: couponId } as any).select().single();
-      if (orderError) throw orderError;
-      const { data: pixResponse, error: pixError } = await supabase.functions.invoke("create-pix-charge", { body: { orderId: order.id, amount: finalPrice, description: `${variation.name} - Loja Digital` } });
-      if (pixError) throw pixError;
-      if (pixResponse?.error) throw new Error(pixResponse.error);
-      await supabase.from("orders").update({ payment_id: pixResponse.txid }).eq("id", order.id);
-      setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: order.id, variationId: variation.id, variationName: variation.name, amount: finalPrice });
-      setCouponCode(""); setCouponDiscount(0); setCouponId(null);
-    } catch (err: any) { console.error(err); toast.error("Erro ao gerar pagamento PIX."); }
+      const result = await secureCheckout({
+        product_id: variation.product_id,
+        variation_index: variations?.filter(v => v.product_id === variation.product_id).findIndex(v => v.id === variation.id) ?? 0,
+        quantity: 1,
+        coupon_code: couponCode.trim() || undefined,
+      });
+
+      if (result.delivered) {
+        setDeliveredCredential({
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
+          name: variation.name,
+        });
+        queryClient.invalidateQueries({ queryKey: ["shop-stock-counts"] });
+        toast.success("Compra realizada com saldo! Produto entregue.");
+        setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+        return;
+      }
+
+      if (result.requiresPix) {
+        const pixResponse = await generatePixPayment(result.orderId);
+        setPixData({ qrcode: pixResponse.qrcode, copiaecola: pixResponse.copiaecola, txid: pixResponse.txid, orderId: result.orderId, variationId: variation.id, variationName: variation.name, amount: Number(variation.price) });
+        setCouponCode(""); setCouponDiscount(0); setCouponId(null);
+      }
+    } catch (err: any) { console.error(err); toast.error(err?.message || "Erro ao gerar pagamento PIX."); }
     finally { setPurchasing(null); }
   };
 
   const confirmPaymentAndDeliver = async () => {
     if (!pixData || !user) return;
     setCheckingPayment(true);
-
     try {
-      const { data, error } = await supabase.functions.invoke("confirm-pix-payment", {
-        body: {
-          orderId: pixData.orderId,
-          txid: pixData.txid,
-        },
-      });
+      // Poll order status — the webhook handles payment confirmation and delivery
+      const result = await pollOrderDelivery(pixData.orderId, 24, 2500);
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      if (!data?.paid) {
-        toast.warning("O pagamento ainda não foi identificado. Aguarde alguns instantes e tente novamente.");
-        return;
-      }
-
-      if (data?.status === "refunded") {
-        toast.info(data?.error || "Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
-        refetchBalance();
-        setPixData(null);
-        return;
-      }
-
-      if (data?.status === "refund_needed" || data?.status === "cancelled") {
-        toast.error(data?.error || "Houve um problema na entrega. O pedido foi marcado para reembolso.");
-        setPixData(null);
-        return;
-      }
-
-      if (data?.delivered) {
+      if (result.status === "delivered" && result.delivered) {
         setDeliveredCredential({
-          credential: data.credential || "Produto entregue — verifique sua área do cliente",
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
           name: pixData.variationName,
         });
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
@@ -691,49 +668,20 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         return;
       }
 
-      toast.info("Pagamento identificado. Finalizando a entrega...");
-
-      for (let i = 0; i < 24; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-        const { data: orderCheck } = await supabase
-          .from("orders")
-          .select("status")
-          .eq("id", pixData.orderId)
-          .single();
-
-        if (orderCheck?.status === "delivered") {
-          const { data: log } = await supabase
-            .from("delivery_logs")
-            .select("credential_delivered")
-            .eq("order_id", pixData.orderId)
-            .maybeSingle();
-
-          setDeliveredCredential({
-            credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
-            name: pixData.variationName,
-          });
-          queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-          setPixData(null);
-          toast.success("Pagamento confirmado! Produto entregue.");
-          return;
-        }
-
-        if (orderCheck?.status === "refunded") {
-          toast.info("Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
-          refetchBalance();
-          setPixData(null);
-          return;
-        }
-
-        if (orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
-          toast.error("Houve um problema na entrega. O pedido foi marcado para reembolso.");
-          setPixData(null);
-          return;
-        }
+      if (result.status === "refunded") {
+        toast.info("Houve um problema na entrega. O valor foi reembolsado no seu saldo.");
+        refetchBalance();
+        setPixData(null);
+        return;
       }
 
-      toast.warning("Pagamento confirmado, mas a entrega ainda está em processamento. Confira sua área do cliente em instantes.");
-      setPixData(null);
+      if (result.status === "refund_needed" || result.status === "cancelled") {
+        toast.error("Houve um problema na entrega. O pedido foi marcado para reembolso.");
+        setPixData(null);
+        return;
+      }
+
+      toast.warning("Pagamento ainda não identificado. Aguarde alguns instantes e tente novamente.");
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Erro ao confirmar pagamento.");
@@ -745,13 +693,14 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
     if (!pixData || !user) return;
     setPayingWithBalance(true);
     try {
-      const { data, error } = await supabase.functions.invoke("pay-with-balance", {
-        body: { orderId: pixData.orderId },
+      // Use secure-checkout with balance — the backend handles debit
+      // Since order already exists, we poll for delivery after backend processes it
+      const { data, error } = await supabase.functions.invoke("secure-checkout", {
+        body: { orderId: pixData.orderId, pay_with_balance: true },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Handle refund case
       if (data?.refunded) {
         toast.error(data.error || "Conta não disponível. Saldo reembolsado.");
         queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
@@ -772,40 +721,24 @@ const Shop = ({ initialCategorySlug }: { initialCategorySlug?: string }) => {
         return;
       }
 
-      if (data?.paid) {
-        // Paid but delivery pending — poll
-        toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+      toast.info("Pagamento com saldo confirmado. Finalizando entrega...");
+      refetchBalance();
+      const result = await pollOrderDelivery(pixData.orderId);
+      if (result.delivered) {
+        setDeliveredCredential({
+          credential: result.credential || "Produto entregue — verifique sua área do cliente",
+          name: pixData.variationName,
+        });
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
         refetchBalance();
-        for (let i = 0; i < 24; i++) {
-          await new Promise((r) => setTimeout(r, 2500));
-          const { data: orderCheck } = await supabase
-            .from("orders")
-            .select("status")
-            .eq("id", pixData.orderId)
-            .single();
-          if (orderCheck?.status === "delivered") {
-            const { data: log } = await supabase
-              .from("delivery_logs")
-              .select("credential_delivered")
-              .eq("order_id", pixData.orderId)
-              .maybeSingle();
-            setDeliveredCredential({
-              credential: log?.credential_delivered || "Produto entregue — verifique sua área do cliente",
-              name: pixData.variationName,
-            });
-            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-            setPixData(null);
-            toast.success("Produto entregue com sucesso!");
-            return;
-          }
-          if (orderCheck?.status === "refunded" || orderCheck?.status === "refund_needed" || orderCheck?.status === "cancelled") {
-            toast.error("Conta não disponível. Seu saldo foi reembolsado automaticamente.");
-            queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
-            refetchBalance();
-            setPixData(null);
-            return;
-          }
-        }
+        setPixData(null);
+        toast.success("Produto entregue com sucesso!");
+      } else if (result.status === "refunded" || result.status === "refund_needed" || result.status === "cancelled") {
+        toast.error("Conta não disponível. Seu saldo foi reembolsado automaticamente.");
+        queryClient.invalidateQueries({ queryKey: ["shop-lzt-accounts"] });
+        refetchBalance();
+        setPixData(null);
+      } else {
         toast.warning("Entrega em processamento. Confira sua área do cliente.");
         setPixData(null);
       }
