@@ -81,6 +81,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    // Handle PKCE code exchange from email confirmation links
+    const handleCodeExchange = async () => {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      if (code) {
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error("Code exchange failed:", error.message);
+          }
+        } catch (e) {
+          console.error("Code exchange error:", e);
+        }
+        // Clean up URL regardless of success
+        url.searchParams.delete("code");
+        window.history.replaceState({}, "", url.toString());
+      }
+    };
+
+    // Handle hash fragment tokens (implicit flow / magic links)
+    const handleHashTokens = async () => {
+      const hash = window.location.hash;
+      if (hash && (hash.includes("access_token") || hash.includes("type=signup") || hash.includes("type=recovery") || hash.includes("type=magiclink"))) {
+        // Supabase client auto-detects hash tokens via getSession/onAuthStateChange
+        // Just ensure we don't have stale state
+        return;
+      }
+    };
+
+    void handleCodeExchange();
+    void handleHashTokens();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
