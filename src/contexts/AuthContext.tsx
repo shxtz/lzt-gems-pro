@@ -81,7 +81,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Handle PKCE code exchange from email confirmation links
+    // 1. Set up listener FIRST so it catches all auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      syncAuthState(nextSession);
+    });
+
+    // 2. Handle PKCE code exchange from email confirmation links
     const handleCodeExchange = async () => {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
@@ -100,24 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Handle hash fragment tokens (implicit flow / magic links)
-    const handleHashTokens = async () => {
-      const hash = window.location.hash;
-      if (hash && (hash.includes("access_token") || hash.includes("type=signup") || hash.includes("type=recovery") || hash.includes("type=magiclink"))) {
-        // Supabase client auto-detects hash tokens via getSession/onAuthStateChange
-        // Just ensure we don't have stale state
-        return;
-      }
-    };
-
     void handleCodeExchange();
-    void handleHashTokens();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      syncAuthState(nextSession);
-    });
 
     // Hard safety: ensure authReady=true within 5s no matter what
     const safetyTimer = setTimeout(() => {
