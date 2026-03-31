@@ -81,11 +81,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    // 1. Set up listener FIRST so it catches all auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       syncAuthState(nextSession);
     });
+
+    // 2. Handle PKCE code exchange from email confirmation links
+    const handleCodeExchange = async () => {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      if (code) {
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error("Code exchange failed:", error.message);
+          }
+        } catch (e) {
+          console.error("Code exchange error:", e);
+        }
+        // Clean up URL regardless of success
+        url.searchParams.delete("code");
+        window.history.replaceState({}, "", url.toString());
+      }
+    };
+
+    void handleCodeExchange();
 
     // Hard safety: ensure authReady=true within 5s no matter what
     const safetyTimer = setTimeout(() => {
